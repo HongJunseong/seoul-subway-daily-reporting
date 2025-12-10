@@ -2,78 +2,86 @@
 
 from __future__ import annotations
 
-import requests
-import pandas as pd
-
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
-load_dotenv()
 
-# 현재 파일 기준으로 src 경로를 자동으로 PYTHONPATH에 추가
+import requests
+import pandas as pd
+from dotenv import load_dotenv
+
+# =========================
+#  경로 & .env 세팅 (Run 버튼용)
+# =========================
 CURRENT_FILE = Path(__file__).resolve()
 PROJECT_ROOT = CURRENT_FILE.parents[2]
-SRC_DIR = PROJECT_ROOT / "src"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+# 루트의 .env 로드
+load_dotenv(PROJECT_ROOT / ".env")
+
 from src.configs.settings import get_seoul_api_key, BRONZE_DIR
 
-def fetch_realtime_arrival_all() -> pd.DataFrame:
+
+def fetch_realtime_arrival(station_name: str = "강남") -> pd.DataFrame:
     """
-    서울교통공사 지하철 실시간 도착정보 호출 테스트.
-    서비스명: realtimeStationArrival
+    swopenapi 기반 서울 지하철 실시간 도착 정보 (역 단위)
+    SERVICE : realtimeStationArrival
+    응답 키  : realtimeArrivalList
     """
 
     api_key = get_seoul_api_key()
 
-    base_url = "http://swopenAPI.seoul.go.kr/api/subway"
+    base_url = "http://swopenapi.seoul.go.kr/api/subway"
     service_name = "realtimeStationArrival"
     start_index = 0
-    end_index = 100
+    end_index = 50  # 최대 50개 정도만
 
-    # 일단 역 하나(강남)만 테스트해보자
-    station_name = "강남"
-
-    # 🚩 xml → json 으로 바꾸기!!
     url = f"{base_url}/{api_key}/json/{service_name}/{start_index}/{end_index}/{station_name}"
     print("[DEBUG] Request URL:", url)
 
     resp = requests.get(url, timeout=10)
     resp.raise_for_status()
-
-    # 응답 내용 먼저 한 번 찍어보자 (디버그용)
-    # print(resp.text[:300])
-
     data = resp.json()
 
-    # 에러 응답인 경우 (RESULT만 있을 때)
-    if "RESULT" in data and "realtimeStationArrival" not in data:
-        raise RuntimeError(f"API 오류 응답: {data['RESULT']}")
+    print("[DEBUG] Top-level keys:", data.keys())
 
-    if "realtimeStationArrival" not in data:
-        raise RuntimeError(f"응답에 realtimeStationArrival 키가 없습니다: {data.keys()}")
+    # 에러/상태만 온 경우
+    # 예: {"status": ..., "code": ..., "message": ..., ...}
+    if "realtimeArrivalList" not in data:
+        # swopenapi 정상 응답 형식: { "errorMessage": {...}, "realtimeArrivalList": [...] }
+        if "errorMessage" in data:
+            em = data["errorMessage"]
+            raise RuntimeError(
+                f"API 오류: status={em.get('status')} code={em.get('code')} "
+                f"message={em.get('message')}"
+            )
+        # data.go.kr 스타일 메타 응답만 온 경우
+        if {"status", "code", "message"} <= set(data.keys()):
+            raise RuntimeError(
+                f"API 메타 응답만 수신: status={data.get('status')} "
+                f"code={data.get('code')} message={data.get('message')}"
+            )
 
-    body = data["realtimeStationArrival"]
-    if "row" not in body:
-        raise RuntimeError(f"응답에 row 필드가 없습니다: {body.keys()}")
+        # 그 외 알 수 없는 구조
+        raise RuntimeError(f"알 수 없는 응답 구조: {data}")
 
-    rows = body["row"]
+    rows = data["realtimeArrivalList"]
     df = pd.DataFrame(rows)
     return df
 
 
-
 def save_to_bronze(df: pd.DataFrame) -> None:
+    BRONZE_DIR.mkdir(parents=True, exist_ok=True)
     out_path = BRONZE_DIR / "subway_arrival_sample.parquet"
     df.to_parquet(out_path, index=False)
     print(f"[INFO] Saved sample to {out_path}")
 
 
 def main():
-    print("[INFO] Fetching realtime subway arrival (all stations)...")
-    df = fetch_realtime_arrival_all()
+    print("[INFO] Fetching realtime subway arrival for station '강남' ...")
+    df = fetch_realtime_arrival("강남")
     print("[INFO] Rows:", len(df))
     print(df.head(10))
 
