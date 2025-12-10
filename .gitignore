@@ -3,9 +3,6 @@ __pycache__/
 
 
 # --- Secrets / local config ---
-.env
-.env.*
-!.env.example
 
 
 # --- Artifacts / models / reports ---
