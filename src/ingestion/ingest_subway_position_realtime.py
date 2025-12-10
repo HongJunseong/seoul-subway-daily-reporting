@@ -22,8 +22,8 @@ load_dotenv(PROJECT_ROOT / ".env")
 # -------------------------------------
 
 from src.configs.settings import get_position_api_key, BRONZE_DIR
-from src.utils.station_loader import load_lines_from_usage   # ★ 신규 함수 사용
-
+# ✅ 이제 usage가 아니라, 실시간 역정보 엑셀 기준 호선 이름 사용
+from src.utils.station_loader import load_lines_from_realtime_ref
 
 BASE_URL = "http://swopenapi.seoul.go.kr/api/subway"
 SERVICE_NAME = "realtimePosition"
@@ -31,12 +31,14 @@ SERVICE_NAME = "realtimePosition"
 
 def fetch_realtime_position_for_line(line_name: str) -> pd.DataFrame:
     """
-    특정 호선(예: '2호선', '4호선')에 대한 실시간 열차 위치 조회
+    특정 호선(예: '2호선', '경의중앙선')에 대한 실시간 열차 위치 조회.
+
+    line_name 은 '실시간도착_역정보(20251103).xlsx' 의 '호선이름' 기준.
     """
     api_key = get_position_api_key()
 
     start_index = 0
-    end_index = 100  
+    end_index = 100
 
     url = f"{BASE_URL}/{api_key}/json/{SERVICE_NAME}/{start_index}/{end_index}/{line_name}"
 
@@ -80,7 +82,7 @@ def fetch_realtime_position_for_lines(lines: Sequence[str]) -> pd.DataFrame:
     """
     모든 호선에 대해 위치정보를 조회하여 하나의 DF로 합쳐 반환
     """
-    dfs = []
+    dfs: list[pd.DataFrame] = []
     for ln in lines:
         df_line = fetch_realtime_position_for_line(ln)
         print(f"[INFO] Fetched {len(df_line)} rows for line: {ln}")
@@ -119,10 +121,13 @@ def save_position_to_bronze(df: pd.DataFrame, snapshot_time: datetime) -> Path:
 
 
 def main():
-    # ⭐ usage → Silver에서 호선 목록 자동 로딩
-    lines = load_lines_from_usage()
-    print(f"[INFO] Total lines detected from usage: {len(lines)}")
-    print("Lines:", lines)
+    # ✅ '실시간도착_역정보(20251103).xlsx' 의 '호선이름' 기준으로 호선 목록 로딩
+    lines = load_lines_from_realtime_ref()
+    print(f"[INFO] Total lines from realtime reference (호선이름): {len(lines)}")
+    print("[INFO] Lines used for realtime position:", lines)
+
+    # 🔹 필요하면 개발/테스트용으로 일부 호선만 제한 가능
+    # lines = [ln for ln in lines if ln in ["1호선", "2호선", "3호선"]]
 
     snapshot_time = datetime.now()
     print(f"[INFO] Fetching realtime subway positions at snapshot: {snapshot_time}")

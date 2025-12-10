@@ -28,7 +28,7 @@ def list_bronze_arrival_files() -> List[Path]:
     base = BRONZE_DIR / "subway_arrival"
     pattern = str(base / "year=*" / "month=*" / "day=*" / "hour=*" / "arrivals.parquet")
 
-    paths = glob(pattern)  # 🔥 절대 경로 패턴은 glob()로
+    paths = glob(pattern)
     files = [Path(p) for p in paths]
 
     if not files:
@@ -110,15 +110,17 @@ def main():
     if not files:
         return
 
-    for f in files:
-        print(f"[INFO] Processing bronze file: {f}")
-        df_bronze = pd.read_parquet(f)
-        df_fact = transform_to_fact_subway_arrival(df_bronze)
-        print(f"[INFO] Fact rows: {len(df_fact)}")
+    # ⭐ 모든 파일을 도는 대신, 가장 최근(mtime 기준) 브론즈 파일만 처리
+    latest_file = max(files, key=lambda p: p.stat().st_mtime)
+    print(f"[INFO] Processing ONLY latest bronze arrival file: {latest_file}")
 
-        save_silver_fact(df_fact, f)
+    df_bronze = pd.read_parquet(latest_file)
+    df_fact = transform_to_fact_subway_arrival(df_bronze)
+    print(f"[INFO] Fact rows: {len(df_fact)}")
 
-    print("[DONE] FactSubwayArrivalRealtime build finished.")
+    save_silver_fact(df_fact, latest_file)
+
+    print("[DONE] FactSubwayArrivalRealtime build finished (latest snapshot only).")
 
 
 if __name__ == "__main__":

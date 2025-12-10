@@ -1,97 +1,87 @@
 # src/utils/station_loader.py
 
+from __future__ import annotations
+
 from pathlib import Path
-import pandas as pd
 import sys
+import pandas as pd
 
 CURRENT_FILE = Path(__file__).resolve()
 PROJECT_ROOT = CURRENT_FILE.parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.configs.settings import SILVER_DIR, BRONZE_DIR
+# usage용 SILVER_DIR, BRONZE_DIR은 이 파일에선 안 써도 되긴 하지만
+# 나중에 dim_station/dim_line 만들 때 쓸 수 있으니 남겨둬도 무방
+from src.configs.settings import SILVER_DIR, BRONZE_DIR  # 필요 없으면 삭제해도 됨
 
-
-def _load_latest_parquet(base: Path, pattern: str) -> pd.DataFrame | None:
-    """
-    base 아래에서 pattern에 맞는 parquet 중 가장 최근 파일 하나를 읽어서 반환.
-    없으면 None.
-    """
-    files = sorted(base.glob(pattern))
-    if not files:
-        return None
-
-    latest = files[-1]
-    print(f"[INFO] Using usage file: {latest}")
-    return pd.read_parquet(latest)
+# 📌 서울시 실시간 도착 역정보 엑셀(공식 기준)
+#    파일 위치: <프로젝트 루트>/data/reference/실시간도착_역정보(20251103).xlsx
+REFERENCE_DIR = PROJECT_ROOT / "data" / "reference"
+REALTIME_STATION_INFO_PATH = REFERENCE_DIR / "실시간도착_역정보(20251103).xlsx"
 
 
 # -----------------------------------------------------
-#  1) STATION NAME LOADER
+#  🔥 서울시 '실시간 도착 역정보' 기반 로더들
+#     (SUBWAY_ID / STATN_ID / STATN_NM / 호선이름)
 # -----------------------------------------------------
-def load_station_names_from_usage() -> list[str]:
+def _load_realtime_station_reference() -> pd.DataFrame:
     """
-    1순위: SILVER usage(fact_subway_usage_daily)에서 station_name 추출
-    2순위: BRONZE usage(subway_usage)에서 SBWY_STNS_NM 추출
-    """
-    # 1) SILVER 검색
-    silver_base = SILVER_DIR / "fact_subway_usage_daily"
-    df = _load_latest_parquet(
-        silver_base,
-        "year=*/month=*/day=*/fact_subway_usage_daily.parquet"
-    )
+    서울시에서 제공한 '실시간도착_역정보(20251103).xlsx'를 읽어서 반환.
 
-    # 2) SILVER 없으면 BRONZE 사용
-    if df is None:
-        bronze_base = BRONZE_DIR / "subway_usage"
-        df = _load_latest_parquet(
-            bronze_base,
-            "year=*/month=*/day=*/usage.parquet"
+    expected columns:
+      - SUBWAY_ID : 지하철 호선 ID (예: 1001, 1002, 1063 ...)
+      - STATN_ID  : 역 ID
+      - STATN_NM  : 역명 (실시간 API에서 사용하는 공식 역명)
+      - 호선이름   : 호선 이름 (예: 1호선, 경의중앙선 ...)
+    """
+    path = REALTIME_STATION_INFO_PATH
+    if not path.exists():
+        raise FileNotFoundError(f"실시간 역 정보 파일을 찾을 수 없습니다: {path}")
+
+    df = pd.read_excel(path)
+
+    required_cols = {"SUBWAY_ID", "STATN_ID", "STATN_NM", "호선이름"}
+    missing = required_cols.difference(df.columns)
+    if missing:
+        raise RuntimeError(
+            f"실시간 역 정보 파일에 필요한 컬럼이 없습니다. "
+            f"missing={missing}, columns={df.columns}"
         )
 
-    if df is None:
-        raise RuntimeError("Usage 데이터가 없습니다. 역 목록을 생성할 수 없습니다.")
+    print(f"[INFO] Loaded realtime station reference from: {path}")
+    return df
 
-    # NEW 컬럼 우선순위
-    candidate_cols = ["station_name", "SBWY_STNS_NM"]
-    col = None
-    for c in candidate_cols:
-        if c in df.columns:
-            col = c
-            break
 
-    if col is None:
-        raise RuntimeError(f"역 이름 컬럼(station_name/SBWY_STNS_NM)이 없습니다. columns={df.columns}")
-
-    stations = sorted(df[col].dropna().unique().tolist())
-    print(f"[INFO] Loaded {len(stations)} station names.")
+def load_station_names_from_realtime_ref() -> list[str]:
+    """
+    실시간 도착/위치 API에서 인식하는 공식 역 이름 리스트.
+    → '실시간도착_역정보(20251103).xlsx'의 STATN_NM 사용.
+    arrival ingest 에서 STATN_NM 그대로 써서 호출하면 됨.
+    """
+    df = _load_realtime_station_reference()
+    stations = sorted(df["STATN_NM"].dropna().unique().tolist())
+    print(f"[INFO] Loaded {len(stations)} station names from REALTIME reference (STATN_NM).")
     return stations
 
 
-# -----------------------------------------------------
-#  2) LINE NAME LOADER
-# -----------------------------------------------------
-def load_lines_from_usage() -> list[str]:
+def load_lines_from_realtime_ref() -> list[str]:
     """
-    SILVER usage 데이터에서 호선명(line_name) 가져오기.
+    실시간 도착/위치 API에서 사용할 호선 이름 리스트.
+    → '실시간도착_역정보(20251103).xlsx'의 '호선이름' 사용.
+
+    position ingest 에서는 이 리스트를 사용해서
+    realtimePosition(line_name) 호출에 쓰면 됨.
     """
-    silver_root = SILVER_DIR / "fact_subway_usage"
-    files = list(silver_root.glob("year=*/month=*/day=*/fact_subway_usage_daily.parquet"))
-    if not files:
-        raise RuntimeError("Usage SILVER 데이터 없음. 호선 목록을 생성할 수 없습니다.")
+    df = _load_realtime_station_reference()
+    lines = sorted(df["호선이름"].dropna().unique().tolist())
+    print(f"[INFO] Loaded {len(lines)} line names from REALTIME reference (호선이름).")
+    return lines
 
-    df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
 
-    # NEW 호선 컬럼명
-    candidate_cols = ["line_name", "SBWY_ROUT_LN_NM"]
-
-    col = None
-    for c in candidate_cols:
-        if c in df.columns:
-            col = c
-            break
-
-    if col is None:
-        raise RuntimeError(f"Usage 데이터에서 호선 컬럼을 찾을 수 없습니다. columns={df.columns}")
-
-    return sorted(df[col].dropna().unique().tolist())
+def load_subway_id_mapping() -> pd.DataFrame:
+    """
+    SUBWAY_ID / STATN_ID / STATN_NM / 호선이름 전체를 그대로 반환.
+    dim_station / dim_line 설계, 조인 키 만들 때 사용.
+    """
+    return _load_realtime_station_reference().copy()

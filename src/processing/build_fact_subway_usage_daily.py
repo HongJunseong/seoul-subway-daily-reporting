@@ -78,7 +78,6 @@ def transform_to_fact_subway_usage_daily(df_bronze: pd.DataFrame) -> pd.DataFram
     ride = ride.fillna(0)
     alight = alight.fillna(0)
 
-    # Int64 (nullable integer)로 캐스팅
     fact["ride_count"] = ride.astype("Int64")
     fact["alight_count"] = alight.astype("Int64")
     fact["total_count"] = (ride + alight).astype("Int64")
@@ -94,7 +93,7 @@ def save_silver_fact(df_fact: pd.DataFrame, bronze_file: Path) -> Path:
       .../bronze/subway_usage/year=YYYY/month=MM/day=DD/usage.parquet
 
     silver:
-      .../silver/fact_subway_usage_daily/year=YYYY/month=MM/day=DD/fact_subway_usage_daily.parquet
+      .../silver/fact_subway_usage/year=YYYY/month=MM/day=DD/fact_subway_usage_daily.parquet
     """
     # subway_usage 이후의 파티션 경로(year=../month=../day=..)만 추출
     rel_partition = bronze_file.parent.relative_to(BRONZE_DIR / "subway_usage")
@@ -114,17 +113,19 @@ def main():
     if not files:
         return
 
-    for f in files:
-        print(f"[INFO] Processing bronze usage file: {f}")
-        df_bronze = pd.read_parquet(f)
-        print(f"[INFO] Bronze rows: {len(df_bronze)}")
+    # ⭐ 모든 파일을 도는 대신, 가장 최근(mtime 기준) BRONZE 파일 1개만 처리
+    latest_file = max(files, key=lambda p: p.stat().st_mtime)
+    print(f"[INFO] Processing ONLY latest bronze usage file: {latest_file}")
 
-        df_fact = transform_to_fact_subway_usage_daily(df_bronze)
-        print(f"[INFO] Fact rows: {len(df_fact)}")
+    df_bronze = pd.read_parquet(latest_file)
+    print(f"[INFO] Bronze rows: {len(df_bronze)}")
 
-        save_silver_fact(df_fact, f)
+    df_fact = transform_to_fact_subway_usage_daily(df_bronze)
+    print(f"[INFO] Fact rows: {len(df_fact)}")
 
-    print("[DONE] FactSubwayUsageDaily build finished.")
+    save_silver_fact(df_fact, latest_file)
+
+    print("[DONE] FactSubwayUsageDaily build finished (latest snapshot only).")
 
 
 if __name__ == "__main__":

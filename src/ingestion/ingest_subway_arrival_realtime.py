@@ -22,7 +22,8 @@ load_dotenv(PROJECT_ROOT / ".env")
 # ---------------------------------------------------------------
 
 from src.configs.settings import get_arrival_api_key, BRONZE_DIR
-from src.utils.station_loader import load_station_names_from_usage
+# ✅ 이제 usage가 아니라, '실시간도착_역정보(20251103).xlsx' 기준 역 리스트 사용
+from src.utils.station_loader import load_station_names_from_realtime_ref
 
 BASE_URL = "http://swopenapi.seoul.go.kr/api/subway"
 SERVICE_NAME = "realtimeStationArrival"
@@ -31,7 +32,9 @@ SERVICE_NAME = "realtimeStationArrival"
 def fetch_realtime_arrival_for_station(station_name: str) -> pd.DataFrame:
     """
     특정 역(station_name)에 대한 실시간 도착정보 조회.
-    usage에서 가져온 역명 기준으로 호출.
+
+    station_name 은 '실시간도착_역정보(20251103).xlsx' 의 STATN_NM 기준.
+    (이미 서울시가 제공한 공식 역명이므로 별도 정규화 없이 그대로 사용)
     """
     api_key = get_arrival_api_key()
 
@@ -39,12 +42,19 @@ def fetch_realtime_arrival_for_station(station_name: str) -> pd.DataFrame:
     end_index = 50
 
     url = f"{BASE_URL}/{api_key}/json/{SERVICE_NAME}/{start_index}/{end_index}/{station_name}"
-    resp = requests.get(url, timeout=10)
-    resp.raise_for_status()
-    data = resp.json()
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        print(f"[WARN] Failed to request arrival for {station_name}: {e}")
+        return pd.DataFrame()
 
     # 정상 응답 구조: { "errorMessage": {...}, "realtimeArrivalList": [...] }
     if "realtimeArrivalList" not in data:
+        # 디버깅용으로 원본 응답도 한 번 찍어두기
+        print(f"[DEBUG] raw response for {station_name} = {data}")
+
         # 오류 응답이면 경고만 찍고 해당 역은 스킵
         if "errorMessage" in data:
             em = data["errorMessage"]
@@ -65,7 +75,7 @@ def fetch_realtime_arrival_for_station(station_name: str) -> pd.DataFrame:
     df = pd.DataFrame(rows)
 
     # 쿼리 기준 역명 기록 (디버깅/매핑용)
-    df["query_station_name"] = station_name
+    df["query_station_name"] = station_name  # reference(STATN_NM) 기준 이름
 
     # 역 이름 컬럼이 혹시 없으면 보강
     if "statnNm" not in df.columns:
@@ -77,7 +87,8 @@ def fetch_realtime_arrival_for_station(station_name: str) -> pd.DataFrame:
 def fetch_realtime_arrival_for_stations(stations: Sequence[str]) -> pd.DataFrame:
     """
     여러 역 리스트에 대해 조회 → 하나의 DataFrame으로 concat.
-    usage 기반 전체 역명 리스트를 그대로 사용.
+
+    stations: 실시간 레퍼런스(STATN_NM) 기준 역 이름 리스트.
     """
     dfs: list[pd.DataFrame] = []
     for s in stations:
@@ -90,7 +101,7 @@ def fetch_realtime_arrival_for_stations(stations: Sequence[str]) -> pd.DataFrame
             print(f"[WARN] Failed to fetch for station {s}: {e}")
 
     if not dfs:
-        raise RuntimeError("어느 역에서도 데이터를 가져오지 못했습니다.")
+        raise RuntimeError("어느 역에서도 도착 데이터를 가져오지 못했습니다.")
 
     df_all = pd.concat(dfs, ignore_index=True)
     return df_all
@@ -119,9 +130,14 @@ def save_to_bronze_partition(df: pd.DataFrame, snapshot_time: datetime) -> Path:
 
 
 def main():
-    # usage BRONZE/SILVER에서 전체 역명 자동 로딩
-    station_names = load_station_names_from_usage()
-    print(f"[INFO] Total stations from usage: {len(station_names)}")
+    # ✅ usage가 아니라, '실시간도착_역정보(20251103).xlsx' 에서 STATN_NM 기준 역명 로딩
+    station_names = load_station_names_from_realtime_ref()
+    print(f"[INFO] Total stations from realtime reference (STATN_NM): {len(station_names)}")
+
+    # 🔹 개발/테스트 시 쿼터 관리용으로 일부만 잘라서 쓰고 싶으면, 아래처럼 제한 두면 됨
+    # MAX_STATIONS = 200
+    # station_names = station_names[:MAX_STATIONS]
+    # print(f"[INFO] Limiting to first {len(station_names)} stations for this run")
 
     snapshot_time = datetime.now()
     print(f"[INFO] Fetching realtime arrivals at snapshot: {snapshot_time}")
@@ -129,8 +145,12 @@ def main():
     df_all = fetch_realtime_arrival_for_stations(station_names)
     print("[INFO] Total arrival rows:", len(df_all))
 
-    # 디버깅용 샘플 출력 (컬럼 없으면 KeyError 나니까 방어 구문)
-    sample_cols = [c for c in ["subwayId", "statnNm", "trainLineNm", "arvlMsg2", "arvlMsg3"] if c in df_all.columns]
+    # 디버깅용 샘플 출력
+    sample_cols = [
+        c
+        for c in ["subwayId", "statnNm", "trainLineNm", "arvlMsg2", "arvlMsg3", "query_station_name"]
+        if c in df_all.columns
+    ]
     if sample_cols:
         print(df_all[sample_cols].head())
 

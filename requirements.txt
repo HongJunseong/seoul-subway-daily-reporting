@@ -3,3 +3,4 @@ requests
 pyarrow
 python-dotenv
 requests
+openpyxl
