@@ -1,0 +1,226 @@
+🎯 프로젝트 컨셉 (날씨 없음 버전)
+
+프로젝트 이름 (예시)
+
+“Seoul Transit Lakehouse & LLM Auto-Report”
+
+한 줄 요약
+
+서울시 대중교통(지하철/버스)의 실시간 + 집계 API를 수집해서
+Delta Lake 기반 Lakehouse + DW/DM를 만들고,
+매일 LLM이 자동으로 혼잡/이상 패턴을 요약 리포트해주는 시스템.
+
+📡 어떤 실제 데이터를 쓸 수 있냐?
+
+전부 실제 공공데이터 / OpenAPI라 “데이터 직접 생성”이 아니라 실제 서비스 데이터야.
+
+버스 도착 정보 API (서울)
+
+정류장 기준 버스 도착 예정 정보 제공 
+데이터.go.kr
+
+“몇 번 버스가 몇 분 뒤 도착 예정인지” 계속 받아볼 수 있음
+→ 실시간 Arrival Fact 가능
+
+지하철 역별 승하차 인원 API
+
+역/시간대별 탑승/하차 인원 제공, 최근 1주 데이터 REST API로 제공 
+데이터.go.kr
+
+→ 일/시간대별 혼잡도, 노선별 수요 분석, DM 만들기 좋음
+
+(옵션) 열차 시간표 / 최단경로 / 요금 API
+
+열차 시간표 API, 최단경로, 실시간 요금 정보도 OpenAPI로 제공됨 
+데이터.go.kr
++2
+데이터.go.kr
++2
+
+→ 나중에 “이동 시뮬레이션”이나 “요금 기반 지표”까지 확장 가능
+
+핵심 포인트:
+
+실시간류: 버스/지하철 도착 정보
+
+집계류: 역별 승하차 인원(일/시간대)
+이 둘만으로도 충분히 DW/DM + LLM 리포트까지 간다.
+
+🧱 DW / 데이터 마트 설계 (구체적인 그림)
+1) Fact 테이블들
+
+FactBusArrival
+
+event_time
+
+stop_id (정류장 ID)
+
+route_id (노선 ID)
+
+direction
+
+predicted_arrival_time
+
+remaining_minutes
+
+vehicle_id (있으면)
+
+collected_at
+
+FactSubwayPassenger
+
+travel_date
+
+travel_hour
+
+station_id
+
+line_id
+
+boardings (승차 인원)
+
+alightings (하차 인원)
+
+card_type (일회용/정기 등)
+
+user_type (성인/청소년 등) 
+데이터.go.kr
+
+2) Dim 테이블들
+
+DimStation
+
+station_id
+
+station_name
+
+line_id
+
+district (자치구)
+
+latitude/longitude (지하철/버스 정류장 좌표는 교통 빅데이터/서울 데이터에서 제공) 
+서울 데이터
+
+DimRoute (Bus Route)
+
+route_id
+
+route_name
+
+type (간선/지선/광역 등)
+
+DimDateTime
+
+date
+
+hour
+
+day_of_week
+
+is_weekend
+
+is_holiday (옵션)
+
+3) Data Mart 예시 (Gold Layer)
+
+dm_station_hourly_load
+
+역/시간대별 승하차 인원, 혼잡지수
+
+dm_route_on_time_stats
+
+버스 노선별 지연률, 평균 대기시간
+
+dm_daily_transit_summary
+
+전체 승하차량, Peak 시간대, 상위 혼잡역/노선 Top N
+
+→ 이 3개만 있어도 LLM이 “오늘 교통 리포트” 뽑기에 충분함.
+
+🧊 Delta Lake / AWS / LLM을 어디에 얹을까?
+🔹 Storage & Lakehouse
+
+S3 + Delta Lake
+
+/bronze/bus_arrival/ : API Raw JSON 그대로 Delta
+
+/silver/fact_bus_arrival/ : 정제된 버스 도착 Fact
+
+/silver/fact_subway_passenger/ : 승하차 Fact
+
+/gold/dm_* : DM 테이블들
+
+🔹 Glue / Athena
+
+Glue Catalog로 Delta 테이블 등록
+
+Athena로 바로 쿼리 & 분석
+
+🔹 Spark (Delta)
+
+로컬 → 나중에 EMR / Glue Spark Job으로 확장
+
+Batch ETL + (원하면) Structured Streaming 도입
+
+🔹 Airflow
+
+DAG 예시:
+
+fetch_bus_arrival_raw (5분/10분 간격 API 호출 → S3 Bronze)
+
+fetch_subway_passenger_raw (하루 1회 배치)
+
+build_silver_facts
+
+build_gold_marts
+
+generate_llm_report (Gold 기준 요약 생성 → Slack/메일/Webhook)
+
+🔹 LLM 자동화
+
+Gold의 dm_daily_transit_summary에서 집계된 수치 뽑고,
+
+Prompt 예시:
+
+“다음 지표를 기반으로 서울 대중교통 상황 일일 리포트 작성해줘.
+
+전체 승차 인원: ...
+
+전일 대비 증감: ...
+
+가장 혼잡한 역 TOP3: ...
+
+가장 지연이 잦은 버스 노선 TOP3: ...
+
+인사이트/원인/추가로 모니터링할 포인트까지 포함해줘.”
+
+→ 이걸 Airflow에서 매일 자동으로 돌리면
+**“AI/LLM 기반 데이터 업무 자동화 경험”**이 딱 된다.
+
+📌 지금 단계에서 네가 하면 좋은 “첫 작업”
+
+너 지금 당장 시작하려면:
+
+프로젝트 이름/컨셉 확정
+
+예: seoul-transit-lakehouse
+
+폴더 구조 먼저 잡기
+
+src/ingestion/ : API 호출 코드
+
+src/processing/ : Spark/ETL 코드
+
+dags/ : Airflow DAG
+
+infrastructure/ : AWS/도커 관련
+
+사용할 API 1~2개만 먼저 선택
+
+버스 도착 정보 API (서울) 
+데이터.go.kr
+
+지하철 역별 승하차 인원 API 
+데이터.go.kr
+
+“Raw 수집 → S3(or 로컬)” 하는 ingestion 스크립트부터 작성
