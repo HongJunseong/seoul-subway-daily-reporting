@@ -1,1 +1,1 @@
-> Real-Time Seoul Transit Analytics Platform built with Kafka, Spark, Delta Lake, Airflow, AWS, and LLM Auto-Reporting.
+> End-to-end data platform for collecting, processing, and daily reporting of Seoul subway operations using AWS, Spark, Kafka, Airflow, and LLM Auto-Reporting.
