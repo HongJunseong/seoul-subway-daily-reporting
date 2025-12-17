@@ -72,6 +72,8 @@
   - 일간 데이터 준비 완료 시 자동 알림
   - 운영 관점의 파이프라인 모니터링 구현
 
+<img width="550" height="230" alt="image" src="https://github.com/user-attachments/assets/544959ce-d5c7-442f-afc1-d5a984278582" />
+
 ---
 
 ## LLM Auto-Reporting
@@ -93,3 +95,26 @@
 ### API Traffic Limitation
 서울 열린데이터 API는 **일일 호출 트래픽 제한**이 존재하여, 도착 정보(arrival), 열차 위치(position)와 같은 데이터는  
 짧은 주기로 **부분적인 실시간 수집**은 가능하지만, 지속적이거나 고빈도의 연속 수집에는 제약이 있습니다.
+
+---
+## How to Run (Overview)
+
+본 프로젝트는 Apache Airflow를 중심으로
+데이터 수집, 처리, 리포트 생성 파이프라인이 자동으로 실행됩니다.
+
+### 1. Environment Setup
+- Python 3.11
+- Docker / Docker Compose
+- Apache Airflow
+- Apache Kafka
+- Apache Spark
+- AWS S3 접근 권한 설정
+
+> AWS 자격 증명 및 API Key, Discord Webhook URL 등은 `.env` 파일을 통해 관리됩니다.
+
+### 2. Start Core Services
+Docker Compose를 통해 Airflow, Kafka 등 주요 서비스를 실행합니다.
+
+```bash
+docker compose up -d
+
