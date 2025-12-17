@@ -1,10 +1,6 @@
 # --- Python / build caches ---
 __pycache__/
 
-
-# --- Secrets / local config ---
-
-
 # --- Artifacts / models / reports ---
 artifacts/**
 !artifacts/figures/**          # keep images for README
@@ -21,3 +17,12 @@ chrome_debug.log
 
 # --- result ---
 *.html
+
+# --- environments ---
+.env
+
+# --- parquet files ---
+*.parquet
+
+# --- data folder ---
+data/**

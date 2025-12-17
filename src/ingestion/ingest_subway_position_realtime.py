@@ -1,15 +1,15 @@
-# src/ingestion/ingest_subway_position_realtime.py
-
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Sequence
+import tempfile
 
 import requests
 import pandas as pd
 from dotenv import load_dotenv
+from src.utils.time import now_kst
 
 # ---------- 경로 & .env 세팅 ----------
 CURRENT_FILE = Path(__file__).resolve()
@@ -21,9 +21,11 @@ if str(PROJECT_ROOT) not in sys.path:
 load_dotenv(PROJECT_ROOT / ".env")
 # -------------------------------------
 
-from src.configs.settings import get_position_api_key, BRONZE_DIR
-# ✅ 이제 usage가 아니라, 실시간 역정보 엑셀 기준 호선 이름 사용
+from src.configs.settings import get_position_api_key
 from src.utils.station_loader import load_lines_from_realtime_ref
+
+from src.common.config import load_s3_config
+from src.common.s3_uploader import upload_file_to_s3
 
 BASE_URL = "http://swopenapi.seoul.go.kr/api/subway"
 SERVICE_NAME = "realtimePosition"
@@ -32,8 +34,7 @@ SERVICE_NAME = "realtimePosition"
 def fetch_realtime_position_for_line(line_name: str) -> pd.DataFrame:
     """
     특정 호선(예: '2호선', '경의중앙선')에 대한 실시간 열차 위치 조회.
-
-    line_name 은 '실시간도착_역정보(20251103).xlsx' 의 '호선이름' 기준.
+    line_name 은 레퍼런스 엑셀의 '호선이름' 기준.
     """
     api_key = get_position_api_key()
 
@@ -51,7 +52,6 @@ def fetch_realtime_position_for_line(line_name: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     if "realtimePositionList" not in data:
-        # 오류 메시지 포맷
         if "errorMessage" in data:
             em = data["errorMessage"]
             print(
@@ -71,7 +71,6 @@ def fetch_realtime_position_for_line(line_name: str) -> pd.DataFrame:
 
     # 조회 기준 호선 컬럼 추가
     df["query_line_name"] = line_name
-
     if "subwayNm" not in df.columns:
         df["subwayNm"] = line_name
 
@@ -79,9 +78,6 @@ def fetch_realtime_position_for_line(line_name: str) -> pd.DataFrame:
 
 
 def fetch_realtime_position_for_lines(lines: Sequence[str]) -> pd.DataFrame:
-    """
-    모든 호선에 대해 위치정보를 조회하여 하나의 DF로 합쳐 반환
-    """
     dfs: list[pd.DataFrame] = []
     for ln in lines:
         df_line = fetch_realtime_position_for_line(ln)
@@ -95,55 +91,63 @@ def fetch_realtime_position_for_lines(lines: Sequence[str]) -> pd.DataFrame:
     return pd.concat(dfs, ignore_index=True)
 
 
-def save_position_to_bronze(df: pd.DataFrame, snapshot_time: datetime) -> Path:
+def bronze_position_snapshot_key(snapshot_time: datetime) -> str:
     """
-    snapshot_time 기준 파티션 디렉터리에 저장
-    예) bronze/subway_position/year=YYYY/month=MM/day=DD/hour=HH/positions.parquet
+    ✅ 누적 스냅샷 저장용 S3 key 생성
+
+    예)
+    bronze/subway_position/year=2025/month=12/day=10/hour=14/minute=05/positions_20251210T140512.parquet
     """
-    y, m, d, h = (
-        snapshot_time.strftime("%Y"),
-        snapshot_time.strftime("%m"),
-        snapshot_time.strftime("%d"),
-        snapshot_time.strftime("%H"),
+    y = snapshot_time.strftime("%Y")
+    m = snapshot_time.strftime("%m")
+    d = snapshot_time.strftime("%d")
+    h = snapshot_time.strftime("%H")
+    mm = snapshot_time.strftime("%M")
+    run_ts = snapshot_time.strftime("%Y%m%dT%H%M%S")
+
+    return (
+        f"bronze/subway_position/"
+        f"year={y}/month={m}/day={d}/hour={h}/minute={mm}/"
+        f"positions_{run_ts}.parquet"
     )
 
-    out_dir = BRONZE_DIR / "subway_position" / f"year={y}" / f"month={m}" / f"day={d}" / f"hour={h}"
-    out_dir.mkdir(parents=True, exist_ok=True)
+
+def save_position_to_bronze_s3(df: pd.DataFrame, snapshot_time: datetime) -> str:
+    """
+    snapshot_time 기준으로 S3 bronze 파티션 경로에 Parquet 업로드 (누적)
+    """
+    s3cfg = load_s3_config()
+    key = bronze_position_snapshot_key(snapshot_time)
 
     df = df.copy()
     df["snapshot_ts"] = snapshot_time.isoformat()
 
-    out_path = out_dir / "positions.parquet"
-    df.to_parquet(out_path, index=False)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_path = Path(tmpdir) / "positions.parquet"
+        df.to_parquet(local_path, index=False)
+        upload_file_to_s3(local_path, s3cfg.bucket, key, region=s3cfg.region)
 
-    print(f"[INFO] Saved {len(df)} rows to {out_path}")
-    return out_path
+    s3_uri = f"s3://{s3cfg.bucket}/{key}"
+    print(f"[OK] Uploaded {len(df)} rows to {s3_uri}")
+    return s3_uri
 
 
 def main():
-    # ✅ '실시간도착_역정보(20251103).xlsx' 의 '호선이름' 기준으로 호선 목록 로딩
     lines = load_lines_from_realtime_ref()
     print(f"[INFO] Total lines from realtime reference (호선이름): {len(lines)}")
     print("[INFO] Lines used for realtime position:", lines)
 
-    # 🔹 필요하면 개발/테스트용으로 일부 호선만 제한 가능
-    # lines = [ln for ln in lines if ln in ["1호선", "2호선", "3호선"]]
-
-    snapshot_time = datetime.now()
+    snapshot_time = now_kst()
     print(f"[INFO] Fetching realtime subway positions at snapshot: {snapshot_time}")
 
     df_all = fetch_realtime_position_for_lines(lines)
     print("[INFO] Total position rows:", len(df_all))
 
-    # 샘플 출력
-    sample_cols = [
-        c for c in ["subwayNm", "trainNo", "statnNm", "trainSttus", "statnId"]
-        if c in df_all.columns
-    ]
+    sample_cols = [c for c in ["subwayNm", "trainNo", "statnNm", "trainSttus", "statnId"] if c in df_all.columns]
     if sample_cols:
         print(df_all[sample_cols].head())
 
-    save_position_to_bronze(df_all, snapshot_time)
+    save_position_to_bronze_s3(df_all, snapshot_time)
 
 
 if __name__ == "__main__":

@@ -1,13 +1,14 @@
-# src/ingestion/ingest_subway_usage_daily.py
-
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta
+import tempfile
 
 import requests
 import pandas as pd
+from dotenv import load_dotenv
+import pendulum
 
 # --- 프로젝트 루트 경로 세팅 ---
 CURRENT_FILE = Path(__file__).resolve()
@@ -16,7 +17,12 @@ PROJECT_ROOT = CURRENT_FILE.parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.configs.settings import BRONZE_DIR, get_passenger_api_key
+load_dotenv(PROJECT_ROOT / ".env")
+
+from src.configs.settings import get_passenger_api_key
+from src.common.config import load_s3_config
+from src.common.s3_uploader import upload_file_to_s3
+from src.common.paths import s3_bronze_usage_key
 
 # 서울시 열린데이터광장 지하철 호선별 역별 승하차 인원 API
 BASE_URL = "http://openapi.seoul.go.kr:8088"
@@ -35,8 +41,7 @@ def fetch_subway_usage_daily(
 
     use_ymd: 'YYYYMMDD' (예: '20251201')
     """
-
-    api_key = get_passenger_api_key()  # 서울시 openapi.seoul.go.kr 인증키
+    api_key = get_passenger_api_key()
 
     all_pages: list[pd.DataFrame] = []
     start = 1
@@ -55,13 +60,11 @@ def fetch_subway_usage_daily(
         data = resp.json()
 
         if SERVICE_NAME not in data:
-            # 에러 응답 처리
             print("[ERROR] Unexpected response structure:", list(data.keys()))
             raise RuntimeError(f"Unexpected response: {data}")
 
         svc = data[SERVICE_NAME]
 
-        # 총 건수 / 결과 코드 확인
         total_count = svc.get("list_total_count")
         result = svc.get("RESULT", {})
         code = result.get("CODE")
@@ -81,9 +84,7 @@ def fetch_subway_usage_daily(
         df_page = pd.DataFrame(rows)
         all_pages.append(df_page)
 
-        # 페이지네이션 종료 조건
         if len(rows) < page_size:
-            # 마지막 페이지로 판단
             break
 
         try:
@@ -92,10 +93,8 @@ def fetch_subway_usage_daily(
             tc_int = None
 
         if tc_int is not None and end >= tc_int:
-            # 이미 total_count 이상 조회했으면 종료
             break
 
-        # 다음 페이지로
         start += page_size
         page_no += 1
 
@@ -104,56 +103,42 @@ def fetch_subway_usage_daily(
         return pd.DataFrame()
 
     df = pd.concat(all_pages, ignore_index=True)
-
-    # 디버그: 실제 컬럼 확인
     print("[DEBUG] df.columns:", list(df.columns))
-
-    # 여기서는 원본 컬럼을 그대로 유지 (USE_YMD, SBWY_ROUT_LN_NM, SBWY_STNS_NM, GTON_TNOPE, GTOFF_TNOPE, REG_YMD 등)
-    # 타입 정리/집계는 SILVER 단계에서 처리
-
     return df
 
 
-def save_to_bronze(df: pd.DataFrame, use_ymd: str) -> Path:
-    """
-    /bronze/subway_usage/year=YYYY/month=MM/day=DD/usage.parquet 로 저장
-    (partition 기준은 사용일자 USE_YMD 가 아니라, '이 사용일자의 통계를 적재하는 파티션 날짜' 개념으로 봐도 됨.
-     여기서는 편의상 use_ymd 기준으로 파티션을 구성.)
-    """
-    y = use_ymd[0:4]
-    m = use_ymd[4:6]
-    d = use_ymd[6:8]
+def save_to_bronze_s3(df: pd.DataFrame, use_ymd: str) -> str:
+    s3cfg = load_s3_config()
+    key = s3_bronze_usage_key(use_ymd)
 
-    out_dir = BRONZE_DIR / "subway_usage" / f"year={y}" / f"month={m}" / f"day={d}"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    df = df.copy()
+    # ✅ KST 고정
+    df["ingested_at"] = pendulum.now("Asia/Seoul").to_iso8601_string()
 
-    out_path = out_dir / "usage.parquet"
-    df.to_parquet(out_path, index=False)
-    print(f"[INFO] Saved Bronze subway_usage: {out_path}")
-    return out_path
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_path = Path(tmpdir) / "usage.parquet"
+        df.to_parquet(local_path, index=False)
+        upload_file_to_s3(local_path, s3cfg.bucket, key, region=s3cfg.region)
+
+    s3_uri = f"s3://{s3cfg.bucket}/{key}"
+    print(f"[OK] Uploaded {len(df)} rows to {s3_uri}")
+    return s3_uri
 
 
 def main():
-    """
-    기본 동작:
-    - 인자가 없으면 '오늘 - 3일' 의 사용일자를 대상으로 호출
-      (CardSubwayStatsNew: 3일 전 데이터를 매일 갱신)
-    - 인자로 YYYYMMDD 가 들어오면 그 날짜를 사용일자로 간주
-    """
     if len(sys.argv) > 1:
         use_ymd = sys.argv[1]
     else:
-        use_ymd = (datetime.today() - timedelta(days=4)).strftime("%Y%m%d")
+        # ✅ KST 기준 today - 4일
+        use_ymd = pendulum.now("Asia/Seoul").subtract(days=4).format("YYYYMMDD")
 
     print("[INFO] Fetching CardSubwayStatsNew for use_ymd:", use_ymd)
 
     df = fetch_subway_usage_daily(use_ymd)
     print("[INFO] Rows fetched:", len(df))
     if len(df) > 0:
-        print("[INFO] Head:")
         print(df.head())
-
-        save_to_bronze(df, use_ymd)
+        save_to_bronze_s3(df, use_ymd)
     else:
         print("[WARN] Empty DataFrame. Check API key / date(use_ymd) / service status.")
 
