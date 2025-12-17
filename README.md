@@ -96,8 +96,14 @@
 서울 열린데이터 API는 **일일 호출 트래픽 제한**이 존재하여, 도착 정보(arrival), 열차 위치(position)와 같은 데이터는  
 짧은 주기로 **부분적인 실시간 수집**은 가능하지만, 지속적이거나 고빈도의 연속 수집에는 제약이 있습니다.
 
+### Data Availability Delay (Usage Data)
+서울 지하철 승하차 인원(usage) 데이터는 API 특성상 **실시간 또는 당일 데이터가 제공되지 않으며**,  
+일반적으로 **3~4일 이전의 데이터만 조회 가능합니다**.
+
+이에 따라 usage 데이터는 arrival 및 position 데이터와 달리 지연된(Lagged) 데이터 기반으로 수집 및 분석됩니다.
+
 ---
-## How to Run (Overview)
+## Execution Flow (Overview)
 
 본 프로젝트는 Apache Airflow를 중심으로
 데이터 수집, 처리, 리포트 생성 파이프라인이 자동으로 실행됩니다.
@@ -117,4 +123,27 @@ Docker Compose를 통해 Airflow, Kafka 등 주요 서비스를 실행합니다.
 
 ```bash
 docker compose up -d
+```
 
+### 3. Airflow DAG Execution
+본 프로젝트는 여러 Airflow DAG들이
+각각의 책임을 가지고 독립적으로 실행되며,
+전체적으로는 다음과 같은 흐름을 가집니다.
+
+- **bronze_arrival** : 서울 지하철 도착(arrival) 데이터를 API로 수집하여 Bronze Layer에 저장
+- **bronze_position** : 열차 위치(position) 데이터를 주기적으로 수집하여 Bronze Layer에 저장
+- **usage_daily** : 일 단위 승하차 인원 데이터를 수집 및 집계하여 분석용 데이터 생성
+- **silver_hourly** : Bronze 데이터를 정제하여 시간 단위로 정규화된 Silver Layer 데이터 생성
+- **gold_daily** : Silver 데이터를 기반으로 일간 지표 및 집계 결과를 Gold Layer에 생성
+- **report_daily** : Gold Layer 집계 결과를 기반으로 일간 분석 리포트를 자동 생성
+
+### 4. Event-driven Alert
+
+Gold Layer 데이터 생성이 완료되면,
+Kafka 이벤트가 발행되고 Consumer가 이를 수신하여
+Discord 알림을 전송합니다.
+
+### 5. LLM Daily Report
+
+집계된 Gold Layer 데이터를 기반으로
+LLM이 자동으로 일간 분석 리포트를 생성합니다.
