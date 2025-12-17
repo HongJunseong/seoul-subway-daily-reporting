@@ -10,6 +10,8 @@
 
 > End-to-end data platform for collecting, processing, and daily reporting of Seoul subway operations using AWS, Spark, Kafka, Airflow, and LLM Auto-Reporting.
 
+---
+
 ## Project Overview
 
 본 프로젝트는 **서울 지하철 운영 데이터를 수집 → 정제 → 분석 → 리포트 자동 생성**까지  
@@ -23,8 +25,14 @@
 - Kafka 이벤트 기반 알림 구조
 - LLM을 활용한 일간 분석 리포트 자동 생성
 
-## System Architecture
+---
 
+## System Architecture
+전체 시스템 구조는 다음과 같습니다.
+
+<img width="600" height="380" alt="image" src="https://github.com/user-attachments/assets/13122996-8abe-4b9b-8ac8-809c99a37e1b" />
+
+---
 
 ## Data Layer Design (Bronze / Silver / Gold)
 
