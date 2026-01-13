@@ -1,0 +1,28 @@
+# --- Python / build caches ---
+__pycache__/
+
+# --- Artifacts / models / reports ---
+artifacts/**
+!artifacts/figures/**          # keep images for README
+
+
+# --- Logs ---
+logs/
+*.log
+chromedriver*.log
+chrome_debug.log
+
+# --- OS / editors ---
+.vscode/
+
+# --- result ---
+*.html
+
+# --- environments ---
+.env
+
+# --- parquet files ---
+*.parquet
+
+# --- data folder ---
+data/**
