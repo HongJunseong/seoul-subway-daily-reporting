@@ -30,7 +30,7 @@
 ## System Architecture
 전체 시스템 구조는 다음과 같습니다.
 
-<img width="600" height="380" alt="image" src="https://github.com/user-attachments/assets/13122996-8abe-4b9b-8ac8-809c99a37e1b" />
+<img width="600" height="380" alt="image" src="https://github.com/user-attachments/assets/4d173ece-bed6-4e2f-8043-9471ba9a7fa4" />
 
 ---
 
@@ -80,7 +80,7 @@
   - 일간 데이터 준비 완료 시 자동 알림
   - 운영 관점의 파이프라인 모니터링 구현
 
-<img width="550" height="230" alt="image" src="https://github.com/user-attachments/assets/544959ce-d5c7-442f-afc1-d5a984278582" />
+<img width="550" height="230" alt="image" src="https://github.com/user-attachments/assets/191f0283-e660-4382-bf25-1b44a644f0a2" />
 
 ---
 
