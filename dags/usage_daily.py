@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 import pendulum
 
@@ -17,23 +16,21 @@ PROJECT_DIR = "/opt/airflow/seoul-subway-daily-reporting"
 USAGE_LAG_DAYS = 4
 
 SPARK_PACKAGES = (
+    "io.delta:delta-spark_2.12:3.2.0,"
     "org.apache.hadoop:hadoop-aws:3.3.4,"
     "com.amazonaws:aws-java-sdk-bundle:1.12.262"
 )
 
+DELTA_CONF = (
+    '--conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" '
+    '--conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog" '
+    '--conf "spark.sql.session.timeZone=Asia/Seoul" '
+)
+
+SPARK_SUBMIT = f'spark-submit --packages "{SPARK_PACKAGES}" {DELTA_CONF}'
+
 # KST 기준 D-4 날짜를 Jinja로 계산
 TARGET_YMD = "{{ (logical_date.in_timezone('Asia/Seoul') - macros.timedelta(days=4)).strftime('%Y%m%d') }}"
-
-def run_bronze_usage(**context):
-    # target_ymd를 Airflow 템플릿으로 계산한 값으로 강제
-    logical_date = context["logical_date"].in_timezone("Asia/Seoul")
-    target_ymd = logical_date.subtract(days=USAGE_LAG_DAYS).format("YYYYMMDD")
-
-    from src.ingestion import ingest_subway_usage_daily as mod  # type: ignore
-
-    # Airflow argv 오염 방지: 날짜로 강제
-    sys.argv = ["ingest_subway_usage_daily.py", target_ymd]
-    mod.main()
 
 with DAG(
     dag_id="usage_daily",
@@ -45,26 +42,39 @@ with DAG(
     tags=["usage", "bronze", "silver", "gold"],
 ) as dag:
 
-    bronze = PythonOperator(
+    # Bronze spark-submit
+    bronze = BashOperator(
         task_id="bronze_usage",
-        python_callable=run_bronze_usage,
-    )
-
-    silver = BashOperator(
-        task_id="silver_usage",
         bash_command=f"""
         set -euo pipefail
-        cd {PROJECT_DIR}
-        spark-submit --packages "{SPARK_PACKAGES}" src/processing/build_fact_subway_usage_daily_spark.py "{TARGET_YMD}"
+        cd "{PROJECT_DIR}"
+        export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
+
+        {SPARK_SUBMIT} "{PROJECT_DIR}/src/ingestion/ingest_subway_usage_daily.py" "{TARGET_YMD}"
         """,
     )
 
+    # Silver spark-submit
+    silver = BashOperator(
+    task_id="silver_usage",
+    bash_command=f"""
+    set -euo pipefail
+    cd "{PROJECT_DIR}"
+    export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
+
+    {SPARK_SUBMIT} "{PROJECT_DIR}/src/processing/build_fact_subway_usage_daily_spark.py" "{TARGET_YMD}"
+    """,
+    )
+
+    # Gold spark-submit
     gold = BashOperator(
         task_id="gold_usage",
         bash_command=f"""
         set -euo pipefail
-        cd {PROJECT_DIR}
-        spark-submit --packages "{SPARK_PACKAGES}" src/processing/build_gold_subway_usage_daily_spark.py "{TARGET_YMD}"
+        cd "{PROJECT_DIR}"
+        export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
+
+        {SPARK_SUBMIT} "{PROJECT_DIR}/src/processing/build_gold_subway_usage_daily_spark.py" "{TARGET_YMD}"
         """,
     )
 
