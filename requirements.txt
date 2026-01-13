@@ -4,3 +4,8 @@ pyarrow
 python-dotenv
 requests
 openpyxl
+boto3
+pyspark==3.5.7
+openai
+openpyxl
+kafka-python

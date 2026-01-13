@@ -96,7 +96,7 @@ def build_spark(app_name: str, region: Optional[str]) -> SparkSession:
 # =========================================================
 def load_silver(spark: SparkSession, bucket: str, ymd: str) -> Optional[DataFrame]:
     y, m, d = ymd_parts(ymd)
-    day_dir = f"s3a://{bucket}/silver/fact_subway_usage/year={y}/month={m}/day={d}/"
+    day_dir = f"s3a://{bucket}/silver/fact_subway_usage_delta/year={y}/month={m}/day={d}/"
     print(f"[INFO] Load SILVER from: {day_dir}")
 
     try:
@@ -232,7 +232,12 @@ def save_gold(df: DataFrame, bucket: str, ymd: str, category: str) -> str:
 # =========================================================
 def main() -> None:
     # D+3 정도 늦게 확정되는 데이터라 D-4를 기본으로 처리
-    target_ymd = (datetime.today() - timedelta(days=4)).strftime("%Y%m%d")
+    # target_ymd = (datetime.today() - timedelta(days=4)).strftime("%Y%m%d")
+    if len(sys.argv) > 1:
+        target_ymd = sys.argv[1]   # DAG가 준 TARGET_YMD 사용
+    else:
+        target_ymd = pendulum.now("Asia/Seoul").subtract(days=4).format("YYYYMMDD")
+
     print(f"[INFO] Building GOLD subway_usage for {target_ymd}")
 
     s3cfg = load_s3_config()
