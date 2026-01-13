@@ -1,31 +1,54 @@
 # src/report/generate_daily_report.py
-
 from __future__ import annotations
 
 import sys
 import json
 from pathlib import Path
-from datetime import datetime
-from dotenv import load_dotenv
+from datetime import datetime, timedelta
 import os
+from typing import Optional
 
-import pandas as pd  # 나중에 필요하면, 일단 있어도 되고 없어도 됨
+from dotenv import load_dotenv
 
 CURRENT_FILE = Path(__file__).resolve()
 PROJECT_ROOT = CURRENT_FILE.parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-
 load_dotenv(PROJECT_ROOT / ".env")
 
 from src.report.build_report_context_daily import build_report_context
+from src.common.config import load_s3_config  # ✅ bucket/region 읽기용
 
-# 🔑 OpenAI / LLM 클라이언트 (예: OpenAI 공식 클라이언트)
-from openai import OpenAI  # pip install openai>=1.0.0 필요
+# OpenAI (openai>=1.0.0)
+from openai import OpenAI
+
 openai_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_key)  # 환경변수 OPENAI_API_KEY 필요
+client = OpenAI(api_key=openai_key)
 
+# =========================================================
+# S3 Upload
+# =========================================================
+def upload_text_to_s3(
+    text: str,
+    bucket: str,
+    key: str,
+    content_type: str = "text/markdown; charset=utf-8",
+) -> str:
+    """
+    text를 S3에 업로드하고 s3://... 경로를 반환
+    - AWS 자격증명은 환경변수(AWS_ACCESS_KEY_ID/SECRET_ACCESS_KEY 등) 또는 default chain을 사용
+    """
+    import boto3
+
+    s3 = boto3.client("s3")
+    s3.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=text.encode("utf-8"),
+        ContentType=content_type,
+    )
+    return f"s3://{bucket}/{key}"
 
 def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
     """
@@ -42,6 +65,15 @@ def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
             "중요한 포인트는 강조해준다. 답변은 반드시 한국어로 작성한다."
         ),
     }
+
+    temporal_note = f"""
+    데이터 기준 시점 주의 (매우 중요)
+    - usage(승하차 이용량) 데이터는 실시간이 아니라, 수집/정제 지연이 있는 '확정 일간 집계'로서 4일전 기준이다.
+    따라서 usage는 "오늘의 실시간 상황"이 아니라, 최근 확정된 이용 패턴/기준 혼잡 구조를 설명하는 용도로 해석해야 한다.
+    - arrival(도착) 데이터는 오늘 기준의 실시간/준실시간 지표로,
+    오늘의 체감 품질과 운행 상황을 설명하는 용도로 해석한다.
+    - 이 시간 차이를 반드시 고려해서 문장을 작성하라.
+    """
 
     user_msg = {
         "role": "user",
@@ -74,7 +106,6 @@ def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
 
     - 승하차 기준 혼잡도 (Usage)
     - 실시간 도착 기준 체감 품질 (Arrival)
-    - 실시간 운행(위치) 기준 혼잡/불균형 (Position)
     - 종합 코멘트 (한 줄 총평)
 
     각 섹션에는 다음 내용을 포함해줘.
@@ -116,23 +147,7 @@ def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
     심야 운행이 많은 도심/환승역(청량리, 제기동, 사당, 불광 등)을
     "야간 운행 패턴" 관점에서 설명해줘.
 
-    3. 실시간 운행(위치) 기준 혼잡/불균형 (Position)
-    position.line_overall, position.peak_stats, position.direction_asymmetry 를 활용해서:
-    동시에 움직이는 열차 수가 많은 노선:
-    예를 들어 9호선, 2호선, 5호선, 1·3·4·7호선 등
-    "동시에 몇 대가 움직였는지(평균/최대)"를 쓰고,
-    "그만큼 배차가 촘촘하거나, 수요가 집중된 구간"이라는 해석을 붙여줘.
-    예시를 따라하지말고, 데이터에 근거해서 말해줘.
-
-    direction_asymmetry 를 활용해서
-    9호선, 1·2·3·6·7호선 등의 **상·하행 불균형(gap)**을 설명해줘.
-    예: "9호선은 상행 13대 vs 하행 8대로 갭 5대 → 특정 방향으로 수요 쏠림"
-    예시 따라하지말고, 데이터에 근거해서 말해줘.
-
-    데이터를 보고 배차의 balance가 좋은 노선은
-    "배차가 균형적으로 유지되는 노선"이라는 식으로 코멘트해줘.
-
-    4. 종합 코멘트 (한 줄 총평)
+    3. 종합 코멘트 (한 줄 총평)
     마지막에 3~5줄 정도로, 오늘 데이터를 한 번 더 압축해서 정리해줘.
     예를 들면 이런 느낌으로:
 
@@ -151,7 +166,7 @@ def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
     messages = [system_msg, user_msg]
     return messages
 
-def generate_daily_report(target_ymd: str | None = None) -> Path:
+def generate_daily_report(target_ymd: str | None = None, save_to_s3: bool = True) -> Path:
     if target_ymd is None:
         target_ymd = datetime.today().strftime("%Y%m%d")
     
@@ -177,6 +192,18 @@ def generate_daily_report(target_ymd: str | None = None) -> Path:
 
     out_path.write_text(report_text, encoding="utf-8")
     print(f"[INFO] Saved daily report: {out_path}")
+
+    # 5) S3 저장 (원하면 끌 수 있음)
+    if save_to_s3:
+        s3cfg = load_s3_config()
+        bucket = getattr(s3cfg, "bucket", None) or os.getenv("SSDR_S3_BUCKET")
+        if not bucket:
+            raise RuntimeError("S3 bucket not configured. (load_s3_config().bucket or SSDR_S3_BUCKET)")
+
+        # 요청한 경로: report_text/daily/
+        key = f"report_text/daily/subway_report_{target_ymd}.md"
+        s3_uri = upload_text_to_s3(report_text, bucket=bucket, key=key)
+        print(f"[INFO] Uploaded daily report (s3): {s3_uri}")
 
     return out_path
 
