@@ -1,26 +1,14 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from datetime import datetime
 import json
 
 import requests
 import pandas as pd
-from dotenv import load_dotenv
 from src.utils.time import now_kst
 
-# --------- 경로 & .env 세팅 (Run 버튼에서 실행 가능하게) ----------
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-load_dotenv(PROJECT_ROOT / ".env")
-# ---------------------------------------------------------------
-
-from src.configs.settings import get_arrival_api_key
+from src.common.get_api import get_arrival_api_key
 from src.common.config import load_s3_config
 from pyspark.sql import SparkSession, functions as F
 

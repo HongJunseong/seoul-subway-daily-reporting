@@ -10,11 +10,6 @@ import argparse
 from pyspark.sql import functions as F
 import pendulum
 
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from src.jobs.spark_common import build_spark, get_bucket, s3a
 
 SILVER_PREFIX = "silver/fact_subway_arrival_delta/"

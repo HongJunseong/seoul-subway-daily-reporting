@@ -11,30 +11,10 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.utils import AnalysisException
 
-# =========================================================
-# Path & Env
-# =========================================================
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-# .env (있으면 로드)
-try:
-    from dotenv import load_dotenv
-
-    env_path = PROJECT_ROOT / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
-except Exception:
-    pass
-
 from src.common.config import load_s3_config
 
 
-# =========================================================
 # Utils
-# =========================================================
 def ymd_parts(ymd: str) -> tuple[str, str, str]:
     return ymd[:4], ymd[4:6], ymd[6:8]
 
@@ -47,9 +27,7 @@ def pick_first_existing(df: DataFrame, candidates: List[str]) -> Optional[str]:
     return None
 
 
-# =========================================================
 # Spark (local + S3A 안정화)
-# =========================================================
 def build_spark(app_name: str, region: Optional[str]) -> SparkSession:
     region = (region or "").strip() or "ap-northeast-2"
 
@@ -89,11 +67,7 @@ def build_spark(app_name: str, region: Optional[str]) -> SparkSession:
     return spark
 
 
-# =========================================================
 # Load SILVER
-#   - 현재 SILVER가 day 폴더 바로 아래에 part-*.parquet 구조이므로
-#     "day 디렉토리"만 읽는 게 정답
-# =========================================================
 def load_silver(spark: SparkSession, bucket: str, ymd: str) -> Optional[DataFrame]:
     y, m, d = ymd_parts(ymd)
     day_dir = f"s3a://{bucket}/silver/fact_subway_usage_delta/year={y}/month={m}/day={d}/"
@@ -109,9 +83,7 @@ def load_silver(spark: SparkSession, bucket: str, ymd: str) -> Optional[DataFram
         return None
 
 
-# =========================================================
 # Transform: Station Daily (rank 컬럼 제거 버전)
-# =========================================================
 def build_station_daily(df: DataFrame) -> DataFrame:
     date_col = pick_first_existing(df, ["pasngYmd", "use_ymd"])
     stn_nm_col = pick_first_existing(df, ["stnNm", "station_name"])
@@ -163,9 +135,7 @@ def build_station_daily(df: DataFrame) -> DataFrame:
     return out
 
 
-# =========================================================
 # Transform: Line Daily (rank 컬럼 제거 버전)
-# =========================================================
 def build_line_daily(df: DataFrame) -> DataFrame:
     date_col = pick_first_existing(df, ["pasngYmd", "use_ymd"])
     line_nm_col = pick_first_existing(df, ["lineNm", "line_name"])
@@ -206,11 +176,7 @@ def build_line_daily(df: DataFrame) -> DataFrame:
     return out
 
 
-# =========================================================
-# Save GOLD (단순/안정)
-#   - overwrite는 해당 day 파티션 폴더를 통째로 재생성
-#   - 작은 데이터 → coalesce(1)로 파일 수 최소화
-# =========================================================
+# Save GOLD
 def save_gold(df: DataFrame, bucket: str, ymd: str, category: str) -> str:
     y, m, d = ymd_parts(ymd)
     out_dir = f"s3a://{bucket}/gold/subway_usage/{category}/year={y}/month={m}/day={d}/"
@@ -227,9 +193,7 @@ def save_gold(df: DataFrame, bucket: str, ymd: str, category: str) -> str:
     return out_dir
 
 
-# =========================================================
 # Main
-# =========================================================
 def main() -> None:
     # D+3 정도 늦게 확정되는 데이터라 D-4를 기본으로 처리
     # target_ymd = (datetime.today() - timedelta(days=4)).strftime("%Y%m%d")

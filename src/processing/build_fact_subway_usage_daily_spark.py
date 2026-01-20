@@ -5,17 +5,10 @@ import sys
 from pathlib import Path
 
 from pyspark.sql import functions as F
-
-# 공통 경로 세팅
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from src.jobs.spark_common import build_spark, get_bucket, s3a
 
-BRONZE_DELTA_PREFIX = "bronze/subway_usage_delta"          # ✅ delta table root
-SILVER_DELTA_PREFIX = "silver/fact_subway_usage_delta"     # ✅ delta table root
+BRONZE_DELTA_PREFIX = "bronze/subway_usage_delta"          # delta table root
+SILVER_DELTA_PREFIX = "silver/fact_subway_usage_delta"     # delta table root
 
 
 def ymd_parts(use_ymd: str) -> tuple[str, str, str]:
@@ -46,7 +39,7 @@ def main():
     spark = build_spark(f"ssdr_fact_usage_{use_ymd}")
     spark.sparkContext.setLogLevel("WARN")
 
-    # ✅ Bronze Delta 읽기 + 파티션만 필터링
+    # Bronze Delta 읽기 + 파티션만 필터링
     df = (
         spark.read.format("delta").load(bronze_path)
         .where((F.col("year") == y) & (F.col("month") == m) & (F.col("day") == d))
@@ -75,7 +68,7 @@ def main():
         )
     )
 
-    # ✅ Silver Delta에 파티션 단위 overwrite (해당 날짜만 교체)
+    # Silver Delta에 파티션 단위 overwrite (해당 날짜만 교체)
     (
         fact.write.format("delta")
         .mode("overwrite")

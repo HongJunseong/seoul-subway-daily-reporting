@@ -7,11 +7,6 @@ import sys
 from pathlib import Path
 from pyspark.sql import functions as F
 
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from src.jobs.spark_common import build_spark, get_bucket, s3a
 from src.common.s3_latest import find_latest_parquet_key, parse_partition_from_key
 
@@ -42,7 +37,7 @@ def main():
     y, m, d, h = parse_partition_from_key(latest_key, has_hour=True)
     yi, mi, di, hi = int(y), int(m), int(d), int(h)
 
-    # ✅ prefix 만들 때는 2자리로 통일 추천
+    # prefix 만들 때는 2자리로 통일 추천
     in_prefix = f"{BRONZE_PREFIX}year={yi}/month={mi:02d}/day={di:02d}/hour={hi:02d}/"
     in_path = s3a(bucket, in_prefix)
     out_path = s3a(bucket, SILVER_PREFIX)
@@ -56,7 +51,7 @@ def main():
 
     df = spark.read.parquet(in_path)
 
-    # ✅ snapshot_ts도 포맷이 애매하면 여러 포맷 시도 가능하지만,
+    # snapshot_ts도 포맷이 애매하면 여러 포맷 시도 가능하지만,
     # 일단 기본 cast + fallback(파케에 이미 timestamp면 그냥 통과)
     snapshot_ts = F.col("snapshot_ts").cast("timestamp")
     recptn_dt = _parse_recptn_dt(F.col("recptnDt"))
@@ -65,7 +60,7 @@ def main():
         df
         .withColumn("snapshot_ts", snapshot_ts)
         .withColumn("recptn_dt", recptn_dt)
-        # ✅ event_time은 무조건 timestamp가 되게 보장
+        # event_time은 무조건 timestamp가 되게 보장
         .withColumn("event_time", F.coalesce(F.col("recptn_dt"), F.col("snapshot_ts")).cast("timestamp"))
 
         .withColumn("station_id", F.col("statnId").cast("long"))
