@@ -7,11 +7,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 import pendulum
 
-PROJECT_ROOT = Path("/opt/airflow/seoul-subway-daily-reporting")
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-PROJECT_DIR = "/opt/airflow/seoul-subway-daily-reporting"
+PROJECT_DIR = "/opt/airflow"
 
 USAGE_LAG_DAYS = 4
 

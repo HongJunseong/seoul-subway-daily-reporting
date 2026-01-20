@@ -26,9 +26,7 @@ from openai import OpenAI
 openai_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_key)
 
-# =========================================================
 # S3 Upload
-# =========================================================
 def upload_text_to_s3(
     text: str,
     bucket: str,
@@ -178,14 +176,14 @@ def generate_daily_report(target_ymd: str | None = None, save_to_s3: bool = True
 
     # 3) LLM 호출
     response = client.chat.completions.create(
-        model="gpt-5-mini",  # 또는 네가 쓰는 모델명으로
+        model="gpt-5-mini",  # model
         messages=messages,
         # temperature=0.3,
     )
 
     report_text = response.choices[0].message.content
 
-    # 4) 결과 저장 (예: markdown)
+    # 4) save result
     out_dir = PROJECT_ROOT / "data" / "report_text" / "daily"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"subway_report_{target_ymd}.md"
@@ -193,7 +191,7 @@ def generate_daily_report(target_ymd: str | None = None, save_to_s3: bool = True
     out_path.write_text(report_text, encoding="utf-8")
     print(f"[INFO] Saved daily report: {out_path}")
 
-    # 5) S3 저장 (원하면 끌 수 있음)
+    # 5) S3 save
     if save_to_s3:
         s3cfg = load_s3_config()
         bucket = getattr(s3cfg, "bucket", None) or os.getenv("SSDR_S3_BUCKET")

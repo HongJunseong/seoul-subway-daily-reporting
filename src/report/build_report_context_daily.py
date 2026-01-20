@@ -10,26 +10,15 @@ from typing import Dict, Any, Tuple, Optional
 
 import pandas as pd
 
-# ---------- 공통 경로 세팅 ----------
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-# ------------------------------------
-
 from src.common.config import load_s3_config
 
-# -------------------------------
 # Lag days (지연 반영)
-# -------------------------------
 USAGE_LAG_DAYS = 4
 ARRIVAL_LAG_DAYS = 0
 
 
-# ============================================================
 # S3 Parquet Loader (prefix 아래 part-*.parquet 전부 읽기)
 #   - s3fs 없이 boto3 + pyarrow로 읽음
-# ============================================================
 def _require(pkg: str) -> None:
     try:
         __import__(pkg)
@@ -100,9 +89,7 @@ def _read_parquet_prefix_s3(bucket: str, prefix: str, region: str) -> pd.DataFra
         return pd.concat(dfs, ignore_index=True)
 
 
-# ============================================================
 # 공통: 컬럼 이름 유연하게 찾기 (pandas)
-# ============================================================
 def _find_first_existing_column(df: pd.DataFrame, candidates: list[str]) -> Optional[str]:
     cols = set(df.columns)
     for c in candidates:
@@ -115,9 +102,7 @@ def get_date_parts(target_ymd: str) -> Tuple[str, str, str]:
     return target_ymd[:4], target_ymd[4:6], target_ymd[6:8]
 
 
-# ============================================================
 # 1) GOLD 로더들 (S3에서 로드)
-# ============================================================
 def load_usage_gold(target_ymd: str) -> pd.DataFrame:
     cfg = load_s3_config()
     bucket = cfg.bucket
@@ -158,9 +143,7 @@ def load_arrival_kpi_gold(target_ymd: str) -> pd.DataFrame:
     return df
 
 
-# ============================================================
 # 2) usage 요약
-# ============================================================
 def summarize_usage(df_usage: pd.DataFrame) -> Dict[str, Any]:
     if df_usage.empty:
         return {"has_data": False}
@@ -219,9 +202,7 @@ def summarize_usage(df_usage: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
-# ============================================================
 # 3) arrival 요약 (station_daily_kpi)
-# ============================================================
 def summarize_arrival(df_arr: pd.DataFrame, df_usage: pd.DataFrame) -> Dict[str, Any]:
     if df_arr.empty:
         return {"has_data": False}
@@ -305,9 +286,7 @@ def summarize_arrival(df_arr: pd.DataFrame, df_usage: pd.DataFrame) -> Dict[str,
         "late_night_hotspots": late_night_hotspots,
     }
 
-# ============================================================
-# 4) 전체 리포트 컨텍스트
-# ============================================================
+# 4) 전체 Report Context
 def build_report_context(target_ymd: str) -> Dict[str, Any]:
     print(f"[INFO] Building report context for {target_ymd}")
     print(f"[INFO] LAG: usage={USAGE_LAG_DAYS}, arrival={ARRIVAL_LAG_DAYS}")

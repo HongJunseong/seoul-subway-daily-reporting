@@ -6,7 +6,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 import pendulum
 
-PROJECT_DIR = "/opt/airflow/seoul-subway-daily-reporting"
+PROJECT_DIR = "/opt/airflow"
 
 SPARK_PACKAGES = (
     "io.delta:delta-spark_2.12:3.2.0,"
@@ -70,8 +70,8 @@ with DAG(
 
         export TARGET_YMD="{{{{ ti.xcom_pull(task_ids='compute_target_ymd') }}}}"
         export RUN_ID="{{{{ run_id }}}}"
-        export GOLD_ARRIVAL_PATH_TMPL="s3://seoul-subway-daily-reporting/gold/subway_arrival/dt={{target_ymd}}/"
-        export GOLD_POSITION_PATH_TMPL="s3://seoul-subway-daily-reporting/gold/subway_position/dt={{target_ymd}}/"
+        export GOLD_ARRIVAL_PATH_TMPL="s3://seoul-subway-daily-reporting/gold/subway_arrival/dt=${{TARGET_YMD}}/"
+        export GOLD_POSITION_PATH_TMPL="s3://seoul-subway-daily-reporting/gold/subway_position/dt=${{TARGET_YMD}}/"
 
         export KAFKA_BOOTSTRAP_SERVERS="kafka:9092"
         export KAFKA_TOPIC="event.pipeline"

@@ -7,7 +7,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 import pendulum
 
-PROJECT_ROOT = Path("/opt/airflow/seoul-subway-daily-reporting")
+PROJECT_ROOT = Path("/opt/airflow")
 
 
 def compute_target_ymd(**context) -> str:
@@ -25,8 +25,8 @@ def compute_target_ymd(**context) -> str:
 
 
 def run_generate_report(**context):
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
+    #if str(PROJECT_ROOT) not in sys.path:
+    #    sys.path.insert(0, str(PROJECT_ROOT))
 
     target_ymd = context["ti"].xcom_pull(task_ids="compute_target_ymd")
 

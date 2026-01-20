@@ -9,13 +9,6 @@ from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-# ---------- 공통 경로 세팅 ----------
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-# ------------------------------------
-
 from src.jobs.spark_common import build_spark, get_bucket, s3a
 
 SILVER_PREFIX = "silver/fact_subway_arrival_delta/"

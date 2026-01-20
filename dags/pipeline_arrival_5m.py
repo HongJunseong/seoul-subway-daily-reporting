@@ -4,7 +4,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 import pendulum
 
-PROJECT_DIR = "/opt/airflow/seoul-subway-daily-reporting"
+PROJECT_DIR = "/opt/airflow"
 
 SPARK_PACKAGES = (
     "io.delta:delta-spark_2.12:3.2.0,"
