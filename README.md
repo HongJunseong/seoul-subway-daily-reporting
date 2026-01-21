@@ -109,6 +109,19 @@
 - 운영 관점 인사이트
 
 ---
+
+## Databricks (Free Edition) Validation
+
+Databricks Free Edition 환경에서 Spark + Delta Lake 기반
+Bronze → Silver → Gold 변환 파이프라인을 Notebook으로 재현했습니다.
+
+- Silver: 타입 캐스팅, 컬럼 표준화, 중복 처리, 파생 지표(total_cnt)
+- Gold: 역/노선 단위 집계 테이블 생성
+- Notebooks: `databricks/notebooks/01_usage_bronze_to_silver.py`,
+  `databricks/notebooks/02_usage_silver_to_gold.py`
+
+---
+
 ## Limitations
 
 ### API Traffic Limitation
