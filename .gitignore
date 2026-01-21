@@ -26,3 +26,12 @@ chrome_debug.log
 
 # --- data folder ---
 data/**
+
+# --- .crc files ---
+*.crc
+
+# --- _SUCCESS files ---
+_SUCCESS
+
+# --- identity files ---
+*.Identifier
