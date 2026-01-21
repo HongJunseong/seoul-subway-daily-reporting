@@ -41,7 +41,7 @@ Table : `bronze_subway_usage`
 - 파생 지표 생성
     - total_cnt = 승차 인원 + 하차 인원
 
-Table : `silver_subway_usage`
+Table : `silver_subway_usage`  
 Notebook : `01_usage_bronze_to_silver`
 
 ### Gold
@@ -49,7 +49,7 @@ Notebook : `01_usage_bronze_to_silver`
 - 역 단위 일간 이용량 집계
 - 노선 단위 일간 이용량 집계
 
-Tables : `gold_subway_usage_daily_station`, `gold_subway_usage_daily_line`
+Tables : `gold_subway_usage_daily_station`, `gold_subway_usage_daily_line`  
 Notebook : `02_usage_silver_to_gold`
 
 ---
@@ -58,8 +58,10 @@ Notebook : `02_usage_silver_to_gold`
 Databricks Notebook은 Databricks UI에서 직접 작성 및 실행되었으며,
 버전 관리 및 재현성을 위해 Source 파일(.py) 형태로 Export하여 관리하였습니다.
 
-> 참고: Export된 .py 파일은 로컬 실행을 목적으로 하지 않으며,
-Databricks 전용 MAGIC 명령어 및 셀 구조를 보존하기 위한 소스 파일이다.
+> 참고: Export된 .py 파일은 로컬 실행을 목적으로 하지 않으며,  
+> Databricks 전용 MAGIC 명령어 및 셀 구조를 보존하기 위한 소스 파일이다.
+
+---
 
 ## 핵심
 - Databricks는 Spark + Delta 기반 파이프라인의 대체 실행 환경으로 활용 가능함
