@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-consumer
+  namespace: airflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-consumer
+  template:
+    metadata:
+      labels:
+        app: alert-consumer
+    spec:
+      initContainers:
+        # git에서 src 코드 받아오기 (git-sync와 동일한 방식)
+        - name: git-clone-src
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              git clone --depth 1 --branch main \
+                https://github.com/HongJunseong/seoul-subway-daily-reporting.git /tmp/repo && \
+              cp -r /tmp/repo/src/. /app/src/
+          volumeMounts:
+            - name: src
+              mountPath: /app/src
+      containers:
+        - name: alert-consumer
+          image: ssdr-airflow:latest
+          imagePullPolicy: Never
+          command:
+            - python
+            - /app/src/alerts/consume_gold_ready_to_discord.py
+          env:
+            - name: PYTHONPATH
+              value: "/app"
+            - name: KAFKA_TOPIC
+              value: "event.pipeline"
+            - name: KAFKA_GROUP_ID
+              value: "alert-discord-gold-ready"
+          envFrom:
+            - secretRef:
+                name: ssdr-secrets
+          volumeMounts:
+            - name: src
+              mountPath: /app/src
+      volumes:
+        - name: src
+          emptyDir: {}
