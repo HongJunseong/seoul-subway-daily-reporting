@@ -38,3 +38,6 @@ _SUCCESS
 
 # --- claude files ---
 CLAUDE.md
+
+# --- binaries ---
+minikube-linux-amd64
