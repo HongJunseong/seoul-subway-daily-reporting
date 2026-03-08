@@ -16,7 +16,7 @@ def find_latest_parquet_key(bucket: str, prefix: str, *, region: str | None = No
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
         for obj in page.get("Contents", []):
             key = obj["Key"]
-            if not key.endswith(".parquet"):
+            if not key.endswith(".parquet") or "/_delta_log/" in key:
                 continue
             ts = obj["LastModified"]
             if latest_ts is None or ts > latest_ts:
