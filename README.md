@@ -5,16 +5,16 @@
 ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-Event--Driven-231F20)
 ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5.7-red)
 ![AWS S3](https://img.shields.io/badge/AWS-S3-FF9900)
-![Docker](https://img.shields.io/badge/Docker-2496ED)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-LLM%20API-412991)
 
-> End-to-end data platform for collecting, processing, and daily reporting of Seoul subway operations using AWS, Spark, Delta Lake, Kafka, Airflow, and LLM.
+> End-to-end data platform for collecting, processing, and daily reporting of Seoul subway operations using AWS, Spark, Delta Lake, Kafka, Airflow, and LLM — deployed on Kubernetes.
 
 ---
 
 ## Project Overview
 
-본 프로젝트는 **서울 지하철 운영 데이터를 수집 → 정제 → 분석 → 리포트 자동 생성**까지  
+본 프로젝트는 **서울 지하철 운영 데이터를 수집 → 정제 → 분석 → 리포트 자동 생성**까지
 전 과정을 아우르는 **End-to-End 데이터 플랫폼**을 구축하는 것을 목표로 합니다.
 
 서울 열린데이터의 지하철 승하차(Usage) 및 도착(Arrival) API 기반의 지하철 데이터를 대상으로 다음을 구현했습니다.
@@ -26,6 +26,7 @@
 - Apache Airflow 기반 워크플로우 오케스트레이션
 - Kafka 이벤트 기반 알림 구조
 - LLM을 활용한 일간 분석 리포트 자동 생성
+- Kubernetes 기반 인프라 배포 (Helm, KubernetesExecutor, Strimzi Kafka)
 
 ---
 
@@ -75,16 +76,15 @@
 
 ## Streaming & Alerting
 
-- **Apache Kafka**
-  - Gold Layer 데이터 생성 완료 이벤트 발행
-  - Consumer가 이벤트 수신 후 Discord 알림 전송
-- **Discord Alert**
-  - 일간 데이터 준비 완료 시 자동 알림
-  - 운영 관점의 파이프라인 모니터링 구현
-    
+### Pipeline Event Alert (Kafka + Discord)
+`gold_daily` DAG 완료 시 **Kafka `event.pipeline` 토픽**에 이벤트를 발행하고,
+별도로 실행 중인 Alert Consumer가 이를 수신하여 **Discord 알림을 자동으로 전송**합니다.
+
+> Airflow DAG → Kafka Producer → `event.pipeline` topic → Alert Consumer → Discord Webhook
+
 <img width="550" height="230" alt="image" src="https://github.com/user-attachments/assets/191f0283-e660-4382-bf25-1b44a644f0a2" />
 
-- **Operational Delay Alert**
+### Operational Delay Alert
   - 15분 window 단위로 도착 지표를 집계한 Gold 테이블을 읽어, **지하철 운행 지연 징후를 감지**하고 Discord로 경고 알림 전송
   - 예시 알림 조건 (임계치 기반) :
     - **10분 이상 지연 비율(long_ratio_10m)** 이 일정 수준 이상일 때
@@ -122,14 +122,35 @@ Bronze → Silver → Gold 변환 파이프라인을 Notebook으로 재현했습
 
 ---
 
+## Kubernetes Deployment
+
+전체 파이프라인은 **Kubernetes (Docker Desktop)** 위에서 실행됩니다.
+Helm Chart 기반으로 Airflow를 배포하고, Strimzi Operator로 Kafka 클러스터를 구성했습니다.
+
+| 구성 요소 | 방식 |
+|----------|------|
+| **Airflow** | Helm Chart (`apache-airflow 1.11.0`), KubernetesExecutor |
+| **Kafka** | Strimzi Operator (`0.51`), KRaft 모드 |
+| **Alert Consumer** | Kubernetes Deployment (`airflow` namespace) |
+| **DAG 동기화** | git-sync (GitHub → `/opt/airflow/dags`, 자동 Pull) |
+| **src 코드 마운트** | initContainer에서 git clone 후 볼륨 공유 |
+| **Airflow 로그** | PVC (`logs.persistence`) — 태스크 Pod 종료 후에도 로그 유지 |
+| **시크릿 관리** | Kubernetes Secret (`ssdr-secrets`) |
+
+**Namespace**
+- `airflow` : Airflow 구성 요소 전체, Alert Consumer
+- `kafka` : Strimzi Operator, Kafka Cluster
+
+---
+
 ## Limitations
 
 ### API Traffic Limitation
-서울 열린데이터 API는 **일일 호출 트래픽 제한**이 존재하여, 도착 정보(arrival) 데이터는  짧은 주기(현재 5분)로  
+서울 열린데이터 API는 **일일 호출 트래픽 제한**이 존재하여, 도착 정보(arrival) 데이터는  짧은 주기(현재 5분)로
 **부분적인 실시간 수집**은 가능하지만, 지속적이거나 고빈도의 연속 수집에는 제약이 있습니다.
 
 ### Data Availability Delay (Usage Data)
-서울 지하철 승하차 인원(usage) 데이터는 API 특성상 **실시간 또는 당일 데이터가 제공되지 않으며**,  
+서울 지하철 승하차 인원(usage) 데이터는 API 특성상 **실시간 또는 당일 데이터가 제공되지 않으며**,
 일반적으로 **3~4일 이전의 데이터만 조회 가능합니다**.
 
 이에 따라 usage 데이터는 arrival 및 position 데이터와 달리 지연된(Lagged) 데이터 기반으로 수집 및 분석됩니다.
@@ -144,45 +165,54 @@ Bronze → Silver → Gold 변환 파이프라인을 Notebook으로 재현했습
 - 이상 징후 탐지 기반 운영 알림 고도화
 
 ---
-## Execution Flow (Overview)
 
-본 프로젝트는 Apache Airflow를 중심으로
-데이터 수집, 처리, 리포트 생성 파이프라인이 자동으로 실행됩니다.
+## Execution Flow
 
-### 1. Environment Setup
-- Python 3.11
-- Docker / Docker Compose
-- Apache Airflow
-- Apache Kafka
-- Apache Spark
-- AWS S3 접근 권한 설정
+본 프로젝트는 **Kubernetes** 위에서 실행됩니다.
+AWS 자격 증명 및 API Key, Discord Webhook, OpenAI Key 등은 `.env` 파일과 Kubernetes Secret으로 관리됩니다.
 
-> AWS 자격 증명 및 API Key, Discord Webhook, OpenAI Key 등은 `.env` 파일을 통해 관리됩니다.
-
-### 2. Start Core Services
-Docker Compose를 통해 Airflow, Kafka 등 주요 서비스를 실행합니다.
+### 1. Secret 생성
 
 ```bash
-docker compose up -d
+bash k8s/create-secret.sh
 ```
 
-### 3. Airflow DAG Execution
-본 프로젝트는 여러 Airflow DAG들이
-각각의 책임을 가지고 독립적으로 실행되며,
-전체적으로는 다음과 같은 흐름을 가집니다.
+### 2. Kafka 배포 (Strimzi)
+
+```bash
+kubectl create namespace kafka
+kubectl apply -f https://strimzi.io/install/latest?namespace=kafka -n kafka
+kubectl apply -f k8s/kafka-cluster.yaml
+```
+
+### 3. Airflow 배포 (Helm)
+
+```bash
+helm repo add apache-airflow https://airflow.apache.org && helm repo update
+
+helm install airflow apache-airflow/airflow \
+  --version 1.11.0 \
+  --namespace airflow \
+  -f k8s/airflow-values.yaml
+```
+
+### 4. Alert Consumer 배포
+
+```bash
+kubectl apply -f k8s/alert-consumer.yaml
+```
+
+### 5. Airflow Web UI
+
+```
+http://localhost:30080
+```
+
+### 6. DAG 실행 흐름
 
 - **pipeline_arrival_5m** : 도착(arrival) 데이터를 5분 주기로 수집 → 정제 → 15분 window로 지표 집계 → ETA 지연(QA) 기반 Discord 알림
 - **usage_daily** : 일 단위 승하차 인원 데이터를 수집 및 집계하여 분석용 데이터 생성
-- **gold_daily** : Silver 데이터를 기반으로 일간 지표 및 집계 결과를 Gold Layer에 생성
+- **gold_daily** : Silver 데이터를 기반으로 일간 지표 및 집계 결과를 Gold Layer에 생성 → Kafka 이벤트 발행 → `report_daily` 자동 트리거
 - **report_daily** : Gold Layer 집계 결과를 기반으로 LLM 일간 분석 리포트를 자동 생성
 
-### 4. Event-driven Alert
-
-Gold Layer 데이터 생성이 완료되면,
-Kafka 이벤트가 발행되고 Consumer가 이를 수신하여
-Discord 알림을 전송합니다.
-
-### 5. LLM Daily Report
-
-집계된 Gold Layer 데이터를 기반으로
-LLM이 자동으로 일간 분석 리포트를 생성합니다.
+> **로컬 개발 환경**: `docker/docker-compose.yaml` 을 사용해 Docker Compose 기반으로도 실행 가능합니다. (LocalExecutor + bitnami/kafka KRaft)
