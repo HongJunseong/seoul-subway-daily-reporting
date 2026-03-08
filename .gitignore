@@ -41,3 +41,7 @@ CLAUDE.md
 
 # --- binaries ---
 minikube-linux-amd64
+
+# --- k8s dashboard UI ---
+adminuser.yaml
+adminuser-role.yaml
