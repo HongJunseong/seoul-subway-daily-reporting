@@ -1,0 +1,40 @@
+# Kafka Helm Chart values for seoul-subway-daily-reporting
+
+global:
+  security:
+    allowInsecureImages: true
+
+# 브로커 1개 (로컬 개발 환경)
+controller:
+  replicaCount: 1
+
+# Bitnami 이미지 대신 공식 Apache Kafka 이미지 사용
+image:
+  registry: docker.io
+  repository: apache/kafka
+  tag: latest
+  pullPolicy: Never
+
+# Zookeeper 없이 KRaft 모드로 실행 (Kafka 3.x 기본값)
+kraft:
+  enabled: true
+
+# 외부 접근을 위한 리스너 설정
+listeners:
+  client:
+    protocol: PLAINTEXT
+  controller:
+    protocol: PLAINTEXT
+
+# 토픽 자동 생성 허용
+extraConfig: |
+  auto.create.topics.enable=true
+
+# 로컬 환경이라 persistence 최소화
+persistence:
+  enabled: true
+  size: 2Gi
+
+# ClusterIP로 내부 서비스 노출 (airflow namespace에서 접근)
+service:
+  type: ClusterIP

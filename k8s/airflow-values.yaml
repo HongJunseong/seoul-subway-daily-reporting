@@ -19,39 +19,61 @@ env:
   - name: PYTHONPATH
     value: "/opt/airflow"
 
-# DAGs, src 로컬 경로 마운트
+# git-sync: GitHub에서 DAGs 자동 동기화 (60초마다 pull)
+dags:
+  gitSync:
+    enabled: true
+    repo: https://github.com/HongJunseong/seoul-subway-daily-reporting.git
+    branch: main
+    rev: HEAD
+    depth: 1
+    maxFailures: 3
+    subPath: dags
+
+# src 디렉토리도 git-sync로 마운트 (DAG와 같은 git repo)
 extraVolumes:
-  - name: dags
-    hostPath:
-      path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/dags
-      type: Directory
-  - name: src
-    hostPath:
-      path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/src
-      type: Directory
+  - name: repo-src
+    emptyDir: {}
 
 extraVolumeMounts:
-  - name: dags
-    mountPath: /opt/airflow/dags
-  - name: src
+  - name: repo-src
     mountPath: /opt/airflow/src
+
+extraInitContainers:
+  - name: git-clone-src
+    image: alpine/git:latest
+    command:
+      - sh
+      - -c
+      - |
+        git clone --depth 1 --branch main \
+          https://github.com/HongJunseong/seoul-subway-daily-reporting.git /tmp/repo && \
+        cp -r /tmp/repo/src/. /opt/airflow/src/
+    volumeMounts:
+      - name: repo-src
+        mountPath: /opt/airflow/src
 
 # KubernetesExecutor가 생성하는 태스크 Pod 설정
 workers:
   extraVolumes:
-    - name: dags
-      hostPath:
-        path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/dags
-        type: Directory
-    - name: src
-      hostPath:
-        path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/src
-        type: Directory
+    - name: repo-src
+      emptyDir: {}
   extraVolumeMounts:
-    - name: dags
-      mountPath: /opt/airflow/dags
-    - name: src
+    - name: repo-src
       mountPath: /opt/airflow/src
+  extraInitContainers:
+    - name: git-clone-src
+      image: alpine/git:latest
+      command:
+        - sh
+        - -c
+        - |
+          git clone --depth 1 --branch main \
+            https://github.com/HongJunseong/seoul-subway-daily-reporting.git /tmp/repo && \
+          cp -r /tmp/repo/src/. /opt/airflow/src/
+      volumeMounts:
+        - name: repo-src
+          mountPath: /opt/airflow/src
 
 # Webserver NodePort로 외부 접근
 webserver:

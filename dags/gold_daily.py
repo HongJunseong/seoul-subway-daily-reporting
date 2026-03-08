@@ -47,7 +47,6 @@ with DAG(
         export GOLD_ARRIVAL_PATH_TMPL="s3://${{SSDR_S3_BUCKET}}/gold/subway_arrival/dt=${{TARGET_YMD}}/"
         export GOLD_POSITION_PATH_TMPL="s3://${{SSDR_S3_BUCKET}}/gold/subway_position/dt=${{TARGET_YMD}}/"
 
-        export KAFKA_BOOTSTRAP_SERVERS="kafka:9092"
         export KAFKA_TOPIC="event.pipeline"
 
         python src/events/emit_gold_ready.py

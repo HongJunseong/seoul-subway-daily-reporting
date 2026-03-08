@@ -13,4 +13,5 @@ kubectl create secret generic ssdr-secrets \
   --from-literal=DISCORD_WEBHOOK_URL="$DISCORD_WEBHOOK_URL" \
   --from-literal=SSDR_S3_BUCKET="$SSDR_S3_BUCKET" \
   --from-literal=SSDR_AWS_REGION="$SSDR_AWS_REGION" \
-  --from-literal=AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION"
+  --from-literal=AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
+  --from-literal=KAFKA_BOOTSTRAP_SERVERS="ssdr-kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
