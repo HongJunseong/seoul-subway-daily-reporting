@@ -35,10 +35,15 @@ def parse_partition_from_key(key: str, *, has_hour: bool) -> tuple[str, str, str
       bronze/subway_usage/year=2025/month=12/day=11/usage.parquet
     """
     parts = key.split("/")
-    y = [p for p in parts if p.startswith("year=")][0].split("=", 1)[1]
-    m = [p for p in parts if p.startswith("month=")][0].split("=", 1)[1]
-    d = [p for p in parts if p.startswith("day=")][0].split("=", 1)[1]
-    h = None
-    if has_hour:
-        h = [p for p in parts if p.startswith("hour=")][0].split("=", 1)[1]
+
+    def _extract(prefix: str) -> str:
+        part = next((p for p in parts if p.startswith(prefix)), None)
+        if part is None:
+            raise ValueError(f"Partition key '{prefix}' not found in S3 key: {key}")
+        return part.split("=", 1)[1]
+
+    y = _extract("year=")
+    m = _extract("month=")
+    d = _extract("day=")
+    h = _extract("hour=") if has_hour else None
     return y, m, d, h

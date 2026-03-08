@@ -1,0 +1,78 @@
+# Airflow Helm Chart values for seoul-subway-daily-reporting
+
+# KubernetesExecutor: 태스크마다 Pod 생성
+executor: KubernetesExecutor
+
+# 커스텀 이미지 (Java + requirements.txt 포함)
+images:
+  airflow:
+    repository: ssdr-airflow
+    tag: latest
+    pullPolicy: Never
+
+# 환경변수: Secret에서 주입 (string 형식)
+extraEnvFrom: |
+  - secretRef:
+      name: ssdr-secrets
+
+env:
+  - name: PYTHONPATH
+    value: "/opt/airflow"
+
+# DAGs, src 로컬 경로 마운트
+extraVolumes:
+  - name: dags
+    hostPath:
+      path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/dags
+      type: Directory
+  - name: src
+    hostPath:
+      path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/src
+      type: Directory
+
+extraVolumeMounts:
+  - name: dags
+    mountPath: /opt/airflow/dags
+  - name: src
+    mountPath: /opt/airflow/src
+
+# KubernetesExecutor가 생성하는 태스크 Pod 설정
+workers:
+  extraVolumes:
+    - name: dags
+      hostPath:
+        path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/dags
+        type: Directory
+    - name: src
+      hostPath:
+        path: /run/desktop/mnt/host/wsl/home/wnstjd4504/projects/seoul-subway-daily-reporting/src
+        type: Directory
+  extraVolumeMounts:
+    - name: dags
+      mountPath: /opt/airflow/dags
+    - name: src
+      mountPath: /opt/airflow/src
+
+# Webserver NodePort로 외부 접근
+webserver:
+  service:
+    type: NodePort
+    ports:
+      - name: airflow-ui
+        port: 8080
+        targetPort: 8080
+        nodePort: 30080
+
+# PostgreSQL 내장 사용 (bitnami/postgresql:11 deprecated → 13으로 재정의)
+postgresql:
+  enabled: true
+  image:
+    tag: "latest"
+    pullPolicy: Never
+
+# KubernetesExecutor는 Redis 불필요
+redis:
+  enabled: false
+
+# Webserver 시크릿 키
+webserverSecretKey: "seoul-subway-secret-key"

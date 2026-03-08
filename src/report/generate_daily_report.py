@@ -48,11 +48,20 @@ def upload_text_to_s3(
     )
     return f"s3://{bucket}/{key}"
 
-def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
+def build_prompt(target_ymd: str, ctx: dict) -> list[dict]:
     """
-    LLM에 넘길 messages와, 나중을 위해 원본 JSON 문자열을 같이 반환.
+    LLM에 넘길 messages 리스트를 반환.
     """
     ctx_json = json.dumps(ctx, ensure_ascii=False, indent=2)
+
+    temporal_note = (
+        "\n\n[데이터 기준 시점 주의 — 매우 중요]\n"
+        "- usage(승하차 이용량) 데이터는 실시간이 아니라, 수집/정제 지연이 있는 '확정 일간 집계'로서 4일전 기준이다. "
+        "따라서 usage는 \"오늘의 실시간 상황\"이 아니라, 최근 확정된 이용 패턴/기준 혼잡 구조를 설명하는 용도로 해석해야 한다.\n"
+        "- arrival(도착) 데이터는 오늘 기준의 실시간/준실시간 지표로, "
+        "오늘의 체감 품질과 운행 상황을 설명하는 용도로 해석한다.\n"
+        "- 이 시간 차이를 반드시 고려해서 문장을 작성하라."
+    )
 
     system_msg = {
         "role": "system",
@@ -61,17 +70,9 @@ def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
             "숫자를 단순 나열하는 것이 아니라, 패턴과 의미를 해석해서 글로 풀어내야 한다. "
             "톤은 침착하고 설명 잘하는 데이터 분석가 느낌으로, 과장 없이 사실 위주로 쓰되, "
             "중요한 포인트는 강조해준다. 답변은 반드시 한국어로 작성한다."
+            + temporal_note
         ),
     }
-
-    temporal_note = f"""
-    데이터 기준 시점 주의 (매우 중요)
-    - usage(승하차 이용량) 데이터는 실시간이 아니라, 수집/정제 지연이 있는 '확정 일간 집계'로서 4일전 기준이다.
-    따라서 usage는 "오늘의 실시간 상황"이 아니라, 최근 확정된 이용 패턴/기준 혼잡 구조를 설명하는 용도로 해석해야 한다.
-    - arrival(도착) 데이터는 오늘 기준의 실시간/준실시간 지표로,
-    오늘의 체감 품질과 운행 상황을 설명하는 용도로 해석한다.
-    - 이 시간 차이를 반드시 고려해서 문장을 작성하라.
-    """
 
     user_msg = {
         "role": "user",
@@ -80,6 +81,8 @@ def build_prompt(target_ymd: str, ctx: dict) -> tuple[list[dict], str]:
 
     ```json
     {ctx_json}
+    ```
+
     이 데이터를 기반으로 한국어로 "서울 지하철 일간 분석 보고서"를 작성해줘.
 
     전체 스타일 / 길이 요구

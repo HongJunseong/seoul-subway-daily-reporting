@@ -35,3 +35,6 @@ _SUCCESS
 
 # --- identity files ---
 *.Identifier
+
+# --- claude files ---
+CLAUDE.md

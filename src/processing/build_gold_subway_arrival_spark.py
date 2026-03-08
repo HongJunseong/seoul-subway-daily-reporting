@@ -31,8 +31,7 @@ def parse_ymdh_from_key(key: str) -> tuple[str, str, str, str]:
 
 
 def main():
-    # 오늘 날짜(로컬 기준)
-    target_ymd = datetime.today().strftime("%Y%m%d")
+    target_ymd = os.environ.get("TARGET_YMD") or datetime.today().strftime("%Y%m%d")
     y, m, d = get_date_parts(target_ymd)
 
     bucket = get_bucket()

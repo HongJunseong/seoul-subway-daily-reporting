@@ -4,21 +4,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 import pendulum
 
-PROJECT_DIR = "/opt/airflow"
-
-SPARK_PACKAGES = (
-    "io.delta:delta-spark_2.12:3.2.0,"
-    "org.apache.hadoop:hadoop-aws:3.3.4,"
-    "com.amazonaws:aws-java-sdk-bundle:1.12.262"
-)
-
-DELTA_CONF = (
-    '--conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" '
-    '--conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog" '
-    '--conf "spark.sql.session.timeZone=Asia/Seoul" '
-)
-
-SPARK_SUBMIT = f'spark-submit --packages "{SPARK_PACKAGES}" {DELTA_CONF}'
+from common import PROJECT_DIR, SPARK_SUBMIT
 
 with DAG(
     dag_id="pipeline_arrival_5m",
