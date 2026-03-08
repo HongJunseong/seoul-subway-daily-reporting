@@ -19,7 +19,7 @@ env:
   - name: PYTHONPATH
     value: "/opt/airflow"
 
-# git-sync: GitHub에서 DAGs 자동 동기화 (60초마다 pull)
+# git-sync: GitHub에서 DAGs 자동 동기화
 dags:
   gitSync:
     enabled: true
@@ -30,16 +30,16 @@ dags:
     maxFailures: 3
     subPath: dags
 
-# src 디렉토리도 git-sync로 마운트 (DAG와 같은 git repo)
-extraVolumes:
+# src 마운트용 공통 설정
+_gitSyncSrcVolume: &gitSyncSrcVolume
   - name: repo-src
     emptyDir: {}
 
-extraVolumeMounts:
+_gitSyncSrcMount: &gitSyncSrcMount
   - name: repo-src
     mountPath: /opt/airflow/src
 
-extraInitContainers:
+_gitSyncSrcInit: &gitSyncSrcInit
   - name: git-clone-src
     image: alpine/git:latest
     command:
@@ -53,30 +53,17 @@ extraInitContainers:
       - name: repo-src
         mountPath: /opt/airflow/src
 
-# KubernetesExecutor가 생성하는 태스크 Pod 설정
-workers:
-  extraVolumes:
-    - name: repo-src
-      emptyDir: {}
-  extraVolumeMounts:
-    - name: repo-src
-      mountPath: /opt/airflow/src
-  extraInitContainers:
-    - name: git-clone-src
-      image: alpine/git:latest
-      command:
-        - sh
-        - -c
-        - |
-          git clone --depth 1 --branch main \
-            https://github.com/HongJunseong/seoul-subway-daily-reporting.git /tmp/repo && \
-          cp -r /tmp/repo/src/. /opt/airflow/src/
-      volumeMounts:
-        - name: repo-src
-          mountPath: /opt/airflow/src
+# Scheduler
+scheduler:
+  extraVolumes: *gitSyncSrcVolume
+  extraVolumeMounts: *gitSyncSrcMount
+  extraInitContainers: *gitSyncSrcInit
 
-# Webserver NodePort로 외부 접근
+# Webserver
 webserver:
+  extraVolumes: *gitSyncSrcVolume
+  extraVolumeMounts: *gitSyncSrcMount
+  extraInitContainers: *gitSyncSrcInit
   service:
     type: NodePort
     ports:
@@ -85,7 +72,19 @@ webserver:
         targetPort: 8080
         nodePort: 30080
 
-# PostgreSQL 내장 사용 (bitnami/postgresql:11 deprecated → 13으로 재정의)
+# Triggerer
+triggerer:
+  extraVolumes: *gitSyncSrcVolume
+  extraVolumeMounts: *gitSyncSrcMount
+  extraInitContainers: *gitSyncSrcInit
+
+# KubernetesExecutor 태스크 Pod 설정
+workers:
+  extraVolumes: *gitSyncSrcVolume
+  extraVolumeMounts: *gitSyncSrcMount
+  extraInitContainers: *gitSyncSrcInit
+
+# PostgreSQL 내장 사용
 postgresql:
   enabled: true
   image:
@@ -98,3 +97,9 @@ redis:
 
 # Webserver 시크릿 키
 webserverSecretKey: "seoul-subway-secret-key"
+
+# 공유 로그 PVC: webserver + 태스크 Pod가 같은 볼륨에 로그 저장
+logs:
+  persistence:
+    enabled: true
+    size: 5Gi
