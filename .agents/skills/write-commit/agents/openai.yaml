@@ -1,0 +1,4 @@
+interface:
+  display_name: "DE 프로젝트 커밋"
+  short_description: "검증된 실제 변경을 기능 단위 한국어 Conventional Commit으로 기록"
+  default_prompt: "$write-commit으로 diff와 검증 결과를 확인하고 승인된 변경을 커밋해줘."
