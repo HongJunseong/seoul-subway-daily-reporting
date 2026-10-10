@@ -23,10 +23,13 @@ jobs:
       - run: ruff check src dags scripts tests
       - run: pytest -q --ignore=tests/test_dags.py
       - run: python scripts/demo.py --output-dir .work/demo/ci
+      - run: python scripts/recovery_experiment.py --output-dir .work/recovery/ci
       - uses: actions/upload-artifact@v4
         with:
           name: offline-pipeline-evidence
-          path: .work/demo/ci
+          path: |
+            .work/demo/ci
+            .work/recovery/ci
           retention-days: 7
   dags:
     runs-on: ubuntu-latest
