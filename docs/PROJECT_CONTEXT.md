@@ -20,6 +20,7 @@
 - 로컬 감사 CLI는 Delta 루트·버전을 읽어 품질, 수집 시간 bucket, 처리 누락, 활성 파일 메타데이터를 남긴다.
 - 태스크 callback 로그는 실행·시도·executor queue를 기록한다. 순수 pool 대기 시간은 별도로 측정해야 한다.
 - 예외 주입 복구 실험은 테이블별 부분 커밋과 품질 오류 후 저장된 원본 재처리를 검증한다.
+- 실제 로컬 Airflow 태스크 연결 실험은 AIRFLOW_OFFLINE.md에 있다. 운영 scheduler·executor 대기는 이 실험에서 측정하지 않는다.
 - 명령과 해석 범위는 OBSERVABILITY.md에 있다. 공개 operations 샘플은 합성이며 live baseline을 대체하지 않는다.
 
 ## 불변 조건

@@ -88,3 +88,43 @@ UNC 경로 apply_patch와 기본 WSL 접근은 제한되어 승인된 WSL Bash �
 로컬 커밋은 `codex/de-portfolio-hardening`의 git log에서 확인한다. 다음 검증은 live 자료와 운영 환경 접근이 포함되므로 이번 완료 범위와 구분한다.
 
 후속 로컬 커밋: af1b05d(Delta 감사), 050e59c(태스크 관측), 78406d3(복구 실험). 문서·샘플 커밋은 바로 다음 git log 항목에 기록한다.
+
+## 2026-10-10 추가 고도화 — 실제 로컬 Airflow 연결 실행
+
+사용자의 “다음작업도 진행해줘 더필요한거아냐?”에 따라 DAG 구조 검사와 실제 태스크 실행 사이의 검증 공백을 보완했다. API·AWS·Discord·LLM과 운영 DB를 사용하지 않고 합성 Bronze·별도 SQLite로 진행했다.
+
+### 구현
+
+- `scripts/seed_bronze.py`는 반복 수집·최신 정정·월말 자정 경계의 합성 Bronze만 준비한다. Silver·Gold·보고서는 미리 만들지 않는다.
+- `scripts/airflow_offline.py`는 Airflow 설정 import 전에 출력 경로의 DB·로컬 저장·템플릿·합성 표시를 고정한다. 상속 Airflow 서비스 설정을 제거하고 서비스 키를 비우며 HTTP 요청을 차단한다.
+- 실제 `TaskInstance.run()`으로 의존성 검사, 날짜 XCom, API 재수집 분기, Spark BashOperator, callback, 보고서 callable을 실행한다. 트리거가 실제 생성한 queued DagRun의 ID/conf를 확인해 같은 실행을 이어 처리한다.
+- `dags/common.py`는 SSDR_PROJECT_DIR/SSDR_SPARK_BINARY와 shell quoting을 지원한다. 로컬 모드는 Delta만 제출하고 S3 모드의 Hadoop AWS/SDK 패키지는 유지한다.
+- 가상환경 Python symlink를 resolve하면 spark-submit 디렉터리를 잃는 문제를 막고, 기존 출력 보존·DB 격리·공백/따옴표/달러 경로·로컬/S3 패키지·자정 경계를 회귀 검사로 남겼다.
+- Airflow 보고서용 의존성을 `requirements/airflow-verification.txt`로 분리했다. CI의 airflow-integration job은 같은 실제 실행을 수행하고 실패 시에도 artifact를 보존한다. 원격 CI는 실행하지 않았다.
+
+### 실제 실행 결과
+
+- 최종 경로: `.work/airflow-offline/verified-03`, CLI exit 0.
+- usage_daily → gold_daily → report_daily 모두 success. 실제 태스크 **12개 success**, bronze_usage **1개 skipped**. 시도 번호 모두 1이며 미실행 API 태스크는 0이다.
+- 실제 callback **24개**, 종료된 시도 12개·시간 표본 12개. malformed/failed/incomplete/conflicting 0. executor queue·scheduled 시작 지연 표본은 0개이며 미측정이다.
+- 승하차 정정 합계 **680**, D-1 도착 관측 **4건·유효 ETA 4건**, report/context/manifest 해시 검증 통과.
+- DAG 실행 전체 시간 **92.934660초**. 합성 원본 준비·DB 초기화를 제외하고 Spark 제출·JVM 시작은 태스크 시간에 포함한다. 소량 로컬 시간이며 운영 SLA/처리량이 아니다.
+- public JSON은 실제 결과를 그대로 복사해 `examples/airflow/`에 보존했다. README·VALIDATION·ROADMAP·PROJECT_CONTEXT와 AIRFLOW_OFFLINE 절차를 갱신했다.
+
+### 실제 검증과 수정 기록
+
+- 파이프라인 `pytest -q --ignore=tests/test_dags.py`: **67 passed**, 64.10초.
+- 격리 Airflow 2.7.3 `pytest -q tests/test_dags.py`: **8 passed**, 0.67초. 기존 Airflow/Pydantic 경고 9개. 서로 다른 회귀 검사 총 75개.
+- 신규 범위 대상 검사 **6 passed**, 0.10초이며 위 67개에 포함된다.
+- Ruff, 별도 pycache prefix compileall, CI YAML 파싱, Markdown 상대 링크 29개, git diff --check 통과. 공개 evidence/task-summary JSON과 원본 결과의 동일성을 확인했다.
+- 초기 환경 준비에서 Python symlink 경로 확인을 수정했다. 첫 DB 실행은 조회한 DagRun의 .dag를 연결하지 않아 중단됐고 보완했다.
+- 두 번째 실행은 실제 세 DAG·보고서까지 성공했으나 검증용 D-1 유효 ETA 기대값을 3으로 잘못 지정해 최종 비교가 실패했다. NULL ETA는 다음 날 자정에 속해 D-1의 유효 표본은 4가 맞다. fixture 날짜별 기대값과 회귀 검사를 추가한 최종 실행에서 전체 조건이 통과했다. 이전 실패 출력은 덮어쓰지 않았다.
+- 로컬 루프는 scheduler의 queued_duration을 만들지 않아 관련 Airflow 경고가 있다. queue를 0초로 대신 채우지 않는다.
+
+### 남은 작업과 보존
+
+실제 scheduler·분산 executor·Docker/Kubernetes·S3 writer의 동시성/복구, 실제 API 지속 수집·응답 상한·결측·신선도 baseline은 여전히 미검증이다. TaskInstance의 실행 시간과 운영 queue/pool 대기를 구분한다. live 로드맵 항목은 완료로 바꾸지 않았다.
+
+이번 시작의 Linux Git 상태는 clean이었다. .env·기존 Secret 스크립트·운영 데이터는 변경/스테이징하지 않았다. Windows Git의 ownership 경고는 글로벌 설정을 바꾸지 않고 WSL Git으로 확인했다. 변경은 codex/de-portfolio-hardening의 기능별 로컬 커밋으로 기록하며 push·배포는 하지 않는다.
+
+로컬 구현 커밋: 33f3121(실제 Airflow 연결 실행·CI·회귀 검사). 문서와 공개 증거는 다음 로컬 커밋에 기록한다.

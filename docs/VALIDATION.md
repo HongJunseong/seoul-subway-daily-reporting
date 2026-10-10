@@ -15,11 +15,13 @@
 - 실제 Delta Silver 커밋 후 예외 주입: 기존 Gold 유지, 저장된 Bronze 재처리, 전체 업무 컬럼 해시 일치.
 - 최신 원천의 음수 값 차단: 기존 Silver/Gold 내용·버전 유지, 올바른 원천 정정 후 복구.
 - 태스크 callback의 정보 제한·실제 시도 번호, 중복/재시도/불완전·충돌 이벤트 집계와 로그 CLI 종료 코드.
+- 실제 로컬 Airflow TaskInstance.run 실행: 날짜 XCom·재처리 분기·Spark BashOperator·queued DagRun 두 번 연결·실제 보고서/context/manifest 검증.
+- 프로젝트 경로·Spark 실행 파일의 shell quoting, 로컬/S3 패키지 분리, 가상환경 symlink·DB 격리·기존 출력 보존.
 - Ruff correctness 검사, Python 컴파일 검사, Compose 설정 파싱, Secret 셸 구문 검사.
 
 현재 실행 결과의 테스트 수와 명령은 SESSION_HANDOFF에 기록한다. examples/evidence.json은 저장된 합성 데모 실행 결과다. 처리 시간은 소량 로컬 입력의 전체 데모 시간으로, 서비스 SLA나 대용량 성능으로 사용하지 않는다.
 
-[관측·복구 절차](OBSERVABILITY.md)와 [operations 공개 샘플](../examples/operations/README.md)에 이번 실행 증거를 남겼다. 예외 주입은 실제 프로세스 강제 종료·인프라 장애 시험과 구분한다. callback 지표는 도구와 연결을 검증했으며 실제 scheduler 실행의 시간 표본은 아직 없다.
+[관측·복구 절차](OBSERVABILITY.md)와 [operations 공개 샘플](../examples/operations/README.md)에 이번 실행 증거를 남겼다. 예외 주입은 실제 프로세스 강제 종료·인프라 장애 시험과 구분한다. callback 지표는 실제 로컬 태스크 실행으로 시간 표본을 확보했다. [Airflow 연결 실행](AIRFLOW_OFFLINE.md)은 순차 TaskInstance 실행이며 실제 scheduler·executor 대기의 표본은 아직 없다.
 
 ## 아직 검증하지 않은 범위
 

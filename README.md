@@ -71,6 +71,12 @@ python scripts/recovery_experiment.py --output-dir .work/recovery/my-run
 
 [복구 실험 결과](examples/operations/recovery.md)에는 단계별 합계·Delta 버전과 측정 범위를, [품질 감사 결과](examples/operations/quality.md)에는 누락 시간 구간·ETA 표본·원본/처리 차이·파일 수를 남겼다. 모두 합성 데이터의 실제 로컬 실행 결과다. Airflow 태스크 callback은 실행·재시도·대기 로그를 남기며, 운영 측정은 별도로 필요하다. 명령과 지표의 정확한 의미는 [관측·복구 문서](docs/OBSERVABILITY.md)에서 확인한다.
 
+## 실제 Airflow 태스크 연결 검증
+
+DAG 구조 검사에 더해 저장된 합성 Bronze에서 `usage_daily → gold_daily → report_daily`를 실제 태스크로 실행했다. API 재수집 분기는 skipped, Spark 변환·날짜 XCom·두 DAG 트리거·보고서 생성은 실제 코드로 처리했다. **태스크 12개 성공과 보고서 해시 검증**을 확인했고, 실제 실행 시간과 미측정 queue를 구분해 [실행 증거](examples/airflow/evidence.md)에 남겼다.
+
+[재현 명령](docs/AIRFLOW_OFFLINE.md)은 별도 SQLite DB와 두 가상환경을 사용한다. 로컬 순차 실행이며 실수집·scheduler·분산 executor·S3 운영 검증은 추가로 필요하다.
+
 ## 자동화
 
 - `arrival_collect_5m`: 실제 수집 시각으로 원문 저장.
@@ -79,7 +85,7 @@ python scripts/recovery_experiment.py --output-dir .work/recovery/my-run
 - `gold_daily`: D-1 원본 재처리 → 일간 도착 Gold → 알림과 보고서 각각 실행.
 - `report_daily`: 날짜와 데이터 품질 확인 → 기본 템플릿 보고서 생성. LLM 해설은 선택 기능.
 
-Docker Compose와 Kubernetes 설정을 제공한다. 이번 변경에서 실제로 검증한 범위는 로컬 Spark/Delta 처리, 실제 Airflow DagBag·템플릿 검사, Compose 설정 파싱이다. 컨테이너 빌드·Kubernetes 배포·S3 운영·실제 API의 지속 수집은 별도 검증 대상이다. GitHub Actions는 두 환경의 검증·합성 데모·예외 주입 복구 실험을 실행하도록 정의했다.
+Docker Compose와 Kubernetes 설정을 제공한다. 이번 변경에서 실제로 검증한 범위는 로컬 Spark/Delta 처리, 실제 Airflow DagBag·템플릿 검사, Compose 설정 파싱이다. 컨테이너 빌드·Kubernetes 배포·S3 운영·실제 API의 지속 수집은 별도 검증 대상이다. GitHub Actions는 파이프라인·DAG 검증, 합성 데모·복구 실험, 실제 로컬 Airflow 연결 실행을 별도 job으로 정의했다.
 
 ## 문서와 남은 작업
 
