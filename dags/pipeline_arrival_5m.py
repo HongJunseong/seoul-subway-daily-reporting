@@ -1,63 +1,23 @@
 from __future__ import annotations
-
+from datetime import timedelta
+import pendulum
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-import pendulum
+from common import spark_command, AS_OF_ENV, DELTA_WRITE_POOL
+from src.alerts.notify_pipeline import notify_failure
 
-from common import PROJECT_DIR, SPARK_SUBMIT
-
-with DAG(
-    dag_id="pipeline_arrival_5m",
-    start_date=pendulum.datetime(2026, 1, 1, tz="Asia/Seoul"),
-    schedule="*/5 * * * *",   # 5분마다
-    catchup=False,
-    max_active_runs=1,
-    tags=["bronze", "silver", "gold", "arrival"],
-) as dag:
-
-    bronze_ingest = BashOperator(
-        task_id="bronze_ingest_arrival",
-        bash_command=f"""
-        set -euo pipefail
-        cd "{PROJECT_DIR}"
-        export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
-
-        {SPARK_SUBMIT} "{PROJECT_DIR}/src/ingestion/ingest_subway_arrival_realtime.py"
-        """,
-    )
-
-    silver_fact = BashOperator(
-        task_id="silver_fact_arrival",
-        bash_command=f"""
-        set -euo pipefail
-        cd "{PROJECT_DIR}"
-        export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
-
-        {SPARK_SUBMIT} "{PROJECT_DIR}/src/processing/build_fact_subway_arrival_spark.py"
-        """,
-    )
-
-    gold_15m = BashOperator(
-        task_id="gold_arrival_metrics_15m",
-        bash_command=f"""
-        set -euo pipefail
-        cd "{PROJECT_DIR}"
-        export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
-
-        {SPARK_SUBMIT} "{PROJECT_DIR}/src/processing/build_gold_arrival_metrics_15m_spark.py"
-        """,
-    )
-
-    gold_qa = BashOperator(
-    task_id="gold_arrival_delay_qa_notify",
-    bash_command=f"""
-        set -euo pipefail
-        cd "{PROJECT_DIR}"
-        export PYTHONPATH="{PROJECT_DIR}:${{PYTHONPATH:-}}"
-
-        {SPARK_SUBMIT} "{PROJECT_DIR}/src/alerts/check_gold_arrival_delay_15m_and_notify.py" \
-        --as_of "{{{{ data_interval_end.in_timezone('Asia/Seoul').strftime('%Y-%m-%d %H:%M:%S') }}}}"
-        """,
-    )
-
-    bronze_ingest >> silver_fact >> gold_15m >> gold_qa
+with DAG(dag_id="pipeline_arrival_5m", start_date=pendulum.datetime(2026, 1, 1, tz="Asia/Seoul"),
+         schedule="*/5 * * * *", catchup=False, max_active_runs=1,
+         default_args={"retries": 2, "retry_delay": timedelta(minutes=1),
+                       "on_failure_callback": notify_failure},
+         tags=["arrival", "processing", "replay"]) as dag:
+    silver = BashOperator(pool=DELTA_WRITE_POOL, task_id="silver_fact_arrival", env=AS_OF_ENV, append_env=True,
+                          bash_command=spark_command("src/processing/build_fact_subway_arrival_spark.py",
+                                                     '--as_of "$AS_OF"'))
+    gold = BashOperator(pool=DELTA_WRITE_POOL, task_id="gold_arrival_metrics_15m", env=AS_OF_ENV, append_env=True,
+                        bash_command=spark_command("src/processing/build_gold_arrival_metrics_15m_spark.py",
+                                                   '--as_of "$AS_OF"'))
+    qa = BashOperator(pool=DELTA_WRITE_POOL, task_id="gold_arrival_eta_qa_notify", env=AS_OF_ENV, append_env=True,
+                      bash_command=spark_command("src/alerts/check_gold_arrival_delay_15m_and_notify.py",
+                                                 '--as_of "$AS_OF"'))
+    silver >> gold >> qa

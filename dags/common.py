@@ -1,31 +1,48 @@
 from __future__ import annotations
+from datetime import datetime, timedelta
+from src.common.dates import validate_ymd
 
 PROJECT_DIR = "/opt/airflow"
-
-SPARK_PACKAGES = (
-    "io.delta:delta-spark_2.12:3.2.0,"
-    "org.apache.hadoop:hadoop-aws:3.3.4,"
-    "com.amazonaws:aws-java-sdk-bundle:1.12.262"
-)
-
-DELTA_CONF = (
-    '--conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension" '
-    '--conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog" '
-    '--conf "spark.sql.session.timeZone=Asia/Seoul" '
-)
-
-SPARK_SUBMIT = f'spark-submit --packages "{SPARK_PACKAGES}" {DELTA_CONF}'
+DELTA_WRITE_POOL = "ssdr_delta_writer"
+SPARK_PACKAGES = ("io.delta:delta-spark_2.12:3.2.0,"
+                  "org.apache.hadoop:hadoop-aws:3.3.4,"
+                  "com.amazonaws:aws-java-sdk-bundle:1.12.262")
+SPARK_SUBMIT = (f'spark-submit --master "local[2]" --driver-memory 1g --packages "{SPARK_PACKAGES}" '
+                '--conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension '
+                '--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog '
+                '--conf spark.sql.session.timeZone=Asia/Seoul '
+                '--conf spark.databricks.delta.snapshotPartitions=8')
 
 
-def compute_target_ymd(**context) -> str:
-    """
-    - 기본: DAG 실행 logical_date를 KST로 바꿔 YYYYMMDD 생성
-    - 수동 override: Trigger DAG 시 conf로 {"target_ymd": "20251216"} 주면 그 값 사용
-    """
-    dag_run = context.get("dag_run")
-    if dag_run and dag_run.conf and dag_run.conf.get("target_ymd"):
-        return str(dag_run.conf["target_ymd"])
+def compute_target_ymd(**context):
+    conf = context["dag_run"].conf or {}
+    if conf.get("target_ymd"):
+        return validate_ymd(str(conf["target_ymd"]))
+    end = context.get("data_interval_end") or context["logical_date"]
+    return end.in_timezone("Asia/Seoul").strftime("%Y%m%d")
 
-    logical_date = context["logical_date"]
-    kst_dt = logical_date.in_timezone("Asia/Seoul")
-    return kst_dt.format("YYYYMMDD")
+
+def compute_dates(**context):
+    anchor = compute_target_ymd(**context)
+    date = datetime.strptime(anchor, "%Y%m%d")
+    return {"target_ymd": anchor, "usage_ymd": (date - timedelta(days=4)).strftime("%Y%m%d"),
+            "arrival_ymd": (date - timedelta(days=1)).strftime("%Y%m%d")}
+
+
+def choose_usage_input(**context):
+    value = (context["dag_run"].conf or {}).get("reprocess_only", False)
+    if not isinstance(value, bool):
+        raise ValueError("reprocess_only must be a JSON boolean")
+    return "silver_usage" if value else "bronze_usage"
+
+
+def spark_command(script, arguments=""):
+    return (f'set -euo pipefail\ncd "{PROJECT_DIR}"\n'
+            f'export PYTHONPATH="{PROJECT_DIR}:'
+            '${PYTHONPATH:-}"\n'
+            f'{SPARK_SUBMIT} "{PROJECT_DIR}/{script}" {arguments}\n')
+
+
+DATE_ENV = {key.upper(): "{{ ti.xcom_pull(task_ids='compute_dates')['" + key + "'] }}"
+            for key in ["target_ymd", "usage_ymd", "arrival_ymd"]}
+AS_OF_ENV = {"AS_OF": "{{ data_interval_end.in_timezone('Asia/Seoul').strftime('%Y-%m-%d %H:%M:%S') }}"}
