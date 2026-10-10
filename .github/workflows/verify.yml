@@ -44,3 +44,32 @@ jobs:
       - run: pip install apache-airflow==2.7.3 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
       - run: pip install pytest==8.4.2
       - run: pytest -q tests/test_dags.py
+  airflow-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements/dev.txt
+            requirements/runtime.txt
+            requirements/airflow-verification.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -r requirements/dev.txt
+      - run: python -m venv .venv-airflow
+      - run: .venv-airflow/bin/pip install apache-airflow==2.7.3 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
+      - run: .venv-airflow/bin/pip install -r requirements/airflow-verification.txt
+      - run: .venv-airflow/bin/python scripts/airflow_offline.py --output-dir .work/airflow-offline/ci --pipeline-python .venv/bin/python
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-airflow-evidence
+          path: .work/airflow-offline/ci
+          retention-days: 7

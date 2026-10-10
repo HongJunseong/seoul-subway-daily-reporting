@@ -1,0 +1,6 @@
+# Extra read-only report dependencies for the isolated Airflow 2.7.3 environment.
+# Install Airflow with its official constraints first; keep Spark in the pipeline venv.
+numpy==2.4.6
+pandas==2.3.3
+pyarrow==19.0.1
+deltalake==1.1.2
