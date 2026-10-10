@@ -55,3 +55,7 @@ adminuser-role.yaml
 
 
 .venv*/
+
+# Native runtime crash dumps
+core
+core.*
