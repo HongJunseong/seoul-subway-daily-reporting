@@ -11,9 +11,15 @@
 - 환승역 노선 구분, 노선 가중 평균, 분위수 해석, 보고서 기준일.
 - 보고서/context 변조에 대한 manifest 검증 실패.
 - 별도 Airflow 2.7.3 환경의 DagBag import, DAG 의존성, 수동 날짜·branch, 실제 Bash 템플릿 렌더.
+- 로컬 감사 CLI: 월말 반개구간·수집 지터·중복 관측·처리 누락·계층별 날짜/값 불일치·잘못된 키/수치·누락 테이블의 실패 판정.
+- 실제 Delta Silver 커밋 후 예외 주입: 기존 Gold 유지, 저장된 Bronze 재처리, 전체 업무 컬럼 해시 일치.
+- 최신 원천의 음수 값 차단: 기존 Silver/Gold 내용·버전 유지, 올바른 원천 정정 후 복구.
+- 태스크 callback의 정보 제한·실제 시도 번호, 중복/재시도/불완전·충돌 이벤트 집계와 로그 CLI 종료 코드.
 - Ruff correctness 검사, Python 컴파일 검사, Compose 설정 파싱, Secret 셸 구문 검사.
 
 현재 실행 결과의 테스트 수와 명령은 SESSION_HANDOFF에 기록한다. examples/evidence.json은 저장된 합성 데모 실행 결과다. 처리 시간은 소량 로컬 입력의 전체 데모 시간으로, 서비스 SLA나 대용량 성능으로 사용하지 않는다.
+
+[관측·복구 절차](OBSERVABILITY.md)와 [operations 공개 샘플](../examples/operations/README.md)에 이번 실행 증거를 남겼다. 예외 주입은 실제 프로세스 강제 종료·인프라 장애 시험과 구분한다. callback 지표는 도구와 연결을 검증했으며 실제 scheduler 실행의 시간 표본은 아직 없다.
 
 ## 아직 검증하지 않은 범위
 

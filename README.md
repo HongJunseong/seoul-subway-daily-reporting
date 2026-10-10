@@ -40,6 +40,7 @@ v2는 기존 저장 경로와 분리했다. 이전 데이터는 자동 수정하
 | 자정·월말을 넘는 window 누락 | KST 반개구간과 필요한 시간 파티션 계산 | 1월 31일~2월 1일 관측 6건·유효 ETA 5건 |
 | 결측 ETA가 0초로 계산 | NULL 보존, 전체 관측과 유효 표본 분리 | 평균·비율의 유효 표본 분모 확인 |
 | 역명 조인으로 환승역 수치가 중복 | 출처별 요약 분리, 도착 역·노선 ID 유지 | 환승역의 서로 다른 노선 결과 보존 |
+| 처리 중단 시 Silver/Gold의 결과 불일치 | 원본 재처리·품질 gate | Silver 커밋 후 중단 → 기존 Gold 유지 → 정정 값 680 복구 |
 | 알림 소비자에 불필요한 Kafka 의존 | Airflow 직접 연결·선택적 webhook | 알림 실패와 보고서 트리거의 의존성 분리 |
 
 위 수치는 **합성 fixture의 회귀 실험 결과**이며 서울 실제 이용량이나 처리량 벤치마크가 아니다. [샘플 리포트](examples/subway_report_20260201.md), [실험 기록](examples/evidence.json), [검증 코드](tests/test_pipeline_spark.py)를 함께 확인할 수 있다.
@@ -60,6 +61,16 @@ ruff check src dags scripts tests
 
 데모는 비어 있는 출력 디렉터리만 허용한다. 최초 실행 시 Maven에서 Delta JAR을 받지만 데이터 입력은 저장된 fixture만 사용한다.
 
+## 품질 감사와 복구 실험
+
+기술 구성에서 끝내지 않고 실패·복구·결과 검증을 재현한다. 실제 로컬 Delta 커밋 후 예외를 주입해 기존 Gold 보존, 원본 재처리, 잘못된 원천 값 차단을 확인한다.
+
+```bash
+python scripts/recovery_experiment.py --output-dir .work/recovery/my-run
+```
+
+[복구 실험 결과](examples/operations/recovery.md)에는 단계별 합계·Delta 버전과 측정 범위를, [품질 감사 결과](examples/operations/quality.md)에는 누락 시간 구간·ETA 표본·원본/처리 차이·파일 수를 남겼다. 모두 합성 데이터의 실제 로컬 실행 결과다. Airflow 태스크 callback은 실행·재시도·대기 로그를 남기며, 운영 측정은 별도로 필요하다. 명령과 지표의 정확한 의미는 [관측·복구 문서](docs/OBSERVABILITY.md)에서 확인한다.
+
 ## 자동화
 
 - `arrival_collect_5m`: 실제 수집 시각으로 원문 저장.
@@ -68,7 +79,7 @@ ruff check src dags scripts tests
 - `gold_daily`: D-1 원본 재처리 → 일간 도착 Gold → 알림과 보고서 각각 실행.
 - `report_daily`: 날짜와 데이터 품질 확인 → 기본 템플릿 보고서 생성. LLM 해설은 선택 기능.
 
-Docker Compose와 Kubernetes 설정을 제공한다. 이번 변경에서 실제로 검증한 범위는 로컬 Spark/Delta 처리, 실제 Airflow DagBag·템플릿 검사, Compose 설정 파싱이다. 컨테이너 빌드·Kubernetes 배포·S3 운영·실제 API의 지속 수집은 별도 검증 대상이다. GitHub Actions는 두 환경의 검증과 합성 데모를 실행하도록 정의했다.
+Docker Compose와 Kubernetes 설정을 제공한다. 이번 변경에서 실제로 검증한 범위는 로컬 Spark/Delta 처리, 실제 Airflow DagBag·템플릿 검사, Compose 설정 파싱이다. 컨테이너 빌드·Kubernetes 배포·S3 운영·실제 API의 지속 수집은 별도 검증 대상이다. GitHub Actions는 두 환경의 검증·합성 데모·예외 주입 복구 실험을 실행하도록 정의했다.
 
 ## 문서와 남은 작업
 

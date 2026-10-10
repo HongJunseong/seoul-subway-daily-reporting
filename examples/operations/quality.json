@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "status": "degraded",
+  "usage_day": "20260128",
+  "window": {
+    "start_kst": "2026-01-31T23:50:00+09:00",
+    "end_kst": "2026-02-01T00:10:00+09:00",
+    "as_of_kst": "2026-02-01T00:20:00+09:00",
+    "stale_after_seconds": 600
+  },
+  "usage": {
+    "bronze": {
+      "rows": 7,
+      "natural_keys": 3,
+      "repeated_key_rows": 4,
+      "exact_repeat_rows": 3,
+      "collection_runs": 3,
+      "keys_with_payload_revisions": 1
+    },
+    "silver": {
+      "rows": 3,
+      "duplicate_key_rows": 0,
+      "invalid_rows": 0,
+      "total_count": 680
+    },
+    "gold": {
+      "rows": 3,
+      "duplicate_key_rows": 0,
+      "invalid_rows": 0,
+      "total_count": 680
+    },
+    "silver_gold_business_match": true
+  },
+  "arrival": {
+    "expected_time_buckets": 4,
+    "cadence_seconds": 300,
+    "missing_bucket_examples": [
+      "2026-02-01T00:05:00+09:00"
+    ],
+    "latest_snapshot_kst": "2026-02-01T00:00:00+09:00",
+    "freshness_seconds": 1200.0,
+    "invalid_snapshot_rows": 0,
+    "bronze_rows": 12,
+    "collection_runs": 6,
+    "observed_snapshots": 3,
+    "observed_time_buckets": 3,
+    "missing_time_buckets": 1,
+    "observed_time_bucket_ratio": 0.75,
+    "missing_examples_truncated": false,
+    "response_at_limit_snapshots": 0,
+    "invalid_silver_snapshot_rows": 0,
+    "unprocessed_snapshot_count": 0,
+    "silver_only_snapshot_count": 0,
+    "invalid_natural_key_rows": 0,
+    "invalid_source_age_rows": 0,
+    "silver_rows": 6,
+    "duplicate_key_rows": 0,
+    "valid_eta_rows": 5,
+    "missing_eta_rows": 1,
+    "missing_eta_ratio": 0.16666666666666666,
+    "invalid_eta_rows": 0,
+    "missing_source_timestamp_rows": 0,
+    "future_source_timestamp_rows": 0,
+    "max_source_age_seconds": 0.0
+  },
+  "sources": {
+    "bronze/subway_usage_delta": {
+      "path": "v2/bronze/subway_usage_delta",
+      "requested_dates": [
+        "20260128"
+      ],
+      "delta_version": 5,
+      "files": {
+        "active_table_files": 9,
+        "active_table_bytes": 36927,
+        "candidate_date_files": 5,
+        "candidate_date_bytes": 20318,
+        "candidate_min_file_bytes": 3905,
+        "candidate_max_file_bytes": 4183
+      },
+      "status": "available",
+      "rows": 7,
+      "read_seconds": 0.123194
+    },
+    "silver/fact_subway_usage_delta": {
+      "path": "v2/silver/fact_subway_usage_delta",
+      "requested_dates": [
+        "20260128"
+      ],
+      "delta_version": 5,
+      "files": {
+        "active_table_files": 2,
+        "active_table_bytes": 7046,
+        "candidate_date_files": 1,
+        "candidate_date_bytes": 3522,
+        "candidate_min_file_bytes": 3522,
+        "candidate_max_file_bytes": 3522
+      },
+      "status": "available",
+      "rows": 3,
+      "read_seconds": 0.012842
+    },
+    "gold/subway_usage/station_daily": {
+      "path": "v2/gold/subway_usage/station_daily",
+      "requested_dates": [
+        "20260128"
+      ],
+      "delta_version": 4,
+      "files": {
+        "active_table_files": 2,
+        "active_table_bytes": 4075,
+        "candidate_date_files": 1,
+        "candidate_date_bytes": 2037,
+        "candidate_min_file_bytes": 2037,
+        "candidate_max_file_bytes": 2037
+      },
+      "status": "available",
+      "rows": 3,
+      "read_seconds": 0.007725
+    },
+    "bronze/subway_arrival_delta": {
+      "path": "v2/bronze/subway_arrival_delta",
+      "requested_dates": [
+        "20260131",
+        "20260201"
+      ],
+      "delta_version": 5,
+      "files": {
+        "active_table_files": 12,
+        "active_table_bytes": 98642,
+        "candidate_date_files": 12,
+        "candidate_date_bytes": 98642,
+        "candidate_min_file_bytes": 8194,
+        "candidate_max_file_bytes": 8230
+      },
+      "status": "available",
+      "rows": 12,
+      "read_seconds": 0.028463
+    },
+    "silver/fact_subway_arrival_delta": {
+      "path": "v2/silver/fact_subway_arrival_delta",
+      "requested_dates": [
+        "20260131",
+        "20260201"
+      ],
+      "delta_version": 0,
+      "files": {
+        "active_table_files": 2,
+        "active_table_bytes": 11088,
+        "candidate_date_files": 2,
+        "candidate_date_bytes": 11088,
+        "candidate_min_file_bytes": 5460,
+        "candidate_max_file_bytes": 5628
+      },
+      "status": "available",
+      "rows": 6,
+      "read_seconds": 0.013928
+    }
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "arrival_unobserved_time_buckets"
+    },
+    {
+      "severity": "warning",
+      "code": "arrival_stale"
+    }
+  ],
+  "limitations": [
+    "Unobserved buckets are not proof of a failed API request",
+    "Time-bucket coverage is not station/network coverage",
+    "File bytes describe active date candidates, not measured IO cost",
+    "No task duration or pool wait inferred from Delta timestamps"
+  ],
+  "data_kind": "synthetic"
+}

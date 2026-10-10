@@ -24,6 +24,9 @@
 - [x] 키 없는 합성 데이터 end-to-end 데모
 - [x] 결정적 보고서·입력 context·publication hash
 - [x] 의미 있는 회귀 테스트와 CI 정의
+- [x] 로컬 Delta 품질·시간 구간·처리 누락·파일 감사 CLI
+- [x] 실제 Delta 커밋 후 예외 주입·품질 실패·원본 재처리 복구 실험
+- [x] Airflow lifecycle 로그와 시도별 실행·executor 대기 집계
 - [ ] 실제 수집 데이터의 결측·건수·커버리지 baseline 수립
 - [ ] 배포 환경에서 수집 신선도·실행 시간·복구 시간 측정
 - Phase 3의 실운영 항목은 live 서비스 검증 증거가 있어야 완료한다.
