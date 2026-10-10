@@ -1,5 +1,10 @@
 # --- Python / build caches ---
 __pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.work/
 
 # --- Artifacts / models / reports ---
 artifacts/**
@@ -20,6 +25,8 @@ chrome_debug.log
 
 # --- environments ---
 .env
+.env.*
+!.env.example
 
 # --- parquet files ---
 *.parquet
@@ -45,3 +52,6 @@ minikube-linux-amd64
 # --- k8s dashboard UI ---
 adminuser.yaml
 adminuser-role.yaml
+
+
+.venv*/

@@ -1,117 +1,83 @@
-# src/processing/build_fact_subway_arrival_spark.py (Silver)
-
+"""Replay complete snapshot hours from the Bronze Delta transaction log."""
 from __future__ import annotations
-
-import os
-import sys
-from pathlib import Path
+import argparse
+from datetime import datetime, timedelta
 from pyspark.sql import functions as F
+from pyspark.sql.window import Window
+from src.common.dates import parse_as_of, window_bounds, hour_starts, validate_ymd
+from src.common.storage import table_path
+from src.jobs.spark_common import build_spark
+from src.quality.checks import require_nonempty, reject_rows, require_unique
 
-from src.jobs.spark_common import build_spark, get_bucket, s3a
-from src.common.s3_latest import find_latest_parquet_key, parse_partition_from_key
-
-BRONZE_PREFIX = "bronze/subway_arrival_delta/"
-SILVER_PREFIX = "silver/fact_subway_arrival_delta/"
+BRONZE_PREFIX = "bronze/subway_arrival_delta"
+SILVER_PREFIX = "silver/fact_subway_arrival_delta"
+KEYS = ["snapshot_ts", "line_id", "station_id", "updn_line", "train_no", "dest_station_id"]
 
 
-def _parse_recptn_dt(col):
-    """
-    recptnDt 포맷이 환경마다 달라서(공공 API가 종종 그럼) 안전하게 여러 포맷을 시도.
-    아래 3개는 실무에서 가장 흔한 형태.
-    """
-    return F.coalesce(
-        F.to_timestamp(col, "yyyy-MM-dd HH:mm:ss"),
-        F.to_timestamp(col, "yyyy-MM-dd'T'HH:mm:ss"),
-        F.to_timestamp(col, "yyyyMMddHHmmss"),
-    )
+def transform_arrival(df):
+    require_nonempty(df, "arrival Bronze")
+    mapping = {"statnId": ("station_id", "long"), "statnNm": ("station_name", "string"),
+               "subwayId": ("line_id", "long"), "updnLine": ("updn_line", "string"),
+               "btrainNo": ("train_no", "string"), "bstatnId": ("dest_station_id", "long"),
+               "bstatnNm": ("dest_station_name", "string"), "btrainSttus": ("train_status", "string"),
+               "arvlCd": ("arrival_status_code", "long"), "arvlMsg2": ("arrival_msg_primary", "string")}
+    out = df
+    for source, (target, dtype) in mapping.items():
+        out = out.withColumn(target, F.col(source).cast(dtype))
+    out = (out.withColumn("recptn_dt", F.to_timestamp("recptnDt"))
+           .withColumn("event_time", F.coalesce("recptn_dt", "snapshot_ts"))
+           .withColumn("arrival_seconds_raw", F.col("barvlDt").cast("long"))
+           .withColumn("arrival_seconds", F.when(F.col("barvlDt").rlike("^[0-9]+$") & (F.col("arrival_seconds_raw") >= 0),
+                                                F.col("arrival_seconds_raw")))
+           .withColumn("is_last_train", F.col("lstcarAt") == "1")
+           .withColumn("source_age_sec", F.unix_timestamp("snapshot_ts") - F.unix_timestamp("event_time")))
+    reject_rows(out, F.col("snapshot_ts").isNull() | F.col("station_id").isNull() |
+                F.col("line_id").isNull() | F.col("station_name").isNull() |
+                (F.trim("station_name") == "") | F.col("updn_line").isNull() |
+                F.col("train_no").isNull(), "arrival natural keys")
+    order = Window.partitionBy(*KEYS).orderBy(F.col("ingested_at").desc(), F.col("record_hash").desc())
+    out = (out.withColumn("_revision", F.row_number().over(order)).where("_revision = 1")
+           .select("snapshot_ts", "recptn_dt", "event_time", "station_id", "station_name", "line_id",
+                   "updn_line", "train_no", "dest_station_id", "dest_station_name", "train_status",
+                   "arrival_seconds", "arrival_status_code", "arrival_msg_primary", "is_last_train",
+                   "source_age_sec", "record_hash", "ingested_at", "year", "month", "day", "hour"))
+    require_unique(out, KEYS, "arrival Silver")
+    return out
+
+
+def partition_predicate(hours):
+    return " OR ".join(
+        f"(year='{h:%Y}' AND month='{h:%m}' AND day='{h:%d}' AND hour='{h:%H}')"
+        for h in hours)
+
+
+def build_arrival_silver(spark, as_of=None, *, day=None):
+    if day:
+        start = datetime.strptime(validate_ymd(day), "%Y%m%d")
+        end = start + timedelta(days=1)
+    else:
+        start, end = window_bounds(as_of)
+    hours = hour_starts(start, end)
+    predicate = partition_predicate(hours)
+    df = spark.read.format("delta").load(table_path(BRONZE_PREFIX)).where(predicate)
+    # Rebuild each selected hour in full; an older replay must not erase later snapshots.
+    fact = transform_arrival(df)
+    (fact.write.format("delta").mode("overwrite").option("replaceWhere", predicate)
+     .partitionBy("year", "month", "day", "hour").save(table_path(SILVER_PREFIX)))
+    return fact
 
 
 def main():
-    bucket = get_bucket()
-    region = os.getenv("AWS_REGION")
-
-    latest_key = find_latest_parquet_key(bucket, BRONZE_PREFIX, region=region)
-    if not latest_key:
-        raise RuntimeError(f"No parquet found under s3://{bucket}/{BRONZE_PREFIX}")
-
-    y, m, d, h = parse_partition_from_key(latest_key, has_hour=True)
-    yi, mi, di, hi = int(y), int(m), int(d), int(h)
-
-    # prefix 만들 때는 2자리로 통일 추천
-    in_prefix = f"{BRONZE_PREFIX}year={yi}/month={mi:02d}/day={di:02d}/hour={hi:02d}/"
-    in_path = s3a(bucket, in_prefix)
-    out_path = s3a(bucket, SILVER_PREFIX)
-
-    print(f"[DEBUG] latest_key={latest_key}")
-    print(f"[DEBUG] in_path(prefix)={in_path}")
-    print(f"[DEBUG] out_path(table_root)={out_path}")
-
-    spark = build_spark(f"ssdr_fact_arrival_{yi}{mi:02d}{di:02d}_{hi:02d}")
-    spark.sparkContext.setLogLevel("WARN")
-
-    df = spark.read.parquet(in_path)
-
-    # snapshot_ts도 포맷이 애매하면 여러 포맷 시도 가능하지만,
-    # 일단 기본 cast + fallback(파케에 이미 timestamp면 그냥 통과)
-    snapshot_ts = F.col("snapshot_ts").cast("timestamp")
-    recptn_dt = _parse_recptn_dt(F.col("recptnDt"))
-
-    fact = (
-        df
-        .withColumn("snapshot_ts", snapshot_ts)
-        .withColumn("recptn_dt", recptn_dt)
-        # event_time은 무조건 timestamp가 되게 보장
-        .withColumn("event_time", F.coalesce(F.col("recptn_dt"), F.col("snapshot_ts")).cast("timestamp"))
-
-        .withColumn("station_id", F.col("statnId").cast("long"))
-        .withColumn("station_name", F.col("statnNm").cast("string"))
-        .withColumn("line_id", F.col("subwayId").cast("long"))
-        .withColumn("updn_line", F.col("updnLine").cast("string"))
-        .withColumn("train_line_name", F.col("trainLineNm").cast("string"))
-        .withColumn("prev_station_id", F.col("statnFid").cast("long"))
-        .withColumn("next_station_id", F.col("statnTid").cast("long"))
-        .withColumn("dest_station_id", F.col("bstatnId").cast("long"))
-        .withColumn("dest_station_name", F.col("bstatnNm").cast("string"))
-        .withColumn("train_no", F.col("btrainNo").cast("string"))
-        .withColumn("train_status", F.col("btrainSttus").cast("string"))
-        .withColumn("arrival_seconds", F.col("barvlDt").cast("long"))
-        .withColumn("arrival_status_code", F.col("arvlCd").cast("long"))
-        .withColumn("arrival_msg_primary", F.col("arvlMsg2").cast("string"))
-        .withColumn("arrival_msg_secondary", F.col("arvlMsg3").cast("string"))
-        .withColumn(
-            "is_last_train",
-            F.when(F.col("lstcarAt").cast("string") == F.lit("1"), F.lit(True))
-             .when(F.col("lstcarAt").cast("string") == F.lit("0"), F.lit(False))
-             .otherwise(F.lit(None).cast("boolean"))
-        )
-        .withColumn("year", F.lit(yi))
-        .withColumn("month", F.lit(mi))
-        .withColumn("day", F.lit(di))
-        .withColumn("hour", F.lit(hi))
-        .select(
-            "snapshot_ts","recptn_dt","event_time",
-            "station_id","station_name","line_id","updn_line","train_line_name",
-            "prev_station_id","next_station_id","dest_station_id","dest_station_name",
-            "train_no","train_status",
-            "arrival_seconds","arrival_status_code","arrival_msg_primary","arrival_msg_secondary",
-            "is_last_train",
-            "year","month","day","hour",
-        )
-    )
-
-    (
-        fact.write
-            .format("delta")
-            .mode("overwrite")
-            .option("replaceWhere", f"year={yi} AND month={mi} AND day={di} AND hour={hi}")
-            .partitionBy("year", "month", "day", "hour")
-            .save(out_path)
-    )
-
-    print(f"[OK] read bronze hour prefix: s3://{bucket}/{in_prefix}")
-    print(f"[OK] wrote silver delta (replaceWhere): s3://{bucket}/{SILVER_PREFIX} (year={yi}, month={mi}, day={di}, hour={hi})")
-
-    spark.stop()
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--as_of", type=parse_as_of)
+    group.add_argument("--day", type=validate_ymd)
+    args = parser.parse_args()
+    spark = build_spark("arrival-silver")
+    try:
+        print(f"[OK] arrival Silver rows={build_arrival_silver(spark, args.as_of, day=args.day).count()}")
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":

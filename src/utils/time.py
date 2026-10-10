@@ -1,6 +1,3 @@
-# src/utils/time.py
-from datetime import datetime
-import pendulum
+from src.common.dates import now_kst
 
-def now_kst() -> datetime:
-    return pendulum.now("Asia/Seoul").naive()
+__all__ = ["now_kst"]

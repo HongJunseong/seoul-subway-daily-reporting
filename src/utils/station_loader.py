@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 # usage용 SILVER_DIR, BRONZE_DIR은 이 파일에선 안 써도 되긴 하지만
 # 나중에 dim_station/dim_line 만들 때 쓸 수 있으니 남겨둬도 무방
-from src.configs.settings import SILVER_DIR, BRONZE_DIR  # 필요 없으면 삭제해도 됨
+
 
 # 📌 서울시 실시간 도착 역정보 엑셀(공식 기준)
 #    파일 위치: <프로젝트 루트>/data/reference/실시간도착_역정보(20251103).xlsx

@@ -1,127 +1,57 @@
-# src/processing/build_gold_arrival_metrics_15m_spark.py (Gold)
-
+"""15-minute observation metrics, using all intersecting snapshot partitions."""
 from __future__ import annotations
-
-import sys
-from pathlib import Path
-from datetime import datetime, timedelta
 import argparse
-
 from pyspark.sql import functions as F
-import pendulum
+from src.common.dates import parse_as_of, window_bounds, hour_starts
+from src.common.storage import table_path
+from src.jobs.spark_common import build_spark
+from src.processing.build_fact_subway_arrival_spark import partition_predicate
+from src.quality.checks import require_nonempty, DataQualityError
 
-from src.jobs.spark_common import build_spark, get_bucket, s3a
-
-SILVER_PREFIX = "silver/fact_subway_arrival_delta/"
-GOLD_PREFIX   = "gold/arrival_metrics_15m_delta/"
-
-WINDOW_MINUTES = 15
-MIN_N = 20
+SILVER_PREFIX = "silver/fact_subway_arrival_delta"
+GOLD_PREFIX = "gold/arrival_metrics_15m_delta"
 
 
-def _floor_to_5min(ts: datetime) -> datetime:
-    minute = (ts.minute // 5) * 5
-    return ts.replace(minute=minute, second=0, microsecond=0)
+def aggregate_metrics(df, start, end):
+    observations = df.where((F.col("snapshot_ts") >= F.lit(start)) & (F.col("snapshot_ts") < F.lit(end)))
+    require_nonempty(observations, "arrival window")
+    if observations.where(F.col("arrival_seconds").isNotNull()).isEmpty():
+        raise DataQualityError("arrival window has no valid ETA measurements")
+    metrics = (observations.groupBy("station_id", "station_name", "line_id", "updn_line")
+               .agg(F.count("*").alias("n"), F.count("arrival_seconds").alias("valid_eta_n"),
+                    F.countDistinct("snapshot_ts").alias("snapshot_count"),
+                    F.avg("arrival_seconds").alias("avg_eta_sec"),
+                    F.expr("percentile_approx(arrival_seconds, 0.90, 2000)").alias("p90_eta_sec"),
+                    F.avg(F.when(F.col("arrival_seconds").isNotNull(),
+                                 (F.col("arrival_seconds") >= 600).cast("double"))).alias("long_ratio_10m"),
+                    F.max("source_age_sec").alias("max_source_age_sec")))
+    return (metrics.withColumn("window_start_ts", F.lit(start)).withColumn("window_end_ts", F.lit(end))
+            .withColumn("year", F.lit(end.strftime("%Y"))).withColumn("month", F.lit(end.strftime("%m")))
+            .withColumn("day", F.lit(end.strftime("%d"))).withColumn("hour", F.lit(end.strftime("%H")))
+            .withColumn("window_end_ymdhm", F.lit(end.strftime("%Y%m%d%H%M"))))
+
+
+def build_arrival_metrics(spark, as_of):
+    start, end = window_bounds(as_of)
+    df = (spark.read.format("delta").load(table_path(SILVER_PREFIX))
+          .where(partition_predicate(hour_starts(start, end))))
+    metrics = aggregate_metrics(df, start, end)
+    predicate = (f"year='{end:%Y}' AND month='{end:%m}' AND day='{end:%d}' "
+                 f"AND hour='{end:%H}' AND window_end_ymdhm='{end:%Y%m%d%H%M}'")
+    (metrics.write.format("delta").mode("overwrite").option("replaceWhere", predicate)
+     .partitionBy("year", "month", "day", "hour", "window_end_ymdhm").save(table_path(GOLD_PREFIX)))
+    return metrics
 
 
 def main():
     parser = argparse.ArgumentParser()
-    # Airflow에서 data_interval_end 넘길 거야. 없으면 fallback으로 KST now 사용.
-    parser.add_argument("--as_of", type=str, default=None, help="KST 기준 'YYYY-MM-DD HH:MM:SS'")
+    parser.add_argument("--as_of", required=True, type=parse_as_of)
     args = parser.parse_args()
-
-    bucket = get_bucket()
-
-    if args.as_of:
-        # KST naive datetime
-        now = datetime.strptime(args.as_of, "%Y-%m-%d %H:%M:%S")
-    else:
-        now = pendulum.now("Asia/Seoul").naive()
-
-    window_end = _floor_to_5min(now)
-    window_start = window_end - timedelta(minutes=WINDOW_MINUTES)
-
-    # 파티션 키
-    yi, mi, di, hi = window_end.year, window_end.month, window_end.day, window_end.hour
-
-    # Silver는 해당 hour 파티션만 로드 (정확 + 빠름)
-    silver_hour_prefix = f"{SILVER_PREFIX}year={yi}/month={mi:02d}/day={di:02d}/hour={hi:02d}/"
-    silver_hour_path = s3a(bucket, silver_hour_prefix)
-
-    gold_path = s3a(bucket, GOLD_PREFIX)
-
-    print(f"[DEBUG] as_of={args.as_of} now={now}")
-    print(f"[DEBUG] window_start={window_start} window_end={window_end}")
-    print(f"[DEBUG] silver_hour_path={silver_hour_path}")
-    print(f"[DEBUG] gold_path={gold_path}")
-
-    spark = build_spark(f"ssdr_gold_arrival_15m_{window_end.strftime('%Y%m%d_%H%M')}")
-    spark.sparkContext.setLogLevel("WARN")
-
-    df = spark.read.format("delta").load(silver_hour_path)
-
-    # window 비교는 문자열 → timestamp로 확정
-    ws_str = window_start.strftime("%Y-%m-%d %H:%M:%S")
-    we_str = window_end.strftime("%Y-%m-%d %H:%M:%S")
-    ws = F.to_timestamp(F.lit(ws_str), "yyyy-MM-dd HH:mm:ss")
-    we = F.to_timestamp(F.lit(we_str), "yyyy-MM-dd HH:mm:ss")
-
-    df2 = (
-        df
-        .withColumn("event_ts", F.coalesce(F.col("event_time"), F.col("snapshot_ts")).cast("timestamp"))
-        .filter((F.col("event_ts") >= ws) & (F.col("event_ts") < we))
-    )
-
-    # window에 데이터가 없으면 write 스킵
-    if df2.rdd.isEmpty():
-        print("[WARN] rows_in_window=0 -> skip gold write")
+    spark = build_spark("arrival-gold-15m")
+    try:
+        print(f"[OK] arrival metrics groups={build_arrival_metrics(spark, args.as_of).count()}")
+    finally:
         spark.stop()
-        return
-
-    metrics = (
-        df2
-        .groupBy("station_id", "station_name", "line_id", "updn_line")
-        .agg(
-            F.count(F.lit(1)).alias("n"),
-            F.avg(F.col("arrival_seconds").cast("double")).alias("avg_eta_sec"),
-            F.expr("percentile_approx(arrival_seconds, 0.90, 2000)").cast("long").alias("p90_eta_sec"),
-            F.avg(F.when(F.col("arrival_seconds") >= F.lit(600), F.lit(1.0)).otherwise(F.lit(0.0))).alias("long_ratio_10m"),
-            F.max(F.when(F.col("is_last_train") == F.lit(True), F.lit(1)).otherwise(F.lit(0))).alias("last_train_seen_int"),
-        )
-        .withColumn("last_train_seen", (F.col("last_train_seen_int") == F.lit(1)).cast("boolean"))
-        .drop("last_train_seen_int")
-    )
-
-    out = (
-        metrics
-        .withColumn("window_start_ts", F.to_timestamp(F.lit(ws_str), "yyyy-MM-dd HH:mm:ss"))
-        .withColumn("window_end_ts",   F.to_timestamp(F.lit(we_str), "yyyy-MM-dd HH:mm:ss"))
-        .withColumn("window_minutes",  F.lit(WINDOW_MINUTES))
-        .withColumn("min_n",           F.lit(MIN_N))
-        .withColumn("year",  F.lit(yi))
-        .withColumn("month", F.lit(mi))
-        .withColumn("day",   F.lit(di))
-        .withColumn("hour",  F.lit(hi))
-        .withColumn("window_end_ymdhm", F.lit(window_end.strftime("%Y%m%d%H%M")).cast("string"))
-    )
-
-    (
-        out.write
-           .format("delta")
-           .mode("overwrite")
-           .option(
-               "replaceWhere",
-               f"year={yi} AND month={mi} AND day={di} AND hour={hi} AND window_end_ymdhm='{window_end.strftime('%Y%m%d%H%M')}'"
-           )
-           .partitionBy("year", "month", "day", "hour", "window_end_ymdhm")
-           .save(gold_path)
-    )
-
-    total_groups = out.count()
-    print(f"[OK] wrote gold groups={total_groups} -> s3://{bucket}/{GOLD_PREFIX}")
-    print(f"[OK] partition: year={yi}, month={mi}, day={di}, hour={hi}, window_end_ymdhm={window_end.strftime('%Y%m%d%H%M')}")
-
-    spark.stop()
 
 
 if __name__ == "__main__":

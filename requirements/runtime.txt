@@ -1,0 +1,11 @@
+numpy==2.4.6
+pandas==2.3.3
+pyarrow==19.0.1
+requests==2.34.2
+boto3==1.43.111
+pyspark==3.5.7
+delta-spark==3.2.0
+deltalake==1.1.2
+python-dotenv==1.2.4
+pendulum==2.1.2
+PyYAML==6.0.3
