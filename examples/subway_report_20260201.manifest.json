@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "report_mode": "template",
+  "context_sha256": "70cf23812e5c34cf0d0ce9448292a3b3e707a3198e0ea31a63554e8d2a0d5b89",
+  "report_sha256": "71dc14177d08b8efa7141e76071c3aff5840ccc023a6d7a1db4fe442dd722e03",
+  "target_ymd": "20260201",
+  "usage_ymd": "20260128",
+  "arrival_ymd": "20260131"
+}

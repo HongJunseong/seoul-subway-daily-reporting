@@ -1,218 +1,77 @@
 # Seoul Subway Daily Reporting
 
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.7.3-017CEE)
-![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-Event--Driven-231F20)
-![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5.7-red)
-![AWS S3](https://img.shields.io/badge/AWS-S3-FF9900)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-LLM%20API-412991)
+서울 지하철 공공 API에서 **지연되어 제공되는 승하차 데이터와 주기적으로 관측한 도착 ETA를 수집하고, 재실행 가능한 분석 테이블과 근거가 남는 일간 리포트를 만든다.**
 
-> End-to-end data platform for collecting, processing, and daily reporting of Seoul subway operations using AWS, Spark, Delta Lake, Kafka, Airflow, and LLM — deployed on Kubernetes.
+이 프로젝트의 중심 문제는 서로 다른 시간 기준과 원천의 제약을 가진 데이터를 정확하게 처리하는 것이다. 승하차 데이터는 보고서 생산일 D-4, 도착 관측은 D-1을 사용한다. 도착 API를 5분마다 호출하는 구조이며 연속 이벤트 스트림은 아니다. ETA를 실제 승객 대기시간이나 시간표 대비 지연으로 해석하지 않는다.
 
----
+## 설계
 
-## Project Overview
+```mermaid
+flowchart LR
+  U[일간 승하차 API] --> UB[Bronze: 원문·수집 이력]
+  A[5분 도착 API 수집] --> AB[Bronze: 실제 관측 시각]
+  UB --> US[Silver: 자연키별 최신 정정]
+  AB --> AS[Silver: 관측 중복 제거]
+  US --> UG[Gold: 역·노선 이용량]
+  AS --> AG[Gold: 15분·일간 ETA 통계]
+  UG --> R[검증된 context]
+  AG --> R
+  R --> MD[Markdown + context + 해시 manifest]
+  AG --> N[선택적 Discord 알림]
+```
 
-본 프로젝트는 **서울 지하철 운영 데이터를 수집 → 정제 → 분석 → 리포트 자동 생성**까지
-전 과정을 아우르는 **End-to-End 데이터 플랫폼**을 구축하는 것을 목표로 합니다.
+Airflow가 실행 날짜와 의존성을 관리하고 Spark/Delta Lake가 저장·변환을 담당한다. S3 저장을 지원하며, 로컬 파일 시스템에서도 같은 변환을 검증한다. Kafka는 현재 알림 전달만을 위한 추가 운영 비용이므로 제거했다. 선택 근거는 [ADR](docs/adr/001-batch-first.md)에 남겼다.
 
-서울 열린데이터의 지하철 승하차(Usage) 및 도착(Arrival) API 기반의 지하철 데이터를 대상으로 다음을 구현했습니다.
+| 계층 | 책임 | 재실행 정책 |
+|---|---|---|
+| Bronze Delta | 원문, record hash, run ID, 수집 시각 보존 | append; 재수집 이력 보존 |
+| Silver Delta | 타입·키 검증, 최신 정정 및 관측 중복 처리 | 해당 날짜/시간 파티션 교체 |
+| Gold Delta | 이용량, 유효 ETA 표본 기반 집계 | 날짜/15분 window 교체 |
+| Report | 수치·기준일·입력 Delta 버전 기록 | 같은 입력은 같은 템플릿 결과, manifest 해시 검증 |
 
-- Spark 기반 Batch 데이터 파이프라인
-- Delta Lake 기반 Medallion Architecture
-  - Bronze / Silver / Gold 계층 기반 데이터 관리
-  - 재집계 및 장애 복구를 고려한 안정적인 데이터 구조
-- Apache Airflow 기반 워크플로우 오케스트레이션
-- Kafka 이벤트 기반 알림 구조
-- LLM을 활용한 일간 분석 리포트 자동 생성
-- Kubernetes 기반 인프라 배포 (Helm, KubernetesExecutor, Strimzi Kafka)
+v2는 기존 저장 경로와 분리했다. 이전 데이터는 자동 수정하지 않는다. 여러 테이블을 묶는 트랜잭션은 없으며, Delta의 원자적 커밋은 테이블별로 적용된다.
 
----
+## 개선과 검증 근거
 
-## System Architecture
-전체 시스템 구조는 다음과 같습니다.
+| 문제 | 개선 | 재현 증거 |
+|---|---|---|
+| 같은 날짜를 재수집하면 합계가 증가 | 날짜·노선·역 자연키별 최신 정정 선택 | 3행을 두 번 저장해도 Silver 3행·합계 660 유지 |
+| 원천 정정이 집계에 반영되어야 함 | REG_YMD·수집 시각으로 최신 버전 선택 | 정정 후 660 → 680, 다른 날짜 합계 보존 |
+| 자정·월말을 넘는 window 누락 | KST 반개구간과 필요한 시간 파티션 계산 | 1월 31일~2월 1일 관측 6건·유효 ETA 5건 |
+| 결측 ETA가 0초로 계산 | NULL 보존, 전체 관측과 유효 표본 분리 | 평균·비율의 유효 표본 분모 확인 |
+| 역명 조인으로 환승역 수치가 중복 | 출처별 요약 분리, 도착 역·노선 ID 유지 | 환승역의 서로 다른 노선 결과 보존 |
+| 알림 소비자에 불필요한 Kafka 의존 | Airflow 직접 연결·선택적 webhook | 알림 실패와 보고서 트리거의 의존성 분리 |
 
-<img width="600" height="380" alt="image" src="https://github.com/user-attachments/assets/4d173ece-bed6-4e2f-8043-9471ba9a7fa4" />
+위 수치는 **합성 fixture의 회귀 실험 결과**이며 서울 실제 이용량이나 처리량 벤치마크가 아니다. [샘플 리포트](examples/subway_report_20260201.md), [실험 기록](examples/evidence.json), [검증 코드](tests/test_pipeline_spark.py)를 함께 확인할 수 있다.
 
----
+## 키 없이 실행
 
-## Data Layer Design (Bronze / Silver / Gold)
-
-| Layer | Description |
-|------|------------|
-| **Bronze** | 원천 API 데이터를 가공 없이 저장 (Raw JSON / Delta) |
-| **Silver** | 결측치 제거, 타입 정합성 보정, 시간 기준 통일 |
-| **Gold** | 분석 및 리포트에 최적화된 집계 테이블 (Top Stations 등) |
-
-> Medallion architecture 구조를 참고하여, Bronze / Silver / Gold 계층으로 데이터를 단계적으로 관리하도록 설계했습니다.
-
----
-
-## Data Pipelines
-
-### 1. Ingestion (Bronze)
-- 서울 지하철 Open API 호출 (일 / 시간 단위)
-- 장애 대비 재시도 및 로깅 처리
-- 수집된 Raw 데이터를 **AWS S3 (Bronze Layer)** 에 Delta Format으로 저장
-- 원본 데이터 보존을 통해 재처리 및 데이터 추적 가능 구조 설계
-
-### 2. Processing (Silver / Gold)
-- **Apache Spark** 기반 데이터 처리 (대용량 데이터 집계 및 확장성 고려)
-- AWS S3에 저장된 Bronze 데이터를 읽어 정제 및 집계 수행
-- 결측치 제거, 타입 정합성 보정 등 데이터 품질 관리
-- 처리 결과를 **AWS S3 (Silver / Gold Layer)** 에 저장
-- 날짜 지연(Lag Day)을 고려한 안정적인 집계 로직 구현
-- 역 / 노선 / 시간 단위 분석 테이블 생성
-
-### 3. Orchestration
-- **Apache Airflow**
-  - AWS S3 기반 데이터 파이프라인 전체 오케스트레이션
-  - 수집, 처리, 리포트 생성 DAG 분리
-  - 각 파이프라인의 실행 주기 독립 관리
-  - 실패 시 재시도, 태스크 의존성 및 실행 순서 제어
-
----
-
-## Streaming & Alerting
-
-### Pipeline Event Alert (Kafka + Discord)
-`gold_daily` DAG 완료 시 **Kafka `event.pipeline` 토픽**에 이벤트를 발행하고,
-별도로 실행 중인 Alert Consumer가 이를 수신하여 **Discord 알림을 자동으로 전송**합니다.
-
-> Airflow DAG → Kafka Producer → `event.pipeline` topic → Alert Consumer → Discord Webhook
-
-<img width="550" height="230" alt="image" src="https://github.com/user-attachments/assets/191f0283-e660-4382-bf25-1b44a644f0a2" />
-
-### Operational Delay Alert
-  - 15분 window 단위로 도착 지표를 집계한 Gold 테이블을 읽어, **지하철 운행 지연 징후를 감지**하고 Discord로 경고 알림 전송
-  - 예시 알림 조건 (임계치 기반) :
-    - **10분 이상 지연 비율(long_ratio_10m)** 이 일정 수준 이상일 때
-    - **p90 ETA(90percentile 도착시간)** 이 10분 이상으로 상승할 때
-      > p90 ETA: 90%의 열차가 도착하는 데 걸리는 시간 기준으로, 평균보다 이용자 체감 지연을 잘 반영하는 운영 지표
-    - 표본 수가 너무 적을 때는 알림 스킵
-  - 알림 메시지에는 **지연이 심한 역 TOP-K** 를 함께 포함하여 운영 관점에서 즉시 확인 가능
-
----
-
-## LLM Auto-Reporting
-
-- **LLM 기반 일간 분석 리포트 자동 생성**
-- Gold Layer 집계 결과를 구조화된 Prompt로 변환
-- 단순 수치 나열이 아닌 **해석 중심 요약 리포트** 생성
-- 정형 데이터 → 자연어 인사이트로 변환하는 자동화 흐름 구현
-
-### Report Contents
-- 오늘의 한 줄 요약
-- 가장 혼잡한 역 / 노선
-- 전일 대비 변화 포인트
-- 운영 관점 인사이트
-
----
-
-## Databricks (Free Edition) Validation
-
-Databricks Free Edition 환경에서 Spark + Delta Lake 기반
-Bronze → Silver → Gold 변환 파이프라인을 Notebook으로 재현했습니다.
-
-- Silver: 타입 캐스팅, 컬럼 표준화, 중복 처리, 파생 지표(total_cnt)
-- Gold: 역/노선 단위 집계 테이블 생성
-- Notebooks: `databricks/notebooks/01_usage_bronze_to_silver.py`,
-  `databricks/notebooks/02_usage_silver_to_gold.py`
-
----
-
-## Kubernetes Deployment
-
-전체 파이프라인은 **Kubernetes (Docker Desktop)** 위에서 실행됩니다.
-Helm Chart 기반으로 Airflow를 배포하고, Strimzi Operator로 Kafka 클러스터를 구성했습니다.
-
-| 구성 요소 | 방식 |
-|----------|------|
-| **Airflow** | Apache Airflow 2.7.3, Helm 배포, KubernetesExecutor |
-| **Kafka** | Strimzi Operator (`0.51`), KRaft 모드 |
-| **Alert Consumer** | Kubernetes Deployment (`airflow` namespace) |
-| **DAG 동기화** | git-sync (GitHub → `/opt/airflow/dags`, 자동 Pull) |
-| **src 코드 마운트** | initContainer에서 git clone 후 볼륨 공유 |
-| **Airflow 로그** | PVC (`logs.persistence`) — 태스크 Pod 종료 후에도 로그 유지 |
-| **시크릿 관리** | Kubernetes Secret (`ssdr-secrets`) |
-
-**Namespace**
-- `airflow` : Airflow 구성 요소 전체, Alert Consumer
-- `kafka` : Strimzi Operator, Kafka Cluster
-
----
-
-## Limitations
-
-### API Traffic Limitation
-서울 열린데이터 API는 **일일 호출 트래픽 제한**이 존재하여, 도착 정보(arrival) 데이터는  짧은 주기(현재 5분)로
-**부분적인 실시간 수집**은 가능하지만, 지속적이거나 고빈도의 연속 수집에는 제약이 있습니다.
-
-### Data Availability Delay (Usage Data)
-서울 지하철 승하차 인원(usage) 데이터는 API 특성상 **실시간 또는 당일 데이터가 제공되지 않으며**,
-일반적으로 **3~4일 이전의 데이터만 조회 가능합니다**.
-
-이에 따라 usage 데이터는 arrival 및 position 데이터와 달리 지연된(Lagged) 데이터 기반으로 수집 및 분석됩니다.
-
----
-
-## Future Work
-
-- Delta Lake Time Travel 기반 데이터 검증
-- Athena / Glue Catalog 연계
-- 대시보드(Tableau / Superset) 추가
-- 이상 징후 탐지 기반 운영 알림 고도화
-
----
-
-## Execution Flow
-
-본 프로젝트는 **Kubernetes** 위에서 실행됩니다.
-AWS 자격 증명 및 API Key, Discord Webhook, OpenAI Key 등은 `.env` 파일과 Kubernetes Secret으로 관리됩니다.
-
-### 1. Secret 생성
+Python 3.11, Java 11/17과 Spark 의존성 다운로드를 위한 최초 네트워크 접근이 필요하다. API·AWS·OpenAI·Discord 키는 필요하지 않다.
 
 ```bash
-bash k8s/create-secret.sh
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements/dev.txt
+python scripts/demo.py --output-dir .work/demo/my-run
+python scripts/verify_report.py .work/demo/my-run/reports/subway_report_20260201.md
+pytest -q --ignore=tests/test_dags.py
+ruff check src dags scripts tests
 ```
 
-### 2. Kafka 배포 (Strimzi)
+데모는 비어 있는 출력 디렉터리만 허용한다. 최초 실행 시 Maven에서 Delta JAR을 받지만 데이터 입력은 저장된 fixture만 사용한다.
 
-```bash
-kubectl create namespace kafka
-kubectl apply -f https://strimzi.io/install/latest?namespace=kafka -n kafka
-kubectl apply -f k8s/kafka-cluster.yaml
-```
+## 자동화
 
-### 3. Airflow 배포 (Helm)
+- `arrival_collect_5m`: 실제 수집 시각으로 원문 저장.
+- `pipeline_arrival_5m`: 실행 구간 끝을 기준으로 저장된 Bronze 처리 → 15분 Gold → 선택적 ETA 알림.
+- `usage_daily`: 매일 06:00 KST에 D-4 수집 → Silver → Gold → 일간 도착 처리 트리거. `reprocess_only`로 API 없이 재처리 가능.
+- `gold_daily`: D-1 원본 재처리 → 일간 도착 Gold → 알림과 보고서 각각 실행.
+- `report_daily`: 날짜와 데이터 품질 확인 → 기본 템플릿 보고서 생성. LLM 해설은 선택 기능.
 
-```bash
-helm repo add apache-airflow https://airflow.apache.org && helm repo update
+Docker Compose와 Kubernetes 설정을 제공한다. 이번 변경에서 실제로 검증한 범위는 로컬 Spark/Delta 처리, 실제 Airflow DagBag·템플릿 검사, Compose 설정 파싱이다. 컨테이너 빌드·Kubernetes 배포·S3 운영·실제 API의 지속 수집은 별도 검증 대상이다. GitHub Actions는 두 환경의 검증과 합성 데모를 실행하도록 정의했다.
 
-helm install airflow apache-airflow/airflow \
-  --version 1.11.0 \
-  --namespace airflow \
-  -f k8s/airflow-values.yaml
-```
+## 문서와 남은 작업
 
-### 4. Alert Consumer 배포
+[데이터 계약](docs/DATA_CONTRACTS.md), [실행·복구 runbook](docs/RUNBOOK.md), [프로젝트 맥락](docs/PROJECT_CONTEXT.md), [로드맵](docs/ROADMAP.md), [검증 범위](docs/VALIDATION.md), [작업 인수인계](docs/SESSION_HANDOFF.md)를 관리한다. [AGENTS.md](AGENTS.md)와 저장소의 [커밋 스킬](.agents/skills/write-commit/SKILL.md)은 이후 작업에서도 같은 기준을 유지한다.
 
-```bash
-kubectl apply -f k8s/alert-consumer.yaml
-```
-
-### 5. Airflow Web UI
-
-```
-http://localhost:30080
-```
-
-### 6. DAG 실행 흐름
-
-- **pipeline_arrival_5m** : 도착(arrival) 데이터를 5분 주기로 수집 → 정제 → 15분 window로 지표 집계 → ETA 지연(QA) 기반 Discord 알림
-- **usage_daily** : 일 단위 승하차 인원 데이터를 수집 및 집계하여 분석용 데이터 생성
-- **gold_daily** : Silver 데이터를 기반으로 일간 지표 및 집계 결과를 Gold Layer에 생성 → Kafka 이벤트 발행 → `report_daily` 자동 트리거
-- **report_daily** : Gold Layer 집계 결과를 기반으로 LLM 일간 분석 리포트를 자동 생성
-
-> **로컬 개발 환경**: `docker/docker-compose.yaml` 을 사용해 Docker Compose 기반으로도 실행 가능합니다. (LocalExecutor + bitnami/kafka KRaft)
+다음 평가는 실제 수집 기간의 누락·신선도·응답 상한 도달 빈도, 실패 후 복구 시간, 파일 수·크기에 근거해야 한다. 작은 합성 데이터 실험으로 대규모 처리 성능이나 전체 서울 지하철 커버리지를 주장하지 않는다. Databricks notebook은 이전 학습 기록이며 v2 운영 코드의 검증 근거로 사용하지 않는다.
