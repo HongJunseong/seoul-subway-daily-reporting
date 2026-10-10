@@ -4,7 +4,7 @@ import pendulum
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from common import compute_target_ymd
-from src.alerts.notify_pipeline import notify_failure
+from src.observability.task_events import on_task_start, on_task_success, on_task_failure, on_task_retry
 
 
 def run_generate_report(**context):
@@ -16,7 +16,8 @@ def run_generate_report(**context):
 with DAG(dag_id="report_daily", start_date=pendulum.datetime(2026, 1, 1, tz="Asia/Seoul"),
          schedule=None, catchup=False, max_active_runs=1,
          default_args={"retries": 2, "retry_delay": timedelta(minutes=2),
-                       "on_failure_callback": notify_failure},
+                       "on_execute_callback": on_task_start, "on_success_callback": on_task_success,
+                       "on_retry_callback": on_task_retry, "on_failure_callback": on_task_failure},
          tags=["report", "validated"]) as dag:
     target = PythonOperator(task_id="compute_target_ymd", python_callable=compute_target_ymd)
     report = PythonOperator(task_id="generate_report", python_callable=run_generate_report)

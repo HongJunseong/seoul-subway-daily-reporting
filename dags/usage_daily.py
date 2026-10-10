@@ -6,12 +6,13 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from common import compute_dates, choose_usage_input, spark_command, DATE_ENV, DELTA_WRITE_POOL
-from src.alerts.notify_pipeline import notify_failure
+from src.observability.task_events import on_task_start, on_task_success, on_task_failure, on_task_retry
 
 with DAG(dag_id="usage_daily", start_date=pendulum.datetime(2026, 1, 1, tz="Asia/Seoul"),
          schedule="0 6 * * *", catchup=False, max_active_runs=1,
          default_args={"retries": 2, "retry_delay": timedelta(minutes=2),
-                       "on_failure_callback": notify_failure},
+                       "on_execute_callback": on_task_start, "on_success_callback": on_task_success,
+                       "on_retry_callback": on_task_retry, "on_failure_callback": on_task_failure},
          tags=["batch", "usage", "replay"]) as dag:
     dates = PythonOperator(task_id="compute_dates", python_callable=compute_dates)
     branch = BranchPythonOperator(task_id="choose_input", python_callable=choose_usage_input)

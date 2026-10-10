@@ -65,3 +65,27 @@ def test_spark_writers_share_one_serial_pool(bag):
     assert writers
     assert {task.pool for task in writers} == {"ssdr_delta_writer"}
     assert all(task.pool_slots == 1 for task in writers)
+
+
+def test_all_tasks_record_lifecycle_without_removing_failure_notification(bag):
+    from src.observability.task_events import on_task_start, on_task_success, on_task_failure, on_task_retry
+    for dag in bag.dags.values():
+        for task in dag.tasks:
+            assert task.on_execute_callback is on_task_start
+            assert task.on_success_callback is on_task_success
+            assert task.on_failure_callback is on_task_failure
+            assert task.on_retry_callback is on_task_retry
+
+
+def test_actual_airflow_attempt_number_is_stable_after_failure(bag):
+    from airflow.models import TaskInstance
+    from src.observability.task_events import task_event
+    ti = TaskInstance(task=bag.dags["usage_daily"].get_task("silver_usage"), run_id="metric-test")
+    ti.try_number = 1
+    ti.state = "running"
+    ctx = {"task_instance": ti}
+    assert task_event(ctx, "started")["try_number"] == 1
+    for state in ["failed", "up_for_retry"]:
+        ti.state = state
+        assert ti.try_number == 2
+        assert task_event(ctx, "failed")["try_number"] == 1
