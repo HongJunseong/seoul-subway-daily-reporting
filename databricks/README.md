@@ -67,3 +67,9 @@ python scripts/record_databricks_run.py --profile SSDR_PORTFOLIO \\
 ```
 
 기존 출력은 덮어쓰지 않는다. 개인 인증 파일은 .work 등 ignored 경로에 보관하고 Job ID 외 사용자 이메일·토큰은 공개 증거에 넣지 않는다.
+
+## Free Edition의 품질·SQL 제공 실험
+
+usage_quality Job은 새 ssdr_v2_fixture_quality_* schema에서 잘못된 최신 정정 차단·정상 정정·Delta history/time travel·원본 재처리를 확인하고 SQL view를 만든다. 기존 usage_fixture Job과 테이블은 보존한다. SQL warehouse는 별도의 opt-in 기록 도구로 실제 조회하며 notebook 전체 view 행 및 SQL source 해시와 비교한다.
+
+[Free Edition 재현 절차](../docs/DATABRICKS_FREE.md)와 [실제 결과](../examples/databricks/free-edition.md)를 확인한다. SQL 모델의 품질 실패 날짜는 분석 view에서 제외하고 품질 상태에서 FAIL로 남긴다. 관리형 모니터링이나 enterprise 권한 검증과 구분한다.

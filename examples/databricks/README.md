@@ -16,3 +16,7 @@
 소스 동기화는 src·fixtures·databricks/notebooks 세 디렉터리로 제한한다. 첫 배포의 넓은 glob이 캐시 파일까지 포함한 문제를 고쳤고 해당 bundle 경로의 불필요한 파일을 제거했다. 비밀 파일이 업로드되지 않았음을 확인했다. 기존 workspace.default 테이블과 다른 notebook은 수정하지 않았다.
 
 재현 절차와 managed Delta 쓰기 정책은 [Databricks 문서](../../databricks/README.md), [ADR](../../docs/adr/002-execution-platforms.md)에 있다.
+
+## Free Edition 추가 검증
+
+[품질·변경 감사·SQL 제공](free-edition.md)은 별도의 새 schema를 사용한다. 정상 정정 후 700/660과 과거 680/660, 실제 serverless warehouse 쿼리·Catalog view 메타데이터를 검증했다. [새 공개 JSON](free-edition-evidence.json)을 기존 680/660 replay 증거와 분리해 보존한다.

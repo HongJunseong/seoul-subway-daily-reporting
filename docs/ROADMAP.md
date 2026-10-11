@@ -56,3 +56,15 @@
 - [ ] 유지보수 중인 Airflow/chart/provider 조합과 운영 metadata DB 검증
 
 Databricks 성공은 합성 승하차 fixture, Kubernetes 성공은 단일 node 합성 lake를 대상으로 한다. 실수집·S3·실시간 관측·대규모 성능의 증거로 확대하지 않는다.
+
+## Phase 6 — Free Edition의 관리형 처리와 SQL 제공
+
+- [x] 새 전용 합성 schema에서 잘못된 최신 정정의 Silver 출판 차단과 기존 버전 보존
+- [x] 정상 정정 후 목표 날짜만 변경·인접 날짜 보존·원본 재처리 해시 일치
+- [x] Delta history/time travel로 이전 출판의 값·전체 해시 확인
+- [x] Unity Catalog SQL view·COMMENT·품질 PASS 분석 제공 계약
+- [x] 같은 합계의 역 identity 오류·누락 Gold 날짜가 SQL 분석에 출판되지 않는 실제 로컬 회귀
+- [x] 기존 serverless SQL warehouse의 실제 네 쿼리와 notebook 결과 일치
+- [ ] 실수집 입력·운영 기간·운영 부담/비용 비교를 통해 주 변환 경로 채택 여부 판단
+
+운영 기술은 문제·대안·검증·도입 비용을 기준으로 선택한다. 실제 실행 성공과 도입 필요성을 구분한다. AWS 운영 후보와 Free Edition의 자동 통합은 아직 구현·검증하지 않았다.

@@ -83,6 +83,14 @@ DAG 구조 검사에 더해 저장된 합성 Bronze에서 `usage_daily → gold_
 
 **Databricks Free Edition에서 serverless Job의 네 태스크를 실제로 실행해 모두 SUCCESS를 확인했다.** 정정 후 680·인접 날짜 660 유지, 원본 불변, 재처리 결과의 모든 업무 컬럼 해시가 로컬 Spark 실행과 일치했다. [실행 증거](examples/databricks/README.md)에는 Job/Run ID와 197.11초의 측정 범위를 담았다. [재현 절차](databricks/README.md)는 공식 CLI 인증과 bundle 배포를 사용한다.
 
+### Free Edition에서 확인한 Databricks 경험
+
+관리형 Spark 실행에 더해 **불량 최신 정정의 출판 차단·Delta 과거 버전 비교·Unity Catalog SQL view·serverless SQL warehouse 조회**를 실제로 확인했다. 정상 정정 후 목표 날짜만 680→700으로 바뀌고 인접 날짜 660은 유지됐으며, 과거 버전 680과 동일 원본 재처리 해시도 검증했다.
+
+품질 상태가 PASS인 날짜만 분석 view에서 제공한다. 실제 warehouse의 날짜별 이용량·역/노선 순위·품질 상태·Catalog 메타데이터 네 쿼리가 성공했고 notebook의 전체 view 행과 일치했다. [실행 결과](examples/databricks/free-edition.md)와 [기능 선택·재현 절차](docs/DATABRICKS_FREE.md)에 근거를 남겼다. 현재 운영 경로에 Databricks가 필수라는 주장과 구분한 관리형 실행·SQL 제공 실험이다.
+
+### Kubernetes 실행과 복구
+
 KubernetesExecutor를 Docker Desktop의 실제 클러스터에서 실행했다. **태스크 12개 성공, 실행 중인 Gold worker 삭제 후 다른 Pod 재시도 성공, 삭제된 worker 로그 13개 보존**을 확인했다. 같은 Bronze 재실행에서도 Delta 테이블 7개의 전체 데이터 해시와 원본 버전이 유지됐다. control·spark·report 자원 프로필, namespace 권한, lake/log PVC와 writer pool 1 slot을 사용한다. [실행 증거](examples/kubernetes/README.md)와 [재현 절차](docs/KUBERNETES.md)를 제공한다. Spark는 태스크 Pod 내부 local[2]다.
 
 실제 Docker 이미지 빌드와 컨테이너 안의 태스크 12개·보고서 해시 검증도 통과했다. [컨테이너 실행 증거](examples/container/README.md)는 순차 태스크 실행과 클러스터 scheduler 검증의 차이를 명시한다.

@@ -215,3 +215,29 @@ write-commit 스킬에 따라 기능별 로컬 커밋을 진행한다. 브랜치
 fixture 릴리스와 PVC는 추가 확인을 위해 보존했고 모든 시간 기반 schedule은 None이다. 기존 사용자 데이터·Secret·.env·Git 저자를 보존했다. write-commit 스킬로 목적별 로컬 커밋을 기록하며 push하지 않는다.
 
 최종 로컬 구현 커밋: 29b7080(Databricks managed Delta), a3b17f6(Kubernetes 자원·실제 복구·재처리 검사), ff17b97(CI). 문서와 공개 실행 증거는 다음 docs(portfolio) 커밋에 기록한다.
+
+## 2026-10-11 Free Edition — 품질 차단·변경 감사·SQL 제공
+
+사용자는 기술을 무분별하게 넣지 않고 Free Edition으로 Databricks 경험을 실제로 설명할 수 있게 고도화하도록 요청했다. 기존 OAuth profile과 serverless 2X-Small warehouse를 사용했고 유료 설정·AWS·서울 API·Discord·LLM 호출·push는 하지 않았다.
+
+### 구현과 실제 결과
+
+- usage_portfolio는 공통 managed_usage 변환을 호출한다. 새 schema workspace.ssdr_v2_fixture_quality_20261011_a를 만들고 기존 실험 테이블이 있으면 중단한다. 실패 데이터를 reset하거나 기존 schema를 덮어쓰지 않는다.
+- 음수 최신 정정이 Silver 출판에서 차단되고 기존 Silver/Gold 전체 업무 해시·버전이 유지됐다. 정상 정정 후 700/660, time travel의 과거 680/660·역 Gold 이전 해시, 최신 원본 재처리의 전체 해시·Bronze 버전 불변을 확인했다.
+- 실제 quality Job 1083946371422567, Run 544131271456497: 두 태스크 SUCCESS, 전체 284.255초. source 수정은 이 실행이 끝난 뒤 배포했다.
+- 최종 SQL 품질 조건을 추가해 serving_views만 선택한 Run 472610999319561: SUCCESS, 32.706초. quality_experiment는 제외했고 새 원본을 만들지 않았다. 두 실행의 증거를 분리한다.
+- 실제 적용 SQL 정의 SHA256과 현재 저장소 source가 일치했다. 기존 warehouse b58bef668eb3cbc9, serverless 2X-Small, auto-stop 10분을 변경하지 않았다.
+- SQL Statement API의 품질·일간 이용량·역/노선 순위·Catalog 메타데이터 네 쿼리 SUCCEEDED. notebook의 세 view 전체 행이 warehouse 결과와 같다. 분석 view COMMENT는 합성 데이터·날짜 의미를, 품질 view COMMENT는 자체 SQL 계약을 설명한다.
+- SQL 분석은 PASS 날짜만 제공한다. 합계가 같아도 잘못된 역 identity는 FAIL·분석 제외, Gold 날짜 누락도 FAIL·분석 제외를 실제 로컬 Delta 검사로 확인했다. warehouse 음수/identity 장애 주입은 수행하지 않았다.
+- recorder는 실제 성공한 Job/태스크/선택 실행, namespace·정정 값·source 해시를 요구한다. SQL chunk/truncation/누락 행/실패·warehouse 결과 차이를 성공으로 저장하지 않는다. 첫 warehouse 결과는 LONG enum 미처리로 비교 실패했고 타입 정규화·회귀 보완 후 새 경로에서 재검증했다. COMMENT 검사도 모든 문장에 synthetic이 있다는 추정 대신 실제 SQL source 문장과의 일치로 수정했다. 최종 verified-03과 실패 출력은 각각 보존했다. SELECT 실행은 --execute-sql opt-in이고 timeout 시 자신의 statement만 취소한다.
+- private: .work/databricks-free/verified-03, quality run/start/deploy 로그. 공개 free-edition-evidence.json은 실제 생성 파일을 그대로 복사했다. 인증 파일·raw Job response와 사용자 이메일·원문 commit metadata는 커밋하지 않는다.
+
+### 검사와 범위
+
+- 최종 파이프라인 94 passed, 111.09초. SQL 차단 대상 2 passed, 63.62초; native recorder 9 passed, 0.12초. 대상은 전체에 포함된다. 기존 별도 Airflow/Pod 12개를 포함한 현재 서로 다른 검사는 106개다.
+- 앞선 전체 92 passed(115.60초) 후 SQL PASS 소비 조건·선택 실행 검증을 보완했다. 실제 선택 실행의 비선택 태스크는 SKIPPED/DISABLED이고 실제 SQL API의 BIGINT type_name은 LONG인 것을 반영해 guard/decoder를 보완했다. 마지막 전체 94개 검사는 이 수정도 포함한다.
+- Ruff·별도 pycache compileall·diff whitespace·bundle validate/deploy를 확인했다. 문서 내부 링크 46개, 실제 public JSON의 byte 동일성, native SQL source hash 3개, SQL statement 4개와 두 bundle Job 설정을 최종 확인했다.
+- Free Edition의 관리형 실행·변경 감사·SQL 소비 경험이다. AWS 통합 운영·enterprise RBAC·managed quality monitoring·장기 백업·분산 Spark 튜닝·대용량 비용 비교로 설명하지 않는다.
+- S3 운영·실수집 baseline·peak 자원·유지보수 Airflow 조합은 기존 로드맵대로 남는다. 사용자 파일·.env·기존 테이블을 보존했고 commit skill에 따라 로컬 커밋한다.
+
+Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·SQL 소비 계약·native 기록·회귀 검사). 문서와 공개 실행 증거는 다음 docs(databricks) 커밋에 기록한다.

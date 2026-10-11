@@ -15,3 +15,9 @@ Databricks는 승하차 처리를 관리형 Spark와 Unity Catalog Delta 테이�
 채택 증거는 examples/databricks, examples/kubernetes와 SESSION_HANDOFF에 기록한다. 관리형 Job 실행, Helm 렌더링, 실제 worker Pod 실행을 서로 다른 검증 범위로 표시한다.
 
 실제 Kubernetes 검증에서는 실행 중인 Gold Pod를 종료하고 scheduler가 다른 Pod에서 재시도해 보고서를 완성했다. 로그 PVC와 동일 원본의 전체 테이블 해시 비교로 복구를 확인했다. 자원 프로필의 성능 적정성과 운영 S3 writer 복구는 별도로 측정해야 한다.
+
+## Free Edition의 채택 근거와 경계
+
+현재 주 경로는 Airflow가 수집·변환·보고서를 관리하는 S3 저장 후보다. Databricks는 관리형 변환·변경 감사·SQL 소비 경로의 비교 실험이다. 실행 성공만으로 운영 필요성·경제성을 입증했다고 설명하지 않는다.
+
+Free Edition 고도화는 최신 불량 정정 차단, Delta history/time travel, Unity Catalog view·COMMENT, SQL warehouse 소비를 선택했다. 같은 변환을 재작성하지 않고 데이터 정확성과 소비 계약을 확인하는 데 사용한다. 같은 합계라도 잘못된 역 identity와 부분 Gold 출판이 분석 결과에 섞이지 않도록 품질 PASS 날짜만 제공한다. 실제 입력·운영 부담·비용 비교로 주 변환 경로를 선택하고 중복 운영을 줄이는 것이 다음 판단이다. [실제 검증과 재현](../DATABRICKS_FREE.md)에 범위를 기록한다.

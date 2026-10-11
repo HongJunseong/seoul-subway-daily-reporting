@@ -58,3 +58,13 @@ ANSI 모드의 잘못된 문자열·overflow·revision 날짜·빈 입력이 이
 최종 회귀: 파이프라인 81 passed(123.15초), 이후 추가한 PVC 재처리 비교 검사 2 passed(0.01초), Airflow/Pod 12 passed(1.20초), 서로 다른 검사 총 95개. 기존 Airflow/Pydantic 경고 8개. 공식 provider/client constraints를 사용했고 Airflow pip check가 통과했다. 원격 CI는 실행하지 않았다.
 
 실제 Docker 이미지 빌드와 두 Python 환경의 pip check도 통과했다. 이미지 안에서 합성 원본 준비·실제 Airflow 태스크 12개·보고서 해시를 검증했다. [컨테이너 증거](../examples/container/README.md)는 최종 이미지 실행 79.324771초와 측정 범위를 기록한다. 순차 TaskInstance 실행이며 실제 Kubernetes scheduler/Pod 실험과 구분한다.
+
+## Free Edition 품질과 SQL 제공 (2026-10-11)
+
+[추가 증거](../examples/databricks/free-edition.md)는 새 quality schema에서 실행했다. 실제 Job 두 태스크 SUCCESS(284.255초), 최종 serving_views 선택 실행 SUCCESS(32.706초), 기존 serverless 2X-Small warehouse의 실제 SELECT 네 쿼리 SUCCEEDED다. 다른 태스크를 제외한 선택 실행을 전체 품질 실험 재실행으로 계산하지 않는다.
+
+음수 최신 정정의 DataQualityError는 Silver/Gold 내용·버전을 보존했다. 정상 정정 후 700/660, 이전 Delta 버전 680/660·이전 역 Gold 업무 해시 유지, 정정 원본 재처리 해시·Bronze 버전 불변을 확인했다. Catalog view 유형/COMMENT·SQL source 해시와 warehouse/notebook의 전체 view 행이 일치한다.
+
+SQL 품질 계약의 같은 합계/다른 역 identity와 누락 Gold 날짜 차단은 실제 로컬 Delta 회귀로 검증했다. warehouse 조회는 정상 복구 후의 값·품질·메타데이터를 확인했다. enterprise 권한·managed quality monitoring·SQL 비용 개선·운영 AWS 연동은 미검증이다.
+
+최종 파이프라인 회귀 94 passed, 111.09초. 최종 SQL 대상 2 passed(63.62초)와 recorder 9 passed(0.12초)는 전체에 포함된다. 앞선 Airflow/Pod 12개와 합친 현재 서로 다른 검사 수는 106개다.

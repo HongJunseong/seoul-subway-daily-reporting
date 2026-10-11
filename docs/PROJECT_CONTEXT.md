@@ -40,3 +40,10 @@ AWS·서울 API·Discord·LLM·Kubernetes 실배포는 로컬 fixture 검증과 
 - KubernetesExecutor는 태스크별 Pod 자원·namespace RBAC·PVC를 사용한다. 실제 Airflow 모델의 태스크 17개 병합/직렬화와 공식 chart 렌더를 확인했다. Spark는 Pod 내부 local[2]다.
 - fixture 배포는 schedule=None, 서비스 Secret 미주입, synthetic 보고서·PVC 보존 경로를 강제한다. Docker Desktop Kubernetes에서 실제 scheduler·태스크 12개·worker 강제 삭제 후 새 Pod 재시도·로그 PVC 보존·동일 원본의 7개 테이블 해시 일치를 확인했다. KUBERNETES.md와 examples/kubernetes/에 실행 증거가 있다.
 - 이미지의 Airflow·Spark Python 환경을 분리한다. 운영 metadata DB는 ssdr-metadata Secret으로 별도 연결한다. 보관된 PostgreSQL 이미지는 합성 fixture용으로만 제한한다.
+
+## Free Edition 기능 선택 (2026-10-11)
+
+- Databricks는 관리형 실행·변경 감사·SQL 소비 계약을 검증하는 별도 경로다. Airflow/S3와 중복 운영해야 하는 필수 구성으로 설명하지 않는다.
+- 새 quality schema에서 음수 최신 정정이 이전 출판 내용/버전을 보존하고 정상 정정·time travel·재처리로 복구되는지 실제 serverless Job에서 확인했다.
+- 세 Unity Catalog view는 날짜 의미·합성 표시·품질 PASS·역/노선 identity를 제공한다. 실제 기존 SQL warehouse의 네 쿼리와 notebook 전체 view 행·SQL source 해시가 일치했다.
+- 기능 선택·검증 범위와 재현은 DATABRICKS_FREE.md, 실제 증거는 examples/databricks/free-edition*에 있다. enterprise RBAC·managed monitoring·실제 AWS 연동 경험으로 확대하지 않는다.
