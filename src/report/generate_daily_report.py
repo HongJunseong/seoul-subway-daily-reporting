@@ -1,216 +1,109 @@
-# src/report/generate_daily_report.py
+"""Deterministic reports by default; optional LLM narrative uses the same validated context."""
 from __future__ import annotations
-
-import sys
+import argparse
+import hashlib
 import json
-from pathlib import Path
-from datetime import datetime, timedelta
 import os
-from typing import Optional
+from pathlib import Path
+from src.common.dates import now_kst, validate_ymd
+from src.common.storage import storage_prefix
+from src.common.config import load_s3_config
+from src.report.build_report_context_daily import build_report_context, ReportDataError
 
-from dotenv import load_dotenv
-
-CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-load_dotenv(PROJECT_ROOT / ".env")
-
-from src.report.build_report_context_daily import build_report_context
-from src.common.config import load_s3_config  # ✅ bucket/region 읽기용
-
-# OpenAI (openai>=1.0.0)
-from openai import OpenAI
-
-openai_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_key)
-
-# S3 Upload
-def upload_text_to_s3(
-    text: str,
-    bucket: str,
-    key: str,
-    content_type: str = "text/markdown; charset=utf-8",
-) -> str:
-    """
-    text를 S3에 업로드하고 s3://... 경로를 반환
-    - AWS 자격증명은 환경변수(AWS_ACCESS_KEY_ID/SECRET_ACCESS_KEY 등) 또는 default chain을 사용
-    """
-    import boto3
-
-    s3 = boto3.client("s3")
-    s3.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=text.encode("utf-8"),
-        ContentType=content_type,
-    )
-    return f"s3://{bucket}/{key}"
-
-def build_prompt(target_ymd: str, ctx: dict) -> list[dict]:
-    """
-    LLM에 넘길 messages 리스트를 반환.
-    """
-    ctx_json = json.dumps(ctx, ensure_ascii=False, indent=2)
-
-    temporal_note = (
-        "\n\n[데이터 기준 시점 주의 — 매우 중요]\n"
-        "- usage(승하차 이용량) 데이터는 실시간이 아니라, 수집/정제 지연이 있는 '확정 일간 집계'로서 4일전 기준이다. "
-        "따라서 usage는 \"오늘의 실시간 상황\"이 아니라, 최근 확정된 이용 패턴/기준 혼잡 구조를 설명하는 용도로 해석해야 한다.\n"
-        "- arrival(도착) 데이터는 오늘 기준의 실시간/준실시간 지표로, "
-        "오늘의 체감 품질과 운행 상황을 설명하는 용도로 해석한다.\n"
-        "- 이 시간 차이를 반드시 고려해서 문장을 작성하라."
-    )
-
-    system_msg = {
-        "role": "system",
-        "content": (
-            "너는 서울 지하철 데이터를 분석해서 일간 리포트를 작성하는 데이터 분석가이다. "
-            "숫자를 단순 나열하는 것이 아니라, 패턴과 의미를 해석해서 글로 풀어내야 한다. "
-            "톤은 침착하고 설명 잘하는 데이터 분석가 느낌으로, 과장 없이 사실 위주로 쓰되, "
-            "중요한 포인트는 강조해준다. 답변은 반드시 한국어로 작성한다."
-            + temporal_note
-        ),
-    }
-
-    user_msg = {
-        "role": "user",
-        "content": f"""
-    아래는 {target_ymd} 기준 서울 지하철 통계 데이터이다. (JSON 형식)
-
-    ```json
-    {ctx_json}
-    ```
-
-    이 데이터를 기반으로 한국어로 "서울 지하철 일간 분석 보고서"를 작성해줘.
-
-    전체 스타일 / 길이 요구
-    - 단순 요약이 아니라, 분석 보고서 형태로 상세하게 작성해줘.
-    - 전체 분량은 최소 800자 이상, 가능하면 1,500자 안팎으로 써줘.
-    - 각 지표(승하차, 대기시간, 5분 이상 비율, active_trains 등)는 단순 숫자 나열이 아니라, "무슨 의미인지"까지 해석해서 설명해줘.
-    - Bullet만 나열하지 말고, 문장형 해설과 함께 섞어서 써줘.
-
-    형식 :
-    다음과 같은 큰 구조를 사용해줘. (이 이모지/섹션 제목을 그대로 써도 좋고, 약간만 변형해도 괜찮아)
-
-    맨 앞에, 아래와 비슷한 형식의 요약 블록을 넣어줘:
-
-    {target_ymd[:4]}-{target_ymd[4:6]}-{target_ymd[6:8]} 서울 지하철 서비스 요약
-
-    - 일반 혼잡도(평소 이용량 기준): …
-    - 체감 지연(대기시간 + 이용량): …
-    - 열차 운행 측면: …
-    처럼 3~5줄 정도의 bullet 요약을 넣어줘.
-
-    그 아래부터는 섹션 번호를 구분해서 써줘:
-
-    - 승하차 기준 혼잡도 (Usage)
-    - 실시간 도착 기준 체감 품질 (Arrival)
-    - 종합 코멘트 (한 줄 총평)
-
-    각 섹션에는 다음 내용을 포함해줘.
-
-    1️. 승하차 기준 혼잡도 (Usage)
-    usage.top_stations_by_total 을 활용해서 TOP 10 역을 서술식 + bullet로 정리해줘.
-    예시 스타일:
-    - 홍대입구 (2호선) – 약 13.6만 명 – 1위
-    - 잠실(송파구청) (2호선) – 약 13.4만 명 – 2위
-    이런 식으로 역명 / 노선 / 승하차 인원 / 순위를 함께 써줘.
-    데이터에 근거해서 설명해줘
-
-    usage.line_usage_stats 를 사용해서,
-
-    1호선, 2호선, 9호선, 경부선, 분당선 등 평균 이용량이 높은 노선을 중심으로
-    "서울/수도권 출퇴근 메인 축" 같은 식으로 해석을 붙여줘.
-    데이터에 근거해서 설명해주면 좋겠어.
-
-    마지막에 한두 줄 정도로
-    "2호선 + 경부선 축이 핵심 축이다"처럼 축/벨트 관점의 한 줄 정리를 넣어줘.
-    예시를 그대로 따라하지 말고, 오늘 데이터에 맞게 새로 작성해줘.
-
-    2. 실시간 도착 기준 체감 품질 (Arrival)
-    arrival.line_wait_stats, arrival.painful_stations, arrival.last_train_info, arrival.late_night_hotspots 를 활용해서:
-    노선별 평균 대기시간(avg_wait_sec)과 5분 이상 대기 비율(long_wait_ratio_5)을
-    1호선, 2호선, 3호선, 4호선, 5·6·7·9호선, 우이신설선(1092) 위주로 비교해줘.
-    예: "2호선은 평균 8분 이상, 5분 이상 대기 비율 66%로 체감 지연이 큰 편" 식으로 서술해줘.
-    데이터에 근거해서 설명해줘.
-
-    arrival.painful_stations 를 이용해서
-    데이터를 꼼꼼히 확인하면서 예를 들어 건대입구, 홍대입구, 고속터미널, 연신내, 강남, 신림, 을지로입구, 성수 등
-    "사람도 많고, 열차도 늦게 오는 역"을 TOP 5~10개 정도 뽑아서
-    또한, 각 역마다 평균 대기시간 + 5분 이상 비율 + 승하차 인원을 같이 설명해줘.
-    예시를 따라하지 말고, 데이터에 근거해서 설명해줘.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-    arrival.last_train_info, late_night_hotspots 를 활용해서
-    막차가 늦게까지 운행된 구간(예: 인천, 파주, 정부과천청사 등)과
-    심야 운행이 많은 도심/환승역(청량리, 제기동, 사당, 불광 등)을
-    "야간 운행 패턴" 관점에서 설명해줘.
+def render_report(ctx):
+    usage, arrival = ctx["usage"], ctx["arrival"]
+    lines = [f"# 서울 지하철 데이터 리포트 · {ctx['target_ymd']}", "",
+             f"- 승하차 기준일: **{ctx['usage_ymd']}**",
+             f"- 도착 관측 기준일: **{ctx['arrival_ymd']}**",
+             "- 수집 방식: 공공 API 배치·주기적 스냅샷", "",
+             "## 승하차 이용량", "",
+             f"승차와 하차를 합산한 이용 횟수는 **{usage['total_count']:,}회**입니다.",
+             "이 수치는 이용자 고유 인원이나 오늘의 혼잡도가 아닙니다.", "",
+             "| 순위 | 역 | 노선 | 승하차 횟수 |", "|---:|---|---|---:|"]
+    if ctx.get("data_kind") == "synthetic":
+        lines[2:2] = ["> 합성 fixture 검증용 리포트입니다. 서울 실제 관측 결과가 아닙니다.", ""]
+    for row in usage["top_stations_by_total"]:
+        lines.append(f"| {row['rank']} | {row['station_name']} | {row['line_name']} | {row['total_count']:,} |")
+    lines += ["", "## 도착 ETA 관측", "",
+              f"관측 {arrival['total_observations']:,}건 중 유효 ETA는 {arrival['valid_eta_observations']:,}건입니다.",
+              "열차·역별 도착예정시간 관측값을 요약합니다. 승객의 실제 대기시간이나 시간표 대비 지연을 측정한 값이 아닙니다.",
+              "노선별 평균과 비율은 유효 ETA 표본 수로 가중합니다. 역별 분위수를 평균해 노선 분위수로 표시하지 않습니다.", "",
+              "| 노선 ID | 유효 표본 | 평균 ETA(초) | ETA 5분 이상 비율 |", "|---:|---:|---:|---:|"]
+    for row in arrival["line_wait_stats"]:
+        lines.append(f"| {row['line_id']} | {row['valid_eta_n']} | {row['avg_eta_sec']:.1f} | {row['long_eta_ratio_5m']:.1%} |")
+    observed = arrival.get("observation_range", {})
+    if observed.get("first_snapshot_ts") and observed.get("last_snapshot_ts"):
+        lines += ["", f"실제 관측 범위(KST): {observed['first_snapshot_ts']} ~ {observed['last_snapshot_ts']}"]
+    if "max_source_age_sec" in observed:
+        lines += [f"최대 원천 시각 차이: {observed['max_source_age_sec']:.0f}초 (snapshot - 원천 수신 시각)"]
+    lines += ["", "## 데이터 범위와 해석 한계", "",
+              f"- 역별 최대 수집 스냅샷 수: {arrival['max_snapshots_per_station']}",
+              "- ALL 응답은 회당 최대 1,000건으로, 서울 전체 역·열차·시간대의 완전한 관측을 보장하지 않습니다.",
+              "- 서로 다른 기준일의 이용량과 ETA를 합쳐 오늘의 혼잡도·실제 지연을 추정하지 않습니다.",
+              "- 역명만을 이용한 승하차·도착 조인은 하지 않습니다.",
+              "- LLM 사용 여부와 무관하게 수치·기준일은 검증된 Gold에서 결정합니다.", ""]
+    return "\n".join(lines)
 
-    3. 종합 코멘트 (한 줄 총평)
-    마지막에 3~5줄 정도로, 오늘 데이터를 한 번 더 압축해서 정리해줘.
-    예를 들면 이런 느낌으로:
 
-    “최근 4일 기준으로는 2호선·경부선 축(홍대입구, 잠실, 고속터미널, 강남 등)이 여전히 최상위 혼잡도를 기록하고 있고,
-    오늘 실시간 데이터 기준으로는 2·7·6·9호선 일부 구간에서 평균 대기시간과 5분 이상 대기 비율이 높게 나타나
-    건대입구, 홍대입구, 고속터미널, 강남, 신림, 연신내 같은 역들이
-    ‘많이 타면서 오래 기다리는 고통역’으로 드러난다.
-    운행 측면에서는 9호선이 가장 많은 열차가 동시에 움직이고, 상·하행 불균형도 가장 커서
-    특정 방향으로의 수요 쏠림과 배차 집중이 뚜렷하게 나타난다.”
+def build_prompt(target_ymd, ctx):
+    return [{"role": "system", "content":
+             "검증된 지하철 데이터만 한국어로 설명하라. 기준 날짜·부분 수집·ETA의 한계를 명시하라. "
+             "입력에 없는 수치·비교·운행 지연·현재 혼잡도를 추정하지 말라."},
+            {"role": "user", "content": json.dumps(ctx, ensure_ascii=False, allow_nan=False)}]
 
-    위 문장을 그대로 따라하지 말고, 오늘 데이터(입력 JSON)에 맞춰서 비슷한 밀도와 톤으로 데이터에 맞게 새로 작성해줘.
-    또한 위에 모든 내용에 대한 설명들이 좀 더 데이터에 근거해서 설명까지 구체적으로 덧붙여지면 좋겠어.
-    """,
-    }
 
-    messages = [system_msg, user_msg]
-    return messages
-
-def generate_daily_report(target_ymd: str | None = None, save_to_s3: bool = True) -> Path:
-    if target_ymd is None:
-        target_ymd = datetime.today().strftime("%Y%m%d")
-    
-    # 1) 컨텍스트 생성
+def generate_daily_report(target_ymd=None, save_to_s3=True):
+    target_ymd = validate_ymd(target_ymd or now_kst().strftime("%Y%m%d"))
     ctx = build_report_context(target_ymd)
-
-    # 2) 프롬프트 생성
-    messages = build_prompt(target_ymd, ctx)
-
-    # 3) LLM 호출
-    response = client.chat.completions.create(
-        model="gpt-5-mini",  # model
-        messages=messages,
-        # temperature=0.3,
-    )
-
-    report_text = response.choices[0].message.content
-
-    # 4) save result
-    out_dir = PROJECT_ROOT / "data" / "report_text" / "daily"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"subway_report_{target_ymd}.md"
-
-    out_path.write_text(report_text, encoding="utf-8")
-    print(f"[INFO] Saved daily report: {out_path}")
-
-    # 5) S3 save
-    if save_to_s3:
-        s3cfg = load_s3_config()
-        bucket = getattr(s3cfg, "bucket", None) or os.getenv("SSDR_S3_BUCKET")
-        if not bucket:
-            raise RuntimeError("S3 bucket not configured. (load_s3_config().bucket or SSDR_S3_BUCKET)")
-
-        # 요청한 경로: report_text/daily/
-        key = f"report_text/daily/subway_report_{target_ymd}.md"
-        s3_uri = upload_text_to_s3(report_text, bucket=bucket, key=key)
-        print(f"[INFO] Uploaded daily report (s3): {s3_uri}")
-
+    canonical = json.dumps(ctx, ensure_ascii=False, sort_keys=True, allow_nan=False)
+    mode = os.getenv("SSDR_REPORT_MODE", "template")
+    report_text = render_report(ctx)
+    if mode == "llm":
+        from openai import OpenAI
+        response = OpenAI().chat.completions.create(model=os.getenv("SSDR_LLM_MODEL", "gpt-5-mini"),
+                                                    messages=build_prompt(target_ymd, ctx))
+        narrative = response.choices[0].message.content
+        if not narrative:
+            raise ReportDataError("LLM returned an empty narrative")
+        # Keep the deterministic evidence table; mark optional unverified interpretation separately.
+        report_text += "\n## AI 해설 · 자동 생성, 추가 검증 필요\n\n" + narrative + "\n"
+    elif mode != "template":
+        raise ValueError("SSDR_REPORT_MODE must be template or llm")
+    output_dir = Path(os.getenv("SSDR_REPORT_OUTPUT_DIR", str(PROJECT_ROOT / "data/report_text/daily")))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stem = f"subway_report_{target_ymd}"
+    out_path = output_dir / f"{stem}.md"
+    provenance = {"schema_version": 2, "report_mode": mode,
+                  "context_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
+                  "report_sha256": hashlib.sha256(report_text.encode()).hexdigest(),
+                  "target_ymd": target_ymd, "usage_ymd": ctx["usage_ymd"], "arrival_ymd": ctx["arrival_ymd"]}
+    outputs = {f"{stem}.md": report_text, f"{stem}.context.json": canonical,
+               f"{stem}.manifest.json": json.dumps(provenance, ensure_ascii=False, indent=2)}
+    for name, content in outputs.items():
+        temp = output_dir / (name + ".tmp")
+        temp.write_text(content, encoding="utf-8")
+        temp.replace(output_dir / name)
+    if save_to_s3 and not os.getenv("SSDR_DATA_ROOT"):
+        import boto3
+        cfg = load_s3_config()
+        client = boto3.client("s3", region_name=cfg.region)
+        for name, content in outputs.items():
+            key = "/".join(p for p in [storage_prefix(), "report_text/daily", name] if p)
+            client.put_object(Bucket=cfg.bucket, Key=key, Body=content.encode("utf-8"),
+                              ContentType="text/markdown; charset=utf-8" if name.endswith(".md") else "application/json")
     return out_path
 
+
 def main():
-    # 오늘 기준
-    generate_daily_report()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("target_ymd", type=validate_ymd)
+    parser.add_argument("--local-only", action="store_true")
+    args = parser.parse_args()
+    print(generate_daily_report(args.target_ymd, save_to_s3=not args.local_only))
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,434 @@
+{
+  "verified": true,
+  "execution_environment": "kubernetes-scheduler-executor",
+  "synthetic": true,
+  "actual_pod_execution": true,
+  "namespace": "ssdr-fixture-20261011",
+  "started_at_utc": "2026-10-11T10:47:06.649395+00:00",
+  "elapsed_seconds": 175.796396,
+  "runs": [
+    {
+      "dag_id": "usage_daily",
+      "run_id": "manual__kubernetes_fixture_metrics_b",
+      "state": "success",
+      "tasks": [
+        {
+          "task_id": "bronze_usage",
+          "state": "skipped",
+          "executed_attempts": 0
+        },
+        {
+          "task_id": "choose_input",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "compute_dates",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "gold_usage",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "silver_usage",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "trigger_gold_daily",
+          "state": "success",
+          "executed_attempts": 1
+        }
+      ]
+    },
+    {
+      "dag_id": "gold_daily",
+      "run_id": "usage__manual__kubernetes_fixture_metrics_b",
+      "state": "success",
+      "tasks": [
+        {
+          "task_id": "compute_dates",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "gold_arrival",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "notify_gold_ready",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "silver_arrival_day",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "trigger_report_daily",
+          "state": "success",
+          "executed_attempts": 1
+        }
+      ]
+    },
+    {
+      "dag_id": "report_daily",
+      "run_id": "gold__usage__manual__kubernetes_fixture_metrics_b",
+      "state": "success",
+      "tasks": [
+        {
+          "task_id": "compute_target_ymd",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "generate_report",
+          "state": "success",
+          "executed_attempts": 1
+        }
+      ]
+    }
+  ],
+  "workers": [
+    {
+      "uid": "c302bdac-4240-4ce6-a285-c7634d32a4e0",
+      "name": "gold-daily-compute-dates-qoccts0v",
+      "dag_id": "gold_daily",
+      "task_id": "compute_dates",
+      "run_id": "usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "7a44aa82-131c-4b47-86a1-511cd64908a0",
+      "name": "gold-daily-gold-arrival-o2j3qtn5",
+      "dag_id": "gold_daily",
+      "task_id": "gold_arrival",
+      "run_id": "usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "3fc66dec-da44-45ca-9e47-0ad59c5e8f6d",
+      "name": "gold-daily-notify-gold-ready-mgv1w2rn",
+      "dag_id": "gold_daily",
+      "task_id": "notify_gold_ready",
+      "run_id": "usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "b28cb5ee-dc04-469f-a766-adc0f59bd371",
+      "name": "gold-daily-silver-arrival-day-aurtvah2",
+      "dag_id": "gold_daily",
+      "task_id": "silver_arrival_day",
+      "run_id": "usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "86add1ba-c7e7-44f4-a26f-91b7aeca7a6b",
+      "name": "gold-daily-trigger-report-daily-safi77b9",
+      "dag_id": "gold_daily",
+      "task_id": "trigger_report_daily",
+      "run_id": "usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "5d7067f4-556b-4e67-821d-f8967ece3a3d",
+      "name": "report-daily-compute-target-ymd-l439yxc8",
+      "dag_id": "report_daily",
+      "task_id": "compute_target_ymd",
+      "run_id": "gold__usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "0f507cd0-963f-4f08-aece-8921ffa372a3",
+      "name": "report-daily-generate-report-r315grre",
+      "dag_id": "report_daily",
+      "task_id": "generate_report",
+      "run_id": "gold__usage__manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "report",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "2Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "e4cb12a5-f332-4f93-9055-6535323e8dc3",
+      "name": "usage-daily-choose-input-2b6b4ys5",
+      "dag_id": "usage_daily",
+      "task_id": "choose_input",
+      "run_id": "manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "fe450a05-71b0-4446-aab3-9b789326e475",
+      "name": "usage-daily-compute-dates-ad0ot1ce",
+      "dag_id": "usage_daily",
+      "task_id": "compute_dates",
+      "run_id": "manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "f6917784-6594-4e65-901c-8c86bfe6d87e",
+      "name": "usage-daily-gold-usage-smog5ftx",
+      "dag_id": "usage_daily",
+      "task_id": "gold_usage",
+      "run_id": "manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "9648f9e7-3c27-44ef-b8d0-214b8c74ffaf",
+      "name": "usage-daily-silver-usage-h5q8ne0t",
+      "dag_id": "usage_daily",
+      "task_id": "silver_usage",
+      "run_id": "manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    },
+    {
+      "uid": "81a27fb0-0d9f-4ff0-ba0c-87d18cf19222",
+      "name": "usage-daily-trigger-gold-daily-h0ei2jfs",
+      "dag_id": "usage_daily",
+      "task_id": "trigger_gold_daily",
+      "run_id": "manual__kubernetes_fixture_metrics_b",
+      "try_number": 1,
+      "phase": "Succeeded",
+      "node": "docker-desktop",
+      "image": "ssdr-airflow:portfolio-v4",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "exit_codes": [
+        0
+      ],
+      "last_event_type": "DELETED"
+    }
+  ],
+  "deleted_worker": null,
+  "worker_retry_verified": false,
+  "report_hashes_verified": true,
+  "usage_total": 680,
+  "daily_arrival_observations": 4,
+  "daily_valid_eta_observations": 4,
+  "writer_pool_slots": 1,
+  "limitations": [
+    "Single local node and synthetic input; no S3/API/Discord/LLM",
+    "No peak memory/CPU or production SLA measurement"
+  ]
+}

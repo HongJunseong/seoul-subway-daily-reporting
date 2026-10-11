@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "verified": true,
+  "interrupted_processing": {
+    "failure_boundary": "after Silver commit, before Gold",
+    "before": {
+      "bronze": {
+        "delta_version": 1,
+        "rows": 6,
+        "business_sha256": "4841ffa630779b14eb0ebd153bd1a10eb7e7e18dcb1cc18960112f25ea92d420",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 0,
+        "rows": 3,
+        "business_sha256": "7eb550d0911371403076d61846f585064195664dbdf164239ae1536853171f14",
+        "total_count": 660
+      },
+      "gold": {
+        "delta_version": 0,
+        "rows": 3,
+        "business_sha256": "7eb550d0911371403076d61846f585064195664dbdf164239ae1536853171f14",
+        "total_count": 660
+      },
+      "line_gold": {
+        "delta_version": 0,
+        "rows": 2,
+        "business_sha256": "0e4434c10e066b673345f528afb30b178e415a3a96be81c31d3a267c166bea8a",
+        "total_count": 660
+      }
+    },
+    "after_failure": {
+      "bronze": {
+        "delta_version": 2,
+        "rows": 7,
+        "business_sha256": "8362c996ee552303ecefe466827ea5c851ee4c901375450c71193d2537157b20",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 1,
+        "rows": 3,
+        "business_sha256": "b378f74f28ba806c1004acb8d34087cc56591a2a1cbea5db298cf2c32deb171a",
+        "total_count": 680
+      },
+      "gold": {
+        "delta_version": 0,
+        "rows": 3,
+        "business_sha256": "7eb550d0911371403076d61846f585064195664dbdf164239ae1536853171f14",
+        "total_count": 660
+      },
+      "line_gold": {
+        "delta_version": 0,
+        "rows": 2,
+        "business_sha256": "0e4434c10e066b673345f528afb30b178e415a3a96be81c31d3a267c166bea8a",
+        "total_count": 660
+      }
+    },
+    "recovered": {
+      "bronze": {
+        "delta_version": 2,
+        "rows": 7,
+        "business_sha256": "8362c996ee552303ecefe466827ea5c851ee4c901375450c71193d2537157b20",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 2,
+        "rows": 3,
+        "business_sha256": "b378f74f28ba806c1004acb8d34087cc56591a2a1cbea5db298cf2c32deb171a",
+        "total_count": 680
+      },
+      "gold": {
+        "delta_version": 1,
+        "rows": 3,
+        "business_sha256": "b378f74f28ba806c1004acb8d34087cc56591a2a1cbea5db298cf2c32deb171a",
+        "total_count": 680
+      },
+      "line_gold": {
+        "delta_version": 1,
+        "rows": 2,
+        "business_sha256": "1719d2ae260e042544577223874452622470836154060b288591a57061431f5a",
+        "total_count": 680
+      }
+    },
+    "replayed": {
+      "bronze": {
+        "delta_version": 2,
+        "rows": 7,
+        "business_sha256": "8362c996ee552303ecefe466827ea5c851ee4c901375450c71193d2537157b20",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 3,
+        "rows": 3,
+        "business_sha256": "b378f74f28ba806c1004acb8d34087cc56591a2a1cbea5db298cf2c32deb171a",
+        "total_count": 680
+      },
+      "gold": {
+        "delta_version": 2,
+        "rows": 3,
+        "business_sha256": "b378f74f28ba806c1004acb8d34087cc56591a2a1cbea5db298cf2c32deb171a",
+        "total_count": 680
+      },
+      "line_gold": {
+        "delta_version": 2,
+        "rows": 2,
+        "business_sha256": "1719d2ae260e042544577223874452622470836154060b288591a57061431f5a",
+        "total_count": 680
+      }
+    },
+    "failed_attempt_seconds": 2.595008,
+    "recovery_processing_seconds": 4.032318,
+    "replay_processing_seconds": 4.14488,
+    "verified": true
+  },
+  "source_quality_failure": {
+    "failure_boundary": "latest source count is negative, rejected before Silver write",
+    "before": {
+      "bronze": {
+        "delta_version": 3,
+        "rows": 3,
+        "business_sha256": "c2ed6ab2fa7cc4486930ba4e109f4008bf6de47e812dfc1942316bad9e7c9bcb",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 4,
+        "rows": 3,
+        "business_sha256": "1f6714db929c95d64efcd73c27186b031c44f28ed2f764e852789d46da66a7ff",
+        "total_count": 660
+      },
+      "gold": {
+        "delta_version": 3,
+        "rows": 3,
+        "business_sha256": "1f6714db929c95d64efcd73c27186b031c44f28ed2f764e852789d46da66a7ff",
+        "total_count": 660
+      },
+      "line_gold": {
+        "delta_version": 3,
+        "rows": 2,
+        "business_sha256": "51612f0d92f8d28cbd8a882bcfe2ecccf21904907d832d122c8cd0f583e5b70b",
+        "total_count": 660
+      }
+    },
+    "after_failure": {
+      "bronze": {
+        "delta_version": 4,
+        "rows": 4,
+        "business_sha256": "e6daab7a56a9facc1a721c4aa882ea7582bdacc9b3db0e0480c2bc34f0759e1c",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 4,
+        "rows": 3,
+        "business_sha256": "1f6714db929c95d64efcd73c27186b031c44f28ed2f764e852789d46da66a7ff",
+        "total_count": 660
+      },
+      "gold": {
+        "delta_version": 3,
+        "rows": 3,
+        "business_sha256": "1f6714db929c95d64efcd73c27186b031c44f28ed2f764e852789d46da66a7ff",
+        "total_count": 660
+      },
+      "line_gold": {
+        "delta_version": 3,
+        "rows": 2,
+        "business_sha256": "51612f0d92f8d28cbd8a882bcfe2ecccf21904907d832d122c8cd0f583e5b70b",
+        "total_count": 660
+      }
+    },
+    "recovered": {
+      "bronze": {
+        "delta_version": 5,
+        "rows": 5,
+        "business_sha256": "f067fdd7ffc6a4f746d2b501c1081bddfae03a5c66b90e2ffda9614c4ff49c57",
+        "total_count": null
+      },
+      "silver": {
+        "delta_version": 5,
+        "rows": 3,
+        "business_sha256": "1f6714db929c95d64efcd73c27186b031c44f28ed2f764e852789d46da66a7ff",
+        "total_count": 660
+      },
+      "gold": {
+        "delta_version": 4,
+        "rows": 3,
+        "business_sha256": "1f6714db929c95d64efcd73c27186b031c44f28ed2f764e852789d46da66a7ff",
+        "total_count": 660
+      },
+      "line_gold": {
+        "delta_version": 4,
+        "rows": 2,
+        "business_sha256": "51612f0d92f8d28cbd8a882bcfe2ecccf21904907d832d122c8cd0f583e5b70b",
+        "total_count": 660
+      }
+    },
+    "recovery_processing_seconds": 4.272651,
+    "verified": true
+  },
+  "limitations": [
+    "Injected exceptions, not a killed process or Kubernetes outage",
+    "Small local fixture timings exclude Spark startup and verification reads",
+    "No measured Airflow queue delay, S3 recovery or production SLA"
+  ]
+}

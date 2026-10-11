@@ -1,0 +1,12 @@
+{
+  "verified": true,
+  "validation_scope": "helm-render-only",
+  "chart_version": "1.11.0",
+  "airflow_version": "2.7.3",
+  "image": "ssdr-airflow:portfolio-v4",
+  "fixture": true,
+  "worker_template_sha256": "7d504eedeaaef9d6bb80c9d14d44ac14957ef4a89e0d45e6cae671df3ed7a7b6",
+  "task_resource_metrics_enabled": true,
+  "namespace_scoped_rbac": true,
+  "actual_pod_execution": false
+}

@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "verified": true,
+  "runs": [
+    {
+      "dag_id": "usage_daily",
+      "run_id": "manual__offline_fixture",
+      "state": "success",
+      "tasks": [
+        {
+          "task_id": "bronze_usage",
+          "state": "skipped",
+          "executed_attempts": 0
+        },
+        {
+          "task_id": "choose_input",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "compute_dates",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "gold_usage",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "silver_usage",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "trigger_gold_daily",
+          "state": "success",
+          "executed_attempts": 1
+        }
+      ]
+    },
+    {
+      "dag_id": "gold_daily",
+      "run_id": "usage__manual__offline_fixture",
+      "state": "success",
+      "tasks": [
+        {
+          "task_id": "compute_dates",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "gold_arrival",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "notify_gold_ready",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "silver_arrival_day",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "trigger_report_daily",
+          "state": "success",
+          "executed_attempts": 1
+        }
+      ]
+    },
+    {
+      "dag_id": "report_daily",
+      "run_id": "gold__usage__manual__offline_fixture",
+      "state": "success",
+      "tasks": [
+        {
+          "task_id": "compute_target_ymd",
+          "state": "success",
+          "executed_attempts": 1
+        },
+        {
+          "task_id": "generate_report",
+          "state": "success",
+          "executed_attempts": 1
+        }
+      ]
+    }
+  ],
+  "executed_tasks": 12,
+  "skipped_api_tasks": 1,
+  "elapsed_seconds": 92.93466,
+  "report_hashes_verified": true,
+  "usage_total": 680,
+  "daily_arrival_observations": 4,
+  "daily_valid_eta_observations": 4,
+  "limitations": [
+    "Local sequential TaskInstance.run loop; not a running scheduler/executor deployment",
+    "No scheduler/pool/executor queue delay measurement",
+    "Synthetic fixture timing; no live API, S3, Discord or LLM validation"
+  ]
+}

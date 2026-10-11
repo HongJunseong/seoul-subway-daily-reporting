@@ -1,0 +1,16 @@
+{
+  "data_kind": "synthetic fixture; not live Seoul observations",
+  "publication_hashes_verified": true,
+  "report_schema_version": 2,
+  "usage_bronze_initial_rows": 6,
+  "usage_silver_rows": 3,
+  "usage_total_before_correction": 660,
+  "usage_total_after_correction": 680,
+  "cross_midnight_observations": 6,
+  "cross_midnight_valid_eta": 5,
+  "elapsed_seconds": 44.978,
+  "report": "subway_report_20260201.md",
+  "limitations": "Small local fixture demonstrates correctness, not throughput or cloud availability",
+  "runtime_context_sha256": "dc03d8eae0d22375208e60327667ba1c2f1b661cd5e5ea144c3977158f9636fc",
+  "sample_context_note": "Only source paths normalized to portable v2-relative paths; sample manifest recomputed"
+}

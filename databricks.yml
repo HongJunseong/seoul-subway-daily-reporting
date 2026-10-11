@@ -1,0 +1,87 @@
+bundle:
+  name: ssdr-managed-usage-v2
+
+variables:
+  namespace:
+    description: Dedicated synthetic Unity Catalog schema
+    default: workspace.ssdr_v2_fixture
+  quality_namespace:
+    description: New isolated schema per quality experiment; existing tables are preserved
+    default: workspace.ssdr_v2_fixture_quality_demo
+  use_ymd:
+    default: "20260128"
+
+sync:
+  paths:
+    - src
+    - fixtures
+    - databricks/notebooks
+    - databricks/sql
+  exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/.env*'
+
+resources:
+  jobs:
+    usage_fixture:
+      name: ssdr-v2-managed-usage-fixture
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      timeout_seconds: 1800
+      parameters:
+        - name: project_root
+          default: ${workspace.file_path}
+        - name: namespace
+          default: ${var.namespace}
+        - name: use_ymd
+          default: ${var.use_ymd}
+      tasks:
+        - task_key: seed_fixture
+          notebook_task:
+            notebook_path: ./databricks/notebooks/00_seed_fixture.py
+        - task_key: silver
+          depends_on:
+            - task_key: seed_fixture
+          notebook_task:
+            notebook_path: ./databricks/notebooks/01_usage_bronze_to_silver.py
+          max_retries: 1
+        - task_key: gold
+          depends_on:
+            - task_key: silver
+          notebook_task:
+            notebook_path: ./databricks/notebooks/02_usage_silver_to_gold.py
+          max_retries: 1
+        - task_key: verify_replay
+          depends_on:
+            - task_key: gold
+          notebook_task:
+            notebook_path: ./databricks/notebooks/03_verify_fixture.py
+
+    usage_quality:
+      name: ssdr-v2-free-quality-and-sql
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      timeout_seconds: 900
+      parameters:
+        - name: project_root
+          default: ${workspace.file_path}
+        - name: namespace
+          default: ${var.quality_namespace}
+      tasks:
+        - task_key: quality_experiment
+          notebook_task:
+            notebook_path: ./databricks/notebooks/04_usage_quality_experiment.py
+          max_retries: 0
+        - task_key: serving_views
+          depends_on:
+            - task_key: quality_experiment
+          notebook_task:
+            notebook_path: ./databricks/notebooks/05_usage_serving.py
+          max_retries: 1
+
+targets:
+  free:
+    default: true

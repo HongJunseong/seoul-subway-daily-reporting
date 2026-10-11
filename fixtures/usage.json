@@ -1,0 +1,26 @@
+[
+  {
+    "USE_YMD": "20260128",
+    "REG_YMD": "20260129",
+    "SBWY_ROUT_LN_NM": "2호선",
+    "SBWY_STNS_NM": "가상환승역",
+    "GTON_TNOPE": "100",
+    "GTOFF_TNOPE": "80"
+  },
+  {
+    "USE_YMD": "20260128",
+    "REG_YMD": "20260129",
+    "SBWY_ROUT_LN_NM": "7호선",
+    "SBWY_STNS_NM": "가상환승역",
+    "GTON_TNOPE": "70",
+    "GTOFF_TNOPE": "60"
+  },
+  {
+    "USE_YMD": "20260128",
+    "REG_YMD": "20260129",
+    "SBWY_ROUT_LN_NM": "2호선",
+    "SBWY_STNS_NM": "가상일반역",
+    "GTON_TNOPE": "200",
+    "GTOFF_TNOPE": "150"
+  }
+]

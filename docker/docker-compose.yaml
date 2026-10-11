@@ -1,33 +1,27 @@
-# Local development only. Production runs on Kubernetes.
-# Run from project root: docker compose -f docker/docker-compose.yaml up -d
-
-version: '3'
-
-x-airflow-common:
-  &airflow-common
+# Local single-node portfolio environment; no external calls until DAGs are unpaused.
+x-airflow-common: &airflow-common
   build:
-    context: .
-    dockerfile: dockerfile
-  environment:
-    &airflow-common-env
+    context: ..
+    dockerfile: docker/dockerfile
+  environment: &airflow-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    AIRFLOW__WEBSERVER__SECRET_KEY: 'seoul-subway-secret-key'
+    AIRFLOW__CORE__PARALLELISM: '2'
+    AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: '2'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__WEBSERVER__SECRET_KEY: '${AIRFLOW_WEBSERVER_SECRET_KEY:-local-development-only}'
     PYTHONPATH: /opt/airflow
-    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  volumes:
-    - ../dags:/opt/airflow/dags
-    - ../src:/opt/airflow/src
-    - ../logs:/opt/airflow/logs
-  user: "${AIRFLOW_UID:-50000}:0"
+    SSDR_REPORT_MODE: template
   env_file:
     - ../.env
+  volumes:
+    - ../dags:/opt/airflow/dags:ro
+    - ../src:/opt/airflow/src:ro
+    - airflow-logs:/opt/airflow/logs
+    - airflow-reports:/opt/airflow/data
+  user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
-    &airflow-common-depends-on
     postgres:
       condition: service_healthy
 
@@ -44,98 +38,40 @@ services:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
       retries: 5
-    restart: always
-
-  kafka:
-    image: bitnami/kafka:3.7
-    environment:
-      KAFKA_CFG_NODE_ID: 1
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    restart: always
-
-  alert-consumer:
-    <<: *airflow-common
-    restart: always
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      <<: *airflow-common-env
-      KAFKA_TOPIC: "event.pipeline"
-      KAFKA_GROUP_ID: "alert-discord-gold-ready"
-    command: >
-      bash -c "python /opt/airflow/src/alerts/consume_gold_ready_to_discord.py"
-
-  airflow-webserver:
-    <<: *airflow-common
-    command: webserver
-    ports:
-      - 8080:8080
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-scheduler:
-    <<: *airflow-common
-    command: scheduler
-    healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-triggerer:
-    <<: *airflow-common
-    command: triggerer
-    healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
+    restart: unless-stopped
   airflow-init:
     <<: *airflow-common
+    user: "0:0"
     entrypoint: /bin/bash
-    command:
-      - -c
-      - |
-        mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins
-        exec /entrypoint airflow version
+    command: ["-c", "mkdir -p /opt/airflow/logs /opt/airflow/data && chown -R ${AIRFLOW_UID:-50000}:0 /opt/airflow/logs /opt/airflow/data && exec /entrypoint bash -c 'airflow pools set ssdr_delta_writer 1 serialize_delta_writers && airflow version'"]
     environment:
-      <<: *airflow-common-env
+      <<: *airflow-env
       _AIRFLOW_DB_UPGRADE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: airflow
       _AIRFLOW_WWW_USER_PASSWORD: airflow
-    user: "0:0"
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   postgres-db-volume:
+  airflow-logs:
+  airflow-reports:

@@ -1,0 +1,18 @@
+[project]
+name = "seoul-subway-daily-reporting"
+version = "0.2.0"
+description = "Reproducible Seoul subway batch data platform"
+requires-python = ">=3.11,<3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["spark: local Spark/Delta integration tests", "airflow: DAG import tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+exclude = ["databricks/notebooks", ".venv"]
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]

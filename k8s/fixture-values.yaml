@@ -1,0 +1,64 @@
+# Apply after airflow-values.yaml only in a dedicated LOCAL fixture namespace.
+# No ssdr-secrets / AWS / API / Discord / LLM credentials are referenced.
+extraEnvFrom: ""
+env:
+  - name: PYTHONPATH
+    value: /opt/airflow
+  - name: SSDR_STORAGE_PREFIX
+    value: v2
+  - name: SSDR_REPORT_MODE
+    value: template
+  - name: SSDR_DATA_ROOT
+    value: /opt/airflow/fixture-lake/input/lake
+  - name: SSDR_DATA_KIND
+    value: synthetic
+  - name: SSDR_REPORT_OUTPUT_DIR
+    value: /opt/airflow/fixture-lake/reports
+  - name: SSDR_TASK_POD_PROFILES
+    value: "true"
+  - name: SSDR_TASK_RESOURCE_METRICS
+    value: "true"
+  - name: SSDR_FIXTURE_MODE
+    value: 'true'
+config:
+  core:
+    dags_are_paused_at_creation: "True"
+    load_examples: "False"
+logs:
+  persistence:
+    enabled: true
+    existingClaim: ssdr-fixture-logs
+volumes:
+  - name: fixture-lake
+    persistentVolumeClaim:
+      claimName: ssdr-fixture-lake
+volumeMounts:
+  - name: fixture-lake
+    mountPath: /opt/airflow/fixture-lake
+
+# Archived compatibility image is restricted to synthetic local validation.
+# Production must use a maintained external metadata DB via ssdr-metadata.
+postgresql:
+  enabled: true
+  image:
+    repository: bitnamilegacy/postgresql
+    tag: 15.4.0-debian-11-r10
+    digest: sha256:034d84dbc017e6013c8e189b4614a675ee2a5e88279ff6776c3b8c339bcdcf9e
+data:
+  metadataSecretName: null
+
+webserver:
+  service:
+    type: ClusterIP
+    ports:
+      - name: airflow-ui
+        port: 8080
+        targetPort: 8080
+
+# Regular bootstrap Jobs prevent post-install hooks from deadlocking --wait.
+migrateDatabaseJob:
+  useHelmHooks: false
+  ttlSecondsAfterFinished: 120
+createUserJob:
+  useHelmHooks: false
+  ttlSecondsAfterFinished: 120

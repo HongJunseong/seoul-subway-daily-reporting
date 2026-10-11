@@ -1,0 +1,8 @@
+# Extra read-only report dependencies for the isolated Airflow 2.7.3 environment.
+# Install Airflow with its official constraints first; keep Spark in the pipeline venv.
+# The bundled Google/Shapely provider wheels use the NumPy 1.x ABI.
+numpy==1.26.4
+pandas==2.3.3
+pyarrow==19.0.1
+deltalake==1.1.2
+Deprecated==1.3.1

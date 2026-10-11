@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "data_kind": "observed",
+  "actual_api_collection": true,
+  "saved_source_replay_verified": true,
+  "capture": {
+    "schema_version": 1,
+    "data_kind": "observed",
+    "status": "collected",
+    "started_at_kst": "2026-10-11T17:49:53.329397+09:00",
+    "usage_day": "20261007",
+    "cadence_seconds": 300,
+    "planned_snapshots": 3,
+    "arrival_scope": "ALL response, maximum 1000 observations; partial coverage",
+    "retry_policy": "one logical GET per arrival slot; usage pagination at most 10 GETs; no automatic retry",
+    "arrival_slots": [
+      {
+        "slot": 0,
+        "planned_at_kst": "2026-10-11T17:49:53.329397+09:00",
+        "request_started_at_kst": "2026-10-11T17:49:53.329421+09:00",
+        "status": "collected",
+        "rows": 1000,
+        "captured_at_kst": "2026-10-11T17:49:53.496877+09:00",
+        "request_completed_at_kst": "2026-10-11T17:49:53.513027+09:00",
+        "elapsed_seconds": 0.183611,
+        "logical_get_attempts": 1
+      },
+      {
+        "slot": 1,
+        "planned_at_kst": "2026-10-11T17:54:53.329397+09:00",
+        "request_started_at_kst": "2026-10-11T17:54:53.320356+09:00",
+        "status": "collected",
+        "rows": 1000,
+        "captured_at_kst": "2026-10-11T17:54:53.443537+09:00",
+        "request_completed_at_kst": "2026-10-11T17:54:53.460660+09:00",
+        "elapsed_seconds": 0.140296,
+        "logical_get_attempts": 1
+      },
+      {
+        "slot": 2,
+        "planned_at_kst": "2026-10-11T17:59:53.329397+09:00",
+        "request_started_at_kst": "2026-10-11T17:59:53.310317+09:00",
+        "status": "collected",
+        "rows": 1000,
+        "captured_at_kst": "2026-10-11T17:59:53.438266+09:00",
+        "request_completed_at_kst": "2026-10-11T17:59:53.451501+09:00",
+        "elapsed_seconds": 0.141184,
+        "logical_get_attempts": 1
+      }
+    ],
+    "usage": {
+      "request_started_at_kst": "2026-10-11T17:49:53.513497+09:00",
+      "status": "collected",
+      "rows": 617,
+      "captured_at_kst": "2026-10-11T17:49:53.591508+09:00",
+      "request_completed_at_kst": "2026-10-11T17:49:53.593462+09:00",
+      "elapsed_seconds": 0.079966,
+      "logical_get_attempts": 1
+    },
+    "limitations": [
+      "Three snapshots are a short source experiment, not a sustained operational baseline",
+      "Observed station/line identities are a sample, not complete network coverage",
+      "Uncollected historical realtime observations cannot be recovered",
+      "ETA is not observed service delay or passenger waiting time",
+      "Usage counts describe usage_day, not current crowding"
+    ],
+    "completed_at_kst": "2026-10-11T17:59:53.452029+09:00",
+    "logical_get_attempts": 4
+  },
+  "source_file_sha256": {
+    "usage.json": "ddb8aabbb483cb732a3e137349022d85c4d6415a700aea8e818c5d487860c88d",
+    "arrival-00.json": "31b535e0dbe3814db2b9d52c9e832c2c9585c713732720939716b6b1a6e6462c",
+    "arrival-01.json": "8a60a792e9f1e6e9a94e38c64d28af6ce1f6091eecf217b351488dcac7cdb517",
+    "arrival-02.json": "f8da49228b52de8f98b6247624033ac3cbed2a17247362075b46dfa253a07aa0"
+  },
+  "before_replay": {
+    "bronze/subway_usage_delta": {
+      "rows": 617,
+      "sha256": "51e80059f50027234b4cbbee18cdb74c88673dcb30fe16277ee6dc865dbcfcc1",
+      "delta_version": 0
+    },
+    "bronze/subway_arrival_delta": {
+      "rows": 3000,
+      "sha256": "9970a10edf3a819589f8bb11eb3ca54111ce51a739eb6fb0e16f9480331d1ef8",
+      "delta_version": 2
+    },
+    "silver/fact_subway_usage_delta": {
+      "rows": 617,
+      "sha256": "8af4b79b37ad9bdd8cb10c3a69dd9974e510985b642d313c1c1d780a4200bd33",
+      "delta_version": 0
+    },
+    "silver/fact_subway_arrival_delta": {
+      "rows": 2987,
+      "sha256": "fc2cafd068f676e0c3a1d59cae3c13469073d6fd39af5c33c98fbbad1ba04cf6",
+      "delta_version": 0
+    },
+    "gold/subway_usage/station_daily": {
+      "rows": 617,
+      "sha256": "9bcbb0ad1a4e68727f736fe6e019d6a8e4033a9ee6ef663895b347f49feb5f8d",
+      "delta_version": 0
+    },
+    "gold/subway_usage/line_daily": {
+      "rows": 27,
+      "sha256": "f2e8086b1c937d762f69c7a893d682b0b0c7eda0e27f8ab2ef54239e7c99a848",
+      "delta_version": 0
+    },
+    "gold/subway_arrival/station_daily_kpi": {
+      "rows": 682,
+      "sha256": "1ada4950fec77f263d7dc58868d52f2f0623fa59f9b7e2dc031bc85cda534d26",
+      "delta_version": 0
+    }
+  },
+  "after_replay": {
+    "bronze/subway_usage_delta": {
+      "rows": 617,
+      "sha256": "51e80059f50027234b4cbbee18cdb74c88673dcb30fe16277ee6dc865dbcfcc1",
+      "delta_version": 0
+    },
+    "bronze/subway_arrival_delta": {
+      "rows": 3000,
+      "sha256": "9970a10edf3a819589f8bb11eb3ca54111ce51a739eb6fb0e16f9480331d1ef8",
+      "delta_version": 2
+    },
+    "silver/fact_subway_usage_delta": {
+      "rows": 617,
+      "sha256": "8af4b79b37ad9bdd8cb10c3a69dd9974e510985b642d313c1c1d780a4200bd33",
+      "delta_version": 1
+    },
+    "silver/fact_subway_arrival_delta": {
+      "rows": 2987,
+      "sha256": "fc2cafd068f676e0c3a1d59cae3c13469073d6fd39af5c33c98fbbad1ba04cf6",
+      "delta_version": 1
+    },
+    "gold/subway_usage/station_daily": {
+      "rows": 617,
+      "sha256": "9bcbb0ad1a4e68727f736fe6e019d6a8e4033a9ee6ef663895b347f49feb5f8d",
+      "delta_version": 1
+    },
+    "gold/subway_usage/line_daily": {
+      "rows": 27,
+      "sha256": "f2e8086b1c937d762f69c7a893d682b0b0c7eda0e27f8ab2ef54239e7c99a848",
+      "delta_version": 1
+    },
+    "gold/subway_arrival/station_daily_kpi": {
+      "rows": 682,
+      "sha256": "1ada4950fec77f263d7dc58868d52f2f0623fa59f9b7e2dc031bc85cda534d26",
+      "delta_version": 1
+    }
+  },
+  "quality": {
+    "schema_version": 1,
+    "status": "degraded",
+    "usage_day": "20261007",
+    "window": {
+      "start_kst": "2026-10-11T17:49:53.329397+09:00",
+      "end_kst": "2026-10-11T17:59:53.438267+09:00",
+      "as_of_kst": "2026-10-11T18:05:56.598560+09:00",
+      "stale_after_seconds": 600
+    },
+    "usage": {
+      "bronze": {
+        "rows": 617,
+        "natural_keys": 617,
+        "repeated_key_rows": 0,
+        "exact_repeat_rows": 0,
+        "collection_runs": 1,
+        "keys_with_payload_revisions": 0
+      },
+      "silver": {
+        "rows": 617,
+        "duplicate_key_rows": 0,
+        "invalid_rows": 0,
+        "total_count": 16619058
+      },
+      "gold": {
+        "rows": 617,
+        "duplicate_key_rows": 0,
+        "invalid_rows": 0,
+        "total_count": 16619058
+      },
+      "silver_gold_business_match": true
+    },
+    "arrival": {
+      "expected_time_buckets": 3,
+      "cadence_seconds": 300,
+      "missing_bucket_examples": [],
+      "latest_snapshot_kst": "2026-10-11T17:59:53.438266+09:00",
+      "freshness_seconds": 363.160294,
+      "invalid_snapshot_rows": 0,
+      "bronze_rows": 3000,
+      "collection_runs": 3,
+      "observed_snapshots": 3,
+      "observed_time_buckets": 3,
+      "missing_time_buckets": 0,
+      "observed_time_bucket_ratio": 1.0,
+      "missing_examples_truncated": false,
+      "response_at_limit_snapshots": 3,
+      "invalid_silver_snapshot_rows": 0,
+      "unprocessed_snapshot_count": 0,
+      "silver_only_snapshot_count": 0,
+      "invalid_natural_key_rows": 0,
+      "invalid_source_age_rows": 0,
+      "silver_rows": 2987,
+      "duplicate_key_rows": 0,
+      "valid_eta_rows": 2987,
+      "missing_eta_rows": 0,
+      "missing_eta_ratio": 0.0,
+      "invalid_eta_rows": 0,
+      "missing_source_timestamp_rows": 0,
+      "future_source_timestamp_rows": 61,
+      "max_source_age_seconds": 1201.0,
+      "median_source_age_seconds": 68.0,
+      "p95_source_age_seconds": 517.0,
+      "observed_line_count": 19,
+      "observed_station_line_identity_count": 682
+    },
+    "sources": {
+      "bronze/subway_usage_delta": {
+        "path": "v2/bronze/subway_usage_delta",
+        "requested_dates": [
+          "20261007"
+        ],
+        "delta_version": 0,
+        "files": {
+          "active_table_files": 2,
+          "active_table_bytes": 80609,
+          "candidate_date_files": 2,
+          "candidate_date_bytes": 80609,
+          "candidate_min_file_bytes": 39253,
+          "candidate_max_file_bytes": 41356
+        },
+        "status": "available",
+        "rows": 617,
+        "read_seconds": 0.036955
+      },
+      "silver/fact_subway_usage_delta": {
+        "path": "v2/silver/fact_subway_usage_delta",
+        "requested_dates": [
+          "20261007"
+        ],
+        "delta_version": 1,
+        "files": {
+          "active_table_files": 1,
+          "active_table_bytes": 57105,
+          "candidate_date_files": 1,
+          "candidate_date_bytes": 57105,
+          "candidate_min_file_bytes": 57105,
+          "candidate_max_file_bytes": 57105
+        },
+        "status": "available",
+        "rows": 617,
+        "read_seconds": 0.008419
+      },
+      "gold/subway_usage/station_daily": {
+        "path": "v2/gold/subway_usage/station_daily",
+        "requested_dates": [
+          "20261007"
+        ],
+        "delta_version": 1,
+        "files": {
+          "active_table_files": 1,
+          "active_table_bytes": 16319,
+          "candidate_date_files": 1,
+          "candidate_date_bytes": 16319,
+          "candidate_min_file_bytes": 16319,
+          "candidate_max_file_bytes": 16319
+        },
+        "status": "available",
+        "rows": 617,
+        "read_seconds": 0.008183
+      },
+      "bronze/subway_arrival_delta": {
+        "path": "v2/bronze/subway_arrival_delta",
+        "requested_dates": [
+          "20261011"
+        ],
+        "delta_version": 2,
+        "files": {
+          "active_table_files": 6,
+          "active_table_bytes": 798178,
+          "candidate_date_files": 6,
+          "candidate_date_bytes": 798178,
+          "candidate_min_file_bytes": 131024,
+          "candidate_max_file_bytes": 135707
+        },
+        "status": "available",
+        "rows": 3000,
+        "read_seconds": 0.02038
+      },
+      "silver/fact_subway_arrival_delta": {
+        "path": "v2/silver/fact_subway_arrival_delta",
+        "requested_dates": [
+          "20261011"
+        ],
+        "delta_version": 1,
+        "files": {
+          "active_table_files": 1,
+          "active_table_bytes": 257548,
+          "candidate_date_files": 1,
+          "candidate_date_bytes": 257548,
+          "candidate_min_file_bytes": 257548,
+          "candidate_max_file_bytes": 257548
+        },
+        "status": "available",
+        "rows": 2987,
+        "read_seconds": 0.010469
+      }
+    },
+    "issues": [
+      {
+        "severity": "warning",
+        "code": "arrival_response_at_limit"
+      },
+      {
+        "severity": "warning",
+        "code": "arrival_source_clock_ahead"
+      }
+    ],
+    "limitations": [
+      "Unobserved buckets are not proof of a failed API request",
+      "Time-bucket coverage is not station/network coverage",
+      "File bytes describe active date candidates, not measured IO cost",
+      "No task duration or pool wait inferred from Delta timestamps"
+    ],
+    "data_kind": "observed"
+  },
+  "local_processing_and_replay_seconds": 64.225656,
+  "scope": "bounded private local experiment; no S3, Databricks, Kubernetes or notification execution"
+}

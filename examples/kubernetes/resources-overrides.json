@@ -1,0 +1,262 @@
+{
+  "verified": true,
+  "validation_scope": "airflow-pod-merge-and-dag-serialization",
+  "actual_pod_execution": false,
+  "tasks": [
+    {
+      "dag_id": "arrival_collect_5m",
+      "task_id": "bronze_ingest_arrival",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "compute_dates",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "gold_arrival",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "notify_gold_ready",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "silver_arrival_day",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "trigger_report_daily",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "pipeline_arrival_5m",
+      "task_id": "gold_arrival_eta_qa_notify",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "pipeline_arrival_5m",
+      "task_id": "gold_arrival_metrics_15m",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "pipeline_arrival_5m",
+      "task_id": "silver_fact_arrival",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "compute_target_ymd",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "generate_report",
+      "profile": "report",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "2Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "bronze_usage",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "choose_input",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "compute_dates",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "gold_usage",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "silver_usage",
+      "profile": "spark",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "trigger_gold_daily",
+      "profile": "control",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      }
+    }
+  ]
+}

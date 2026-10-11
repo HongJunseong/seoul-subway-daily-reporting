@@ -1,0 +1,75 @@
+{
+  "bronze_unchanged": true,
+  "business_snapshot": {
+    "line": {
+      "rows": 4,
+      "sha256": "0615d87bc59dfb5e7db12a3fce89a232b7ba252db894073214338999636e18de"
+    },
+    "silver": {
+      "rows": 6,
+      "sha256": "7dd568fb32ba37424a109593490cb0d5127c1c7ded6d39cc5cb8e676fffce167"
+    },
+    "station": {
+      "rows": 6,
+      "sha256": "2dae2e9f059eab98ecc51260baf90571d1e179b2716b495df865fb40a625513b"
+    }
+  },
+  "dates": [
+    "20260128",
+    "20260129"
+  ],
+  "execution_environment": "databricks-serverless",
+  "spark_version": "4.2.0",
+  "synthetic": true,
+  "table_versions": {
+    "bronze": 0,
+    "line": 3,
+    "silver": 3,
+    "station": 3
+  },
+  "totals": {
+    "20260128": 680,
+    "20260129": 660
+  },
+  "verified": true,
+  "job_id": 1103992482650397,
+  "run_id": 44336808137994,
+  "cross_engine_business_match": true,
+  "start_time_ms": 1791682213027,
+  "end_time_ms": 1791682410137,
+  "elapsed_seconds": 197.11,
+  "tasks": [
+    {
+      "task_key": "gold",
+      "run_id": 152311551076071,
+      "result_state": "SUCCESS",
+      "attempt_number": 0,
+      "setup_duration_ms": 2000,
+      "execution_duration_ms": 25000
+    },
+    {
+      "task_key": "seed_fixture",
+      "run_id": 329951765069607,
+      "result_state": "SUCCESS",
+      "attempt_number": 0,
+      "setup_duration_ms": 2000,
+      "execution_duration_ms": 12000
+    },
+    {
+      "task_key": "silver",
+      "run_id": 12788837451058,
+      "result_state": "SUCCESS",
+      "attempt_number": 0,
+      "setup_duration_ms": 1000,
+      "execution_duration_ms": 20000
+    },
+    {
+      "task_key": "verify_replay",
+      "run_id": 927014769332261,
+      "result_state": "SUCCESS",
+      "attempt_number": 0,
+      "setup_duration_ms": 2000,
+      "execution_duration_ms": 130000
+    }
+  ]
+}

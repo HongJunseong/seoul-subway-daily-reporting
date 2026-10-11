@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "unique_events": 24,
+  "malformed_events": 0,
+  "tasks": [
+    {
+      "dag_id": "gold_daily",
+      "task_id": "compute_dates",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.057213,
+        "max": 0.057213
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "gold_arrival",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 16.76094,
+        "max": 16.76094
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "notify_gold_ready",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.088166,
+        "max": 0.088166
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "silver_arrival_day",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 19.3137,
+        "max": 19.3137
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "trigger_report_daily",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.136054,
+        "max": 0.136054
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "compute_target_ymd",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.073068,
+        "max": 0.073068
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "generate_report",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.174664,
+        "max": 0.174664
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "choose_input",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.116552,
+        "max": 0.116552
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "compute_dates",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 0.286496,
+        "max": 0.286496
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "gold_usage",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 19.945586,
+        "max": 19.945586
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "silver_usage",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 19.501766,
+        "max": 19.501766
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "trigger_gold_daily",
+      "attempts": 1,
+      "succeeded": 1,
+      "failed": 0,
+      "incomplete": 0,
+      "conflicting": 0,
+      "duration_seconds": {
+        "samples": 1,
+        "mean": 2.301773,
+        "max": 2.301773
+      },
+      "executor_queue_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      },
+      "scheduled_interval_to_start_seconds": {
+        "samples": 0,
+        "mean": null,
+        "max": null
+      }
+    }
+  ],
+  "limitations": [
+    "Callbacks are observations, not authoritative scheduler state",
+    "An incomplete lifecycle can also indicate missing/truncated logs",
+    "Executor queue time excludes scheduler/pool waiting",
+    "Interval-to-start includes dependencies, pool and executor; it is not isolated pool wait"
+  ]
+}

@@ -1,42 +1,25 @@
 from __future__ import annotations
-
-from airflow import DAG
-from airflow.operators.python import PythonOperator
+from datetime import timedelta
 import pendulum
-
+from airflow import DAG
+from pod_profiles import task_executor_config
+from airflow.operators.python import PythonOperator
 from common import compute_target_ymd
+from src.observability.task_events import on_task_start, on_task_success, on_task_failure, on_task_retry
 
 
 def run_generate_report(**context):
-    #if str(PROJECT_ROOT) not in sys.path:
-    #    sys.path.insert(0, str(PROJECT_ROOT))
-
-    target_ymd = context["ti"].xcom_pull(task_ids="compute_target_ymd")
-
-    from src.report.generate_daily_report import generate_daily_report  # type: ignore
-
-    out_path = generate_daily_report(target_ymd=target_ymd, save_to_s3=True)
-    print(f"[OK] report generated: {out_path}")
+    from src.report.generate_daily_report import generate_daily_report
+    target = context["ti"].xcom_pull(task_ids="compute_target_ymd")
+    return str(generate_daily_report(target, save_to_s3=True))
 
 
-with DAG(
-    dag_id="report_daily",
-    description="Generate daily LLM report from GOLD (arrival + position) and upload to S3",
-    start_date=pendulum.datetime(2025, 12, 1, tz="Asia/Seoul"),
-    schedule=None,   # test setting
-    catchup=False,
-    max_active_runs=1,
-    tags=["report", "llm"],
-) as dag:
-
-    t_target = PythonOperator(
-        task_id="compute_target_ymd",
-        python_callable=compute_target_ymd,
-    )
-
-    t_report = PythonOperator(
-        task_id="generate_report",
-        python_callable=run_generate_report,
-    )
-
-    t_target >> t_report
+with DAG(dag_id="report_daily", start_date=pendulum.datetime(2026, 1, 1, tz="Asia/Seoul"),
+         schedule=None, catchup=False, max_active_runs=1,
+         default_args={"executor_config": task_executor_config("control"), "retries": 2, "retry_delay": timedelta(minutes=2),
+                       "on_execute_callback": on_task_start, "on_success_callback": on_task_success,
+                       "on_retry_callback": on_task_retry, "on_failure_callback": on_task_failure},
+         tags=["report", "validated"]) as dag:
+    target = PythonOperator(task_id="compute_target_ymd", python_callable=compute_target_ymd)
+    report = PythonOperator(executor_config=task_executor_config("report"), task_id="generate_report", python_callable=run_generate_report)
+    target >> report

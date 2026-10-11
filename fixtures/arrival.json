@@ -1,0 +1,77 @@
+[
+  {
+    "snapshot_ts": "2026-01-31 23:50:00",
+    "rows": [
+      {
+        "statnId": "10020001",
+        "statnNm": "가상환승역",
+        "subwayId": "1002",
+        "updnLine": "상행",
+        "btrainNo": "2001",
+        "bstatnId": "10020002",
+        "barvlDt": "120",
+        "lstcarAt": "0"
+      },
+      {
+        "statnId": "10070001",
+        "statnNm": "가상환승역",
+        "subwayId": "1007",
+        "updnLine": "하행",
+        "btrainNo": "7001",
+        "bstatnId": "10070002",
+        "barvlDt": "700",
+        "lstcarAt": "0"
+      }
+    ]
+  },
+  {
+    "snapshot_ts": "2026-01-31 23:55:00",
+    "rows": [
+      {
+        "statnId": "10020001",
+        "statnNm": "가상환승역",
+        "subwayId": "1002",
+        "updnLine": "상행",
+        "btrainNo": "2001",
+        "bstatnId": "10020002",
+        "barvlDt": "600",
+        "lstcarAt": "1"
+      },
+      {
+        "statnId": "10070001",
+        "statnNm": "가상환승역",
+        "subwayId": "1007",
+        "updnLine": "하행",
+        "btrainNo": "7001",
+        "bstatnId": "10070002",
+        "barvlDt": "900",
+        "lstcarAt": "1"
+      }
+    ]
+  },
+  {
+    "snapshot_ts": "2026-02-01 00:00:00",
+    "rows": [
+      {
+        "statnId": "10020001",
+        "statnNm": "가상환승역",
+        "subwayId": "1002",
+        "updnLine": "상행",
+        "btrainNo": "2001",
+        "bstatnId": "10020002",
+        "barvlDt": null,
+        "lstcarAt": "0"
+      },
+      {
+        "statnId": "10070001",
+        "statnNm": "가상환승역",
+        "subwayId": "1007",
+        "updnLine": "하행",
+        "btrainNo": "7001",
+        "bstatnId": "10070002",
+        "barvlDt": "60",
+        "lstcarAt": "0"
+      }
+    ]
+  }
+]

@@ -1,0 +1,137 @@
+{
+  "verified": true,
+  "synthetic": true,
+  "snapshots": {
+    "bronze/subway_usage_delta": {
+      "version": 2,
+      "rows": 7,
+      "sha256": "cebbec1914a6cec192ca9f4e85646c9d6c3ab92a7602b89ff46d22c5e10f17fe"
+    },
+    "bronze/subway_arrival_delta": {
+      "version": 5,
+      "rows": 12,
+      "sha256": "7f6faa50e22622a282dc0b71ff632feb217685df8e9a6b710c9816202e1ab440"
+    },
+    "silver/fact_subway_usage_delta": {
+      "version": 0,
+      "rows": 3,
+      "sha256": "b985bde9dc80a120637a9b09a70114ee9e62cd297c5314bc25be48bca277ba73"
+    },
+    "silver/fact_subway_arrival_delta": {
+      "version": 0,
+      "rows": 4,
+      "sha256": "3167403c27277cf967ad2ad4f52ebc70b647c39c0d6f954b35b0570916174a0a"
+    },
+    "gold/subway_usage/station_daily": {
+      "version": 0,
+      "rows": 3,
+      "sha256": "d4b13ccf63517b8cee522a62c1b5d79b3e3e4ea7d78e0ed5bee85d97ae090082"
+    },
+    "gold/subway_usage/line_daily": {
+      "version": 0,
+      "rows": 2,
+      "sha256": "43c1860adb3c7f6023e2ed5ccf1322b7da39fcf5d6b25a29fffb32c1047718eb"
+    },
+    "gold/subway_arrival/station_daily_kpi": {
+      "version": 0,
+      "rows": 2,
+      "sha256": "371d23f187752cf22640bb4863a1bf5c0ad3f853d3020e1f41c75e67839cd16e"
+    }
+  },
+  "worker_log_files_persisted": 13,
+  "logs": [
+    {
+      "dag_id": "gold_daily",
+      "task_id": "compute_dates",
+      "try_number": 1,
+      "bytes": 3322,
+      "sha256": "78051884c8a2724f36451fd5b374ea543d2ac477acbe32514a071df4a07a5320"
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "gold_arrival",
+      "try_number": 1,
+      "bytes": 21965,
+      "sha256": "bca7c65b4cbc19dc1cebd6a1e08e2b1dbd02bf9de5e4d3fa1f074c9d0475e2c2"
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "notify_gold_ready",
+      "try_number": 1,
+      "bytes": 3404,
+      "sha256": "9177cf3c3c7d14c98261efb3d831578cbe8a79dd687d7fe3d2da2aef39cf67a5"
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "silver_arrival_day",
+      "try_number": 1,
+      "bytes": 22139,
+      "sha256": "fa5032a2cc255b945c7109543428434126412d55ed0f2e57bc0de8a445eae751"
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "trigger_report_daily",
+      "try_number": 1,
+      "bytes": 3249,
+      "sha256": "1ee27c9bea7206facd0152064bf4de833ca29f0b31f9ca1356581530cb99ba8c"
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "compute_target_ymd",
+      "try_number": 1,
+      "bytes": 3371,
+      "sha256": "9a865389caa263474452416cde498c47d70c43b2d22de6f9f930e1a486c388c7"
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "generate_report",
+      "try_number": 1,
+      "bytes": 3387,
+      "sha256": "fedacc02ea7a349e630cedef114fbc889d2aeb0419afdf2096e33247d290084c"
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "choose_input",
+      "try_number": 1,
+      "bytes": 3470,
+      "sha256": "6ab0d4d2585f5759d4689e600d43edabc25201fe8e81f7a9611e49976723cda3"
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "compute_dates",
+      "try_number": 1,
+      "bytes": 3269,
+      "sha256": "f1a04c8db5114ee96167def571a2f6b6f01a910a20a6ac2ee5942611e992e197"
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "gold_usage",
+      "try_number": 1,
+      "bytes": 5771,
+      "sha256": "4dadccb0dc22b4de9d25021dd420fdd55bf79c25fe936cb84f42eff2a1f8bc50"
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "gold_usage",
+      "try_number": 2,
+      "bytes": 21888,
+      "sha256": "c37d718180bdda9dbbba4214d659ad005be3fed6985b9df90bdb3ed06605af08"
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "silver_usage",
+      "try_number": 1,
+      "bytes": 21949,
+      "sha256": "ad5c67d5bf80f5beff677042da1d1744f26075d112508b75f975b5fffe7d9a0e"
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "trigger_gold_daily",
+      "try_number": 1,
+      "bytes": 22320,
+      "sha256": "0af08a63c8f4cff7c82d5d90d42fcdddf21fee93cedfbe7d1dec482647571fc0"
+    }
+  ],
+  "business_rows_match_previous_run": null,
+  "scope": "local synthetic PVC; committed Delta roots, no internal Parquet scan"
+}

@@ -1,0 +1,486 @@
+{
+  "verified": true,
+  "synthetic": true,
+  "job_id": 1083946371422567,
+  "run_id": 544131271456497,
+  "elapsed_seconds": 284.255,
+  "tasks": [
+    {
+      "task_key": "serving_views",
+      "run_id": 931153363284976,
+      "result_state": "SUCCESS",
+      "attempt_number": 0
+    },
+    {
+      "task_key": "quality_experiment",
+      "run_id": 862042892943123,
+      "result_state": "SUCCESS",
+      "attempt_number": 0
+    }
+  ],
+  "quality": {
+    "bronze_unchanged_on_replay": true,
+    "business_snapshot": {
+      "line": {
+        "rows": 4,
+        "sha256": "1c7e716a5d98f94481409fd65bea0a05924048b529925375a9011c25be903c08"
+      },
+      "silver": {
+        "rows": 6,
+        "sha256": "17ae0d331973eb22755f8924548329d47597fe01f84ac2ad4da35cd4af9f49fb"
+      },
+      "station": {
+        "rows": 6,
+        "sha256": "60e8d77c3266398e59bb35c00bc7f7266fe28023bc0b2145d2a1bb422de0da85"
+      }
+    },
+    "execution_environment": "databricks-serverless",
+    "final_versions": {
+      "bronze": 2,
+      "line": 3,
+      "silver": 3,
+      "station": 3
+    },
+    "historical_station_snapshot": {
+      "rows": 6,
+      "sha256": "2dae2e9f059eab98ecc51260baf90571d1e179b2716b495df865fb40a625513b"
+    },
+    "historical_totals": {
+      "20260128": 680,
+      "20260129": 660
+    },
+    "history": {
+      "bronze": [
+        {
+          "operation": "CREATE TABLE AS SELECT",
+          "version": 0
+        },
+        {
+          "operation": "WRITE",
+          "version": 1
+        },
+        {
+          "operation": "WRITE",
+          "version": 2
+        }
+      ],
+      "line": [
+        {
+          "operation": "CREATE TABLE AS SELECT",
+          "version": 0
+        },
+        {
+          "operation": "MERGE",
+          "version": 1
+        },
+        {
+          "operation": "MERGE",
+          "version": 2
+        },
+        {
+          "operation": "MERGE",
+          "version": 3
+        }
+      ],
+      "silver": [
+        {
+          "operation": "CREATE TABLE AS SELECT",
+          "version": 0
+        },
+        {
+          "operation": "MERGE",
+          "version": 1
+        },
+        {
+          "operation": "MERGE",
+          "version": 2
+        },
+        {
+          "operation": "MERGE",
+          "version": 3
+        }
+      ],
+      "station": [
+        {
+          "operation": "CREATE TABLE AS SELECT",
+          "version": 0
+        },
+        {
+          "operation": "MERGE",
+          "version": 1
+        },
+        {
+          "operation": "MERGE",
+          "version": 2
+        },
+        {
+          "operation": "MERGE",
+          "version": 3
+        }
+      ]
+    },
+    "initial_versions": {
+      "bronze": 0,
+      "line": 1,
+      "silver": 1,
+      "station": 1
+    },
+    "invalid_bronze_version": 1,
+    "namespace": "workspace.ssdr_v2_fixture_quality_20261011_a",
+    "published_versions_unchanged_on_failure": true,
+    "quality_failure_blocked": true,
+    "recovered_totals": {
+      "20260128": 700,
+      "20260129": 660
+    },
+    "recovered_versions": {
+      "bronze": 2,
+      "line": 2,
+      "silver": 2,
+      "station": 2
+    },
+    "replay_business_match": true,
+    "spark_version": "4.2.0",
+    "synthetic": true,
+    "verified": true
+  },
+  "serving": {
+    "execution_environment": "databricks-serverless",
+    "namespace": "workspace.ssdr_v2_fixture_quality_20261011_a",
+    "quality_rows": [
+      {
+        "data_kind": "synthetic",
+        "duplicate_keys": 0,
+        "invalid_rows": 0,
+        "line_different_rows": 0,
+        "line_duplicate_keys": 0,
+        "line_invalid_rows": 0,
+        "line_total_count": 700,
+        "quality_status": "PASS",
+        "silver_total_count": 700,
+        "station_different_rows": 0,
+        "station_duplicate_keys": 0,
+        "station_invalid_rows": 0,
+        "station_total_count": 700,
+        "use_ymd": "20260128"
+      },
+      {
+        "data_kind": "synthetic",
+        "duplicate_keys": 0,
+        "invalid_rows": 0,
+        "line_different_rows": 0,
+        "line_duplicate_keys": 0,
+        "line_invalid_rows": 0,
+        "line_total_count": 660,
+        "quality_status": "PASS",
+        "silver_total_count": 660,
+        "station_different_rows": 0,
+        "station_duplicate_keys": 0,
+        "station_invalid_rows": 0,
+        "station_total_count": 660,
+        "use_ymd": "20260129"
+      }
+    ],
+    "synthetic": true,
+    "verified": true,
+    "view_definition_sha256": {
+      "daily_usage_overview_v2": "3b8ecd82173f6e973c050d71bd8d9156bc3760813b60fd19e00eca5126eaa509",
+      "station_usage_rank_v2": "4fe4897ece340f6373ecf842e230eaa4fffac73c726fa046accae78d9eff4a45",
+      "usage_quality_status_v2": "604d66c4edff201fefa0056eb61185a6f121e1c934b7f9f83af6f8a878ab8f82"
+    },
+    "view_rows": {
+      "daily_usage_overview_v2": [
+        {
+          "alight_count": 290,
+          "data_kind": "synthetic",
+          "line_count": 2,
+          "ride_count": 370,
+          "station_line_count": 3,
+          "total_count": 660,
+          "use_ymd": "20260129"
+        },
+        {
+          "alight_count": 290,
+          "data_kind": "synthetic",
+          "line_count": 2,
+          "ride_count": 410,
+          "station_line_count": 3,
+          "total_count": 700,
+          "use_ymd": "20260128"
+        }
+      ],
+      "station_usage_rank_v2": [
+        {
+          "alight_count": 150,
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "ride_count": 200,
+          "station_name": "가상일반역",
+          "total_count": 350,
+          "usage_rank": 1,
+          "use_ymd": "20260128"
+        },
+        {
+          "alight_count": 150,
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "ride_count": 200,
+          "station_name": "가상일반역",
+          "total_count": 350,
+          "usage_rank": 1,
+          "use_ymd": "20260129"
+        },
+        {
+          "alight_count": 60,
+          "data_kind": "synthetic",
+          "line_name": "7호선",
+          "ride_count": 70,
+          "station_name": "가상환승역",
+          "total_count": 130,
+          "usage_rank": 3,
+          "use_ymd": "20260128"
+        },
+        {
+          "alight_count": 60,
+          "data_kind": "synthetic",
+          "line_name": "7호선",
+          "ride_count": 70,
+          "station_name": "가상환승역",
+          "total_count": 130,
+          "usage_rank": 3,
+          "use_ymd": "20260129"
+        },
+        {
+          "alight_count": 80,
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "ride_count": 100,
+          "station_name": "가상환승역",
+          "total_count": 180,
+          "usage_rank": 2,
+          "use_ymd": "20260129"
+        },
+        {
+          "alight_count": 80,
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "ride_count": 140,
+          "station_name": "가상환승역",
+          "total_count": 220,
+          "usage_rank": 2,
+          "use_ymd": "20260128"
+        }
+      ],
+      "usage_quality_status_v2": [
+        {
+          "data_kind": "synthetic",
+          "duplicate_keys": 0,
+          "invalid_rows": 0,
+          "line_different_rows": 0,
+          "line_duplicate_keys": 0,
+          "line_invalid_rows": 0,
+          "line_total_count": 660,
+          "quality_status": "PASS",
+          "silver_total_count": 660,
+          "station_different_rows": 0,
+          "station_duplicate_keys": 0,
+          "station_invalid_rows": 0,
+          "station_total_count": 660,
+          "use_ymd": "20260129"
+        },
+        {
+          "data_kind": "synthetic",
+          "duplicate_keys": 0,
+          "invalid_rows": 0,
+          "line_different_rows": 0,
+          "line_duplicate_keys": 0,
+          "line_invalid_rows": 0,
+          "line_total_count": 700,
+          "quality_status": "PASS",
+          "silver_total_count": 700,
+          "station_different_rows": 0,
+          "station_duplicate_keys": 0,
+          "station_invalid_rows": 0,
+          "station_total_count": 700,
+          "use_ymd": "20260128"
+        }
+      ]
+    },
+    "views": [
+      "usage_quality_status_v2",
+      "daily_usage_overview_v2",
+      "station_usage_rank_v2"
+    ]
+  },
+  "serving_update": {
+    "job_id": 1083946371422567,
+    "run_id": 472610999319561,
+    "task_run_id": 817222654243481,
+    "result_state": "SUCCESS",
+    "elapsed_seconds": 32.706,
+    "scope": "serving_views selected; quality input tables preserved"
+  },
+  "serving_source_matches": true,
+  "warehouse": {
+    "id": "b58bef668eb3cbc9",
+    "serverless": true,
+    "cluster_size": "2X-Small",
+    "auto_stop_mins": 10
+  },
+  "sql_statements": {
+    "usage_quality_status_v2": {
+      "statement_id": "01f1c520-42f3-18a9-8fd5-bce4ae562bb2",
+      "state": "SUCCEEDED",
+      "rows": [
+        {
+          "use_ymd": "20260129",
+          "data_kind": "synthetic",
+          "silver_total_count": 660,
+          "station_total_count": 660,
+          "line_total_count": 660,
+          "duplicate_keys": 0,
+          "invalid_rows": 0,
+          "station_duplicate_keys": 0,
+          "station_invalid_rows": 0,
+          "line_duplicate_keys": 0,
+          "line_invalid_rows": 0,
+          "station_different_rows": 0,
+          "line_different_rows": 0,
+          "quality_status": "PASS"
+        },
+        {
+          "use_ymd": "20260128",
+          "data_kind": "synthetic",
+          "silver_total_count": 700,
+          "station_total_count": 700,
+          "line_total_count": 700,
+          "duplicate_keys": 0,
+          "invalid_rows": 0,
+          "station_duplicate_keys": 0,
+          "station_invalid_rows": 0,
+          "line_duplicate_keys": 0,
+          "line_invalid_rows": 0,
+          "station_different_rows": 0,
+          "line_different_rows": 0,
+          "quality_status": "PASS"
+        }
+      ]
+    },
+    "daily_usage_overview_v2": {
+      "statement_id": "01f1c520-4465-18bf-8e28-4a678d7a7577",
+      "state": "SUCCEEDED",
+      "rows": [
+        {
+          "use_ymd": "20260129",
+          "data_kind": "synthetic",
+          "ride_count": 370,
+          "alight_count": 290,
+          "total_count": 660,
+          "station_line_count": 3,
+          "line_count": 2
+        },
+        {
+          "use_ymd": "20260128",
+          "data_kind": "synthetic",
+          "ride_count": 410,
+          "alight_count": 290,
+          "total_count": 700,
+          "station_line_count": 3,
+          "line_count": 2
+        }
+      ]
+    },
+    "station_usage_rank_v2": {
+      "statement_id": "01f1c520-45ba-1a82-ab2a-16af02e63a3e",
+      "state": "SUCCEEDED",
+      "rows": [
+        {
+          "use_ymd": "20260128",
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "station_name": "가상일반역",
+          "ride_count": 200,
+          "alight_count": 150,
+          "total_count": 350,
+          "usage_rank": 1
+        },
+        {
+          "use_ymd": "20260129",
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "station_name": "가상일반역",
+          "ride_count": 200,
+          "alight_count": 150,
+          "total_count": 350,
+          "usage_rank": 1
+        },
+        {
+          "use_ymd": "20260128",
+          "data_kind": "synthetic",
+          "line_name": "7호선",
+          "station_name": "가상환승역",
+          "ride_count": 70,
+          "alight_count": 60,
+          "total_count": 130,
+          "usage_rank": 3
+        },
+        {
+          "use_ymd": "20260129",
+          "data_kind": "synthetic",
+          "line_name": "7호선",
+          "station_name": "가상환승역",
+          "ride_count": 70,
+          "alight_count": 60,
+          "total_count": 130,
+          "usage_rank": 3
+        },
+        {
+          "use_ymd": "20260129",
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "station_name": "가상환승역",
+          "ride_count": 100,
+          "alight_count": 80,
+          "total_count": 180,
+          "usage_rank": 2
+        },
+        {
+          "use_ymd": "20260128",
+          "data_kind": "synthetic",
+          "line_name": "2호선",
+          "station_name": "가상환승역",
+          "ride_count": 140,
+          "alight_count": 80,
+          "total_count": 220,
+          "usage_rank": 2
+        }
+      ]
+    },
+    "catalog_metadata": {
+      "statement_id": "01f1c520-46fa-1caa-ac81-c57af42c2a4c",
+      "state": "SUCCEEDED",
+      "rows": [
+        {
+          "table_name": "usage_quality_status_v2",
+          "table_type": "VIEW",
+          "comment": "Custom SQL contract checks, not Databricks managed quality monitoring. Require PASS; missing layers and invalid keys/counts must fail."
+        },
+        {
+          "table_name": "daily_usage_overview_v2",
+          "table_type": "VIEW",
+          "comment": "Synthetic portfolio data. use_ymd is the actual usage date; not current crowding. Only dates passing the custom quality contract are served."
+        },
+        {
+          "table_name": "station_usage_rank_v2",
+          "table_type": "VIEW",
+          "comment": "Synthetic station-line usage ranking for each actual usage date. Transfer lines stay separate. Only dates passing the custom quality contract are served."
+        }
+      ]
+    }
+  },
+  "warehouse_matches_notebook": true,
+  "limitations": [
+    "Synthetic bounded input; no production/S3 integration",
+    "No enterprise RBAC, managed quality monitoring, or cost benchmark"
+  ]
+}

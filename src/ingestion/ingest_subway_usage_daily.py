@@ -1,167 +1,81 @@
+"""Paginated usage collection: fail on incomplete input, preserve immutable revisions."""
 from __future__ import annotations
-
-import sys
-from pathlib import Path
-from datetime import datetime
-import json
-
-import requests
-import pandas as pd
-from dotenv import load_dotenv
-import pendulum
-
+import argparse
+import os
+import uuid
+from datetime import datetime, timedelta
+from pyspark.sql import functions as F
+from src.common.dates import date_parts, now_kst, validate_ymd
 from src.common.get_api import get_passenger_api_key
-from src.common.config import load_s3_config
-from pyspark.sql import SparkSession, functions as F
+from src.common.http import get_json, SourceError
+from src.common.storage import table_path, public_uri
+from src.ingestion.bronze import bronze_frame, USAGE_COLUMNS
+from src.jobs.spark_common import build_spark
 
-# 서울시 열린데이터광장 지하철 호선별 역별 승하차 인원 API
 BASE_URL = "http://openapi.seoul.go.kr:8088"
 SERVICE_NAME = "CardSubwayStatsNew"
 
 
-def fetch_subway_usage_daily(use_ymd: str, page_size: int = 1000, max_pages: int = 10) -> pd.DataFrame:
-    api_key = get_passenger_api_key()
-
-    all_pages: list[pd.DataFrame] = []
-    start = 1
-    page_no = 1
-
-    while page_no <= max_pages:
-        end = start + page_size - 1
-        url = f"{BASE_URL}/{api_key}/json/{SERVICE_NAME}/{start}/{end}/{use_ymd}"
-        print(f"[INFO] Request page {page_no}: {url}")
-
-        resp = requests.get(url, timeout=15)
-        print("[DEBUG] status:", resp.status_code)
-        resp.raise_for_status()
-
-        data = resp.json()
-        if SERVICE_NAME not in data:
-            print("[ERROR] Unexpected response structure:", list(data.keys()))
-            raise RuntimeError(f"Unexpected response: {data}")
-
-        svc = data[SERVICE_NAME]
-        total_count = svc.get("list_total_count")
-        result = svc.get("RESULT", {})
-        code = result.get("CODE")
-        msg = result.get("MESSAGE")
-        print(f"[DEBUG] RESULT: CODE={code}, MESSAGE={msg}, total_count={total_count}")
-
-        if code not in ("INFO-000", None):
-            raise RuntimeError(f"API 오류: CODE={code}, MESSAGE={msg}")
-
-        rows = svc.get("row", [])
-        print(f"[DEBUG] page {page_no} rows:", len(rows))
-        if not rows:
-            break
-
-        all_pages.append(pd.DataFrame(rows))
-
-        if len(rows) < page_size:
-            break
-
+def fetch_subway_usage_daily(use_ymd: str, page_size: int = 1000, max_pages: int = 10, *, session=None):
+    validate_ymd(use_ymd)
+    if not 1 <= page_size <= 1000 or max_pages < 1:
+        raise ValueError("invalid pagination limits")
+    key = get_passenger_api_key()
+    rows = []
+    total = None
+    for page in range(max_pages):
+        start = page * page_size + 1
+        url = f"{BASE_URL}/{key}/json/{SERVICE_NAME}/{start}/{start + page_size - 1}/{use_ymd}"
+        data = get_json(url, session=session)
+        service = data.get(SERVICE_NAME)
+        if not isinstance(service, dict):
+            raise SourceError("Usage API returned an error or unavailable date")
+        if service.get("RESULT", {}).get("CODE") != "INFO-000":
+            raise SourceError("Usage API did not report success")
         try:
-            tc_int = int(total_count) if total_count is not None else None
-        except Exception:
-            tc_int = None
-
-        if tc_int is not None and end >= tc_int:
+            current_total = int(service["list_total_count"])
+        except (KeyError, TypeError, ValueError):
+            raise SourceError("Usage API missing valid total count") from None
+        if total is not None and current_total != total:
+            raise SourceError("Usage total changed during pagination; retry the complete collection")
+        total = current_total
+        batch = service.get("row", [])
+        if not isinstance(batch, list):
+            raise SourceError("Usage API row is not a list")
+        rows.extend(batch)
+        print(f"[INFO] usage date={use_ymd} page={page + 1} rows={len(batch)}")
+        if len(rows) >= total or not batch:
             break
-
-        start += page_size
-        page_no += 1
-
-    if not all_pages:
-        print("[WARN] No data returned from API (all_pages empty).")
-        return pd.DataFrame()
-
-    df = pd.concat(all_pages, ignore_index=True)
-    print("[DEBUG] df.columns:", list(df.columns))
-    return df
+    if not rows or len(rows) != total:
+        raise SourceError(f"Usage collection incomplete: expected={total}, received={len(rows)}")
+    if any(str(row.get("USE_YMD")) != use_ymd for row in rows):
+        raise SourceError("Usage API returned a different usage date")
+    return rows
 
 
-def _normalize_for_spark(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    # 1) dict/list 같은 복잡 타입은 JSON 문자열로
-    for c in df.columns:
-        if df[c].dtype == "object":
-            df[c] = df[c].apply(
-                lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list)) else x
-            )
-
-    # 2) 전부 null인 컬럼 제거
-    all_null_cols = [c for c in df.columns if df[c].isna().all()]
-    if all_null_cols:
-        df = df.drop(columns=all_null_cols)
-
-    # 3) Bronze 안정성: 전부 string 통일
-    for c in df.columns:
-        df[c] = df[c].astype("string")
-
-    return df
-
-
-def save_to_bronze_delta(df: pd.DataFrame, use_ymd: str) -> str:
-    """
-    Spark가 S3에 직접 Delta append
-    path: s3a://{bucket}/bronze/subway_usage_delta
-    partition: year, month, day  (use_ymd 기준)
-    """
-    s3cfg = load_s3_config()
-    delta_path = f"s3a://{s3cfg.bucket}/bronze/subway_usage_delta"
-
-    y, m, d = use_ymd[0:4], use_ymd[4:6], use_ymd[6:8]
-    ingested_at = pendulum.now("Asia/Seoul").to_iso8601_string()
-    run_ts = pendulum.now("Asia/Seoul").format("YYYYMMDDTHHmmss")
-
-    df2 = df.copy()
-    df2["ingested_at"] = ingested_at
-    df2["run_ts"] = run_ts
-    df2["year"] = y
-    df2["month"] = m
-    df2["day"] = d
-
-    df2 = _normalize_for_spark(df2)
-
-    spark = (
-        SparkSession.builder
-        .appName("bronze-usage-delta")
-        .getOrCreate()
-    )
-
-    sdf = spark.createDataFrame(df2)
-    sdf = sdf.withColumn("ingested_at", F.to_timestamp("ingested_at"))
-
-    (sdf.write
-        .format("delta")
-        .mode("append")
-        .partitionBy("year", "month", "day")
-        .save(delta_path)
-    )
-
-    s3_uri = delta_path.replace("s3a://", "s3://")
-    print(f"[OK] Saved {sdf.count()} rows to {s3_uri}")
-    return s3_uri
+def save_to_bronze_delta(rows, use_ymd: str, *, spark=None, captured_at=None, run_id=None) -> str:
+    y, m, d = date_parts(use_ymd)
+    owned = spark is None
+    spark = spark or build_spark("bronze-usage")
+    try:
+        df = bronze_frame(spark, rows, USAGE_COLUMNS, captured_at or now_kst(),
+                          run_id or os.getenv("RUN_ID") or str(uuid.uuid4()))
+        df = df.withColumn("year", F.lit(y)).withColumn("month", F.lit(m)).withColumn("day", F.lit(d))
+        path = table_path("bronze/subway_usage_delta")
+        df.write.format("delta").mode("append").partitionBy("year", "month", "day").save(path)
+        return public_uri(path)
+    finally:
+        if owned:
+            spark.stop()
 
 
 def main():
-    if len(sys.argv) > 1:
-        use_ymd = sys.argv[1]
-    else:
-        # KST 기준 today - 4일
-        use_ymd = pendulum.now("Asia/Seoul").subtract(days=4).format("YYYYMMDD")
-
-    print("[INFO] Fetching CardSubwayStatsNew for use_ymd:", use_ymd)
-
-    df = fetch_subway_usage_daily(use_ymd)
-    print("[INFO] Rows fetched:", len(df))
-
-    if len(df) > 0:
-        print(df.head())
-        save_to_bronze_delta(df, use_ymd)
-    else:
-        print("[WARN] Empty DataFrame. Check API key / date(use_ymd) / service status.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("use_ymd", nargs="?", type=validate_ymd,
+                        default=(now_kst() - timedelta(days=4)).strftime("%Y%m%d"))
+    args = parser.parse_args()
+    rows = fetch_subway_usage_daily(args.use_ymd)
+    print(f"[OK] usage Bronze rows={len(rows)} path={save_to_bronze_delta(rows, args.use_ymd)}")
 
 
 if __name__ == "__main__":
