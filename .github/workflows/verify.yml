@@ -25,6 +25,7 @@ jobs:
       - run: python scripts/demo.py --output-dir .work/demo/ci
       - run: python scripts/recovery_experiment.py --output-dir .work/recovery/ci
       - run: python scripts/managed_usage_experiment.py --output-dir .work/managed-usage/ci
+      - run: python scripts/compaction_experiment.py --output-dir .work/compaction/ci
       - uses: actions/upload-artifact@v4
         with:
           name: offline-pipeline-evidence
@@ -32,6 +33,7 @@ jobs:
             .work/demo/ci
             .work/recovery/ci
             .work/managed-usage/ci
+            .work/compaction/ci/evidence.json
           retention-days: 7
   dags:
     runs-on: ubuntu-latest
