@@ -325,3 +325,34 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 닫힌 시간 compaction의 물리/논리 보존과 로컬 조회 변화는 검증됐다. 실수집 장기 파일 분포·S3 읽기/추가 쓰기 비용·pool 경합/신선도·파티션 변경·보존 정책은 남는다. 이번 약 1MB 출력과 warm 조회를 운영 개선율/비용 절감으로 주장하지 않는다. 이전 Kubernetes 순수 pool 대기/더 큰 동시 입력·유지보수 플랫폼 검증도 로드맵대로 남는다. write-commit 스킬로 기능/테스트·CI·문서의 목적별 로컬 커밋을 진행한다.
 
 구현 로컬 커밋: c17c086(닫힌 시간 compaction·조회/재처리 검증·Delta 회귀), 157ba85(CI 실험과 evidence artifact). 문서와 최종 실제 실행 JSON은 다음 docs(portfolio) 커밋에 기록한다. 원격 push는 하지 않았다.
+
+## 2026-10-11 포트폴리오 저장소 정리·공개 준비
+
+사용자가 미사용·중복 코드를 정리하고 GitHub push를 요청했다. 시작 시 codex/de-portfolio-hardening의 151f026이었고 사용자 staged/untracked 변경은 없었다. 원격 origin/main은 c4a341a이며 기존 고도화 커밋 26개가 아직 원격에 없었다. 같은 작업 브랜치의 누적 고도화와 이번 정리를 공개 대상으로 삼는다. main 직접 병합·force push·Git 저자 변경·실서비스 배포는 범위에 넣지 않는다.
+
+### 현재 경로 정리
+
+- 호출부가 없는 src/utils/station_loader.py(외부 Excel 의존), src/utils/time.py(KST alias), spark_common의 get_bucket/s3a를 제거했다. 공통 날짜/저장 경로와 Spark 세션 구성은 기존 계약을 유지한다.
+- 실행이 차단된 databricks/sample_export/merge_parquet.py와 현재 실행 증거가 아닌 legacy 다운로드 manifest를 제거했다. 작동하는 export는 scripts/export_usage_snapshot.py로 이동하고 루트 import bootstrap·회귀 호출부를 맞췄다. Delta 루트·versionAsOf·날짜 필터와 lineage/manifest를 유지한다.
+- 알림을 src/alerts/notify_arrival_eta_15m.py로 이름 변경하고 DAG·회귀 import를 맞췄다. ETA를 실제 운행 지연처럼 표현하는 이전 파일명을 없앴다.
+- k8s/create-secret.sh를 기존 안전한 v2 구현으로 통합했다. 절대 개인 경로·argv Secret 전달 구현, 중복 create-secret-v2.sh와 사용되지 않는 Secret YAML 템플릿을 제거했다. 프로젝트 상대 dotenv·kubectl 표준 입력 전달을 유지하며 실제 Secret을 생성하지 않았다.
+- docker/requirements.txt의 세 목록 재참조 래퍼를 제거하고 Dockerfile에서 같은 requirements 목록을 직접 설치한다. 버전이나 Airflow/Spark 환경 분리는 바꾸지 않았다.
+- source/compaction 실험의 같은 canonical JSON 전체 행 해시를 src/observability/fingerprints.py로 공유한다. 입력 버전 고정·행 상한·NULL·중복·마이크로초를 보존한다. managed 업무 컬럼 해시와 Kubernetes 증거 해시는 의미/형식이 달라 별도로 유지한다.
+- README의 탐색 순서, REPOSITORY_GUIDE.md의 운영/실험 역할, examples/README.md의 합성/실수집/실제 플랫폼 증거를 정리했다. RUNBOOK·Databricks 경로와 Airflow 검사 명령을 맞추고 잘못된 이중 bash continuation도 고쳤다.
+- 과거 private export의 ignore 규칙·실수집 원문·인증·이미지/PVC/클러스터·역사적 실패 증거는 보존한다. 이전 SESSION_HANDOFF 경로는 당시 기록이므로 전체 치환하지 않았다.
+
+### 실제 검증
+
+- 파이프라인 회귀 165 passed, 152.89초. Airflow/Pod 회귀 12 passed, 1.23초, 기존 Pydantic 경고 8개. 서로 다른 검사 총 177개다. 새 공통 hash의 잘못된 경계/버전 및 실제 Delta 전체 행 계약 검사를 포함한다.
+- 기존 private compaction lake의 버전 35/36을 새 helper로 읽어 공개 36,000행 해시와 일치했다. 기존 실수집 lake의 7개 테이블 전체 행·Delta 버전도 공개 after_replay와 일치했다. 데이터 변경이나 새 API 호출 없이 읽기만 했다.
+- 공식 chart fixture 렌더와 실제 Airflow 태스크 17개의 Pod 병합·DAG 직렬화를 통과했다. 이번 검사는 구성 검증이며 새 Pod 실행이 아니다.
+- ssdr-airflow:portfolio-cleanup 로컬 이미지 build, 두 Python 환경 pip check·provider import 성공. 이 이미지 안의 합성 Airflow 연결 실행은 12태스크 SUCCESS, API 태스크 1개 skip, 73.787953초, 이용량 680·도착/유효 ETA 4/4·보고서 해시 검증 성공이다. 순차 TaskInstance.run 루프이며 Kubernetes scheduler 실행 증거와 구분한다.
+- 컨테이너 결과 전체 폴더를 Windows 경유 복사할 때 scheduler/latest symlink 권한으로 실패했다. evidence.json·task-summary.json 두 일반 파일만 별도 복사해 보존했다. 실행 자체는 성공했고 컨테이너와 원본 로그는 남아 있다.
+- Ruff 전체·별도 pycache compileall·bash -n·export CLI help·diff whitespace 통과. 문서 상대 링크 161개·공개 JSON·모든 DAG의 Spark CLI 경로 존재를 확인했다. 공개 전 기존 미공개 커밋 26개의 서로 다른 변경 blob 256개와 현재 파일에서 로컬 비밀 값 미포함을 확인했다.
+- private: .work/cleanup-regression-01.log, cleanup-airflow-01.log, cleanup-hash-check.log, cleanup-audit.log, cleanup-docker-build.log, cleanup-container.log, cleanup-container-evidence/{evidence,task-summary}.json, cleanup-render.log, cleanup-overrides.log, kubernetes/render-cleanup-fixture, kubernetes/overrides-cleanup.json. 현재 Kubernetes v4 fixture 릴리스는 변경하지 않았다.
+
+### 공개와 남은 작업
+
+사용자 요청에 따라 origin의 codex/de-portfolio-hardening에 일반 push하는 범위다. 로컬 검증과 원격 GitHub Actions 결과는 구분하고 push 후 원격 HEAD/CI 상태를 확인한다. 실제 장기 수집·S3 운영/복구·순수 pool 대기·더 큰 입력·유지보수 플랫폼 조합의 검증은 기존 로드맵대로 남는다. 정리는 이 항목의 완료 증거가 아니다.
+
+이번 정리의 구현 커밋: d8bab1b(미사용·중복 경로 정리와 호출부/회귀), 0488b9e(전체 행 해시 공통화와 회귀). 탐색 안내와 실제 검사 기록은 별도 docs(portfolio) 커밋으로 묶는다.

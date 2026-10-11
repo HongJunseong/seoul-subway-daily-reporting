@@ -59,3 +59,7 @@ fixture에서만 SSDR_TASK_RESOURCE_METRICS=true를 켜 worker cgroup v2를 읽�
 ## 저장 파일 유지보수 실험 (2026-10-11)
 
 compaction_experiment는 새로운 .work 합성 lake에서만 36,000행을 만든다. 닫힌 한 시간의 OPTIMIZE 전후 전체 행·인접 파일·Silver/15분 Gold 재처리를 검사한다. source replay의 Bronze 버전 불변과 유지보수의 dataChange=false 새 커밋을 구분한다. STORAGE_MAINTENANCE.md와 examples/operations/compaction.md에 조회 표본·선택 범위를 기록한다. 자동 일정·S3 쓰기·VACUUM은 수행하지 않는다.
+
+## 저장소 실행 경로 정리 (2026-10-11)
+
+현재 코드 탐색은 REPOSITORY_GUIDE.md, 실행 증거 탐색은 examples/README.md를 기준으로 한다. 사용하지 않는 역 Excel 로더·시간 alias·S3 보조 함수, 비활성 Parquet 병합기와 오래된 다운로드 manifest를 제거했다. Secret 생성은 k8s/create-secret.sh 하나로 통합하며 dotenv·표준 입력 전달을 유지한다. 선택적 버전 고정 Bronze export는 scripts/export_usage_snapshot.py, ETA 알림은 src/alerts/notify_arrival_eta_15m.py다. 실험의 전체 행 해시는 src/observability/fingerprints.py로 공유하며 기존 공개 증거의 형식·값을 보존한다. 과거 SESSION_HANDOFF의 경로는 당시 작업 기록이다.

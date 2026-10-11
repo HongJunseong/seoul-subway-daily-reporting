@@ -4,6 +4,12 @@
 
 이 프로젝트의 중심 문제는 서로 다른 시간 기준과 원천의 제약을 가진 데이터를 정확하게 처리하는 것이다. 승하차 데이터는 보고서 생산일 D-4, 도착 관측은 D-1을 사용한다. 도착 API를 5분마다 호출하는 구조이며 연속 이벤트 스트림은 아니다. ETA를 실제 승객 대기시간이나 시간표 대비 지연으로 해석하지 않는다.
 
+## 처음 보는 사람을 위한 안내
+
+- [코드 구조와 실행 경로](docs/REPOSITORY_GUIDE.md): 수집·변환·보고서 코드와 검증 CLI의 역할.
+- [검증 증거 목록](examples/README.md): 합성·실수집 결과, Databricks·Kubernetes 실행 범위.
+- 아래의 키 없는 데모로 기본 흐름을 재현한 뒤, 필요한 플랫폼 절차를 선택한다.
+
 ## 설계
 
 ```mermaid
@@ -55,7 +61,7 @@ source .venv/bin/activate
 pip install -r requirements/dev.txt
 python scripts/demo.py --output-dir .work/demo/my-run
 python scripts/verify_report.py .work/demo/my-run/reports/subway_report_20260201.md
-pytest -q --ignore=tests/test_dags.py
+pytest -q --ignore=tests/test_dags.py --ignore=tests/test_kubernetes_profiles.py
 ruff check src dags scripts tests
 ```
 
@@ -123,4 +129,4 @@ Docker Compose와 Kubernetes 설정을 제공한다. GitHub Actions는 파이프
 
 [데이터 계약](docs/DATA_CONTRACTS.md), [실행·복구 runbook](docs/RUNBOOK.md), [프로젝트 맥락](docs/PROJECT_CONTEXT.md), [로드맵](docs/ROADMAP.md), [검증 범위](docs/VALIDATION.md), [작업 인수인계](docs/SESSION_HANDOFF.md)를 관리한다. [AGENTS.md](AGENTS.md)와 저장소의 [커밋 스킬](.agents/skills/write-commit/SKILL.md)은 이후 작업에서도 같은 기준을 유지한다.
 
-다음 평가는 실제 수집 기간의 누락·신선도·응답 상한 도달 빈도, 실패 후 복구 시간, 파일 수·크기에 근거해야 한다. 작은 합성 데이터 실험으로 대규모 처리 성능이나 전체 서울 지하철 커버리지를 주장하지 않는다. Databricks의 새 v2 notebook은 같은 변환을 실제 Job에서 실행했다. legacy export manifest는 이전 학습 기록으로 구분한다.
+다음 평가는 실제 수집 기간의 누락·신선도·응답 상한 도달 빈도, 실패 후 복구 시간, 파일 수·크기에 근거해야 한다. 작은 합성 데이터 실험으로 대규모 처리 성능이나 전체 서울 지하철 커버리지를 주장하지 않는다.
