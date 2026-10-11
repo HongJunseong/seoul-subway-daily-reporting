@@ -82,6 +82,12 @@ def test_window_crosses_midnight_and_null_eta_does_not_become_zero(spark, storag
     build_arrival_metrics(spark, end)
     persisted = spark.read.format("delta").load(table_path("gold/arrival_metrics_15m_delta"))
     assert persisted.count() == 2
+    boundaries = persisted.select(
+        F.date_format("window_start_ts", "yyyy-MM-dd HH:mm:ss").alias("start_kst"),
+        F.date_format("window_end_ts", "yyyy-MM-dd HH:mm:ss").alias("end_kst"),
+        "window_end_ymdhm").distinct().collect()
+    assert [(r.start_kst, r.end_kst, r.window_end_ymdhm) for r in boundaries] == [
+        ("2026-01-31 23:50:00", "2026-02-01 00:05:00", "202602010005")]
 
 
 def test_arrival_same_capture_prefers_latest_source_generation_over_hash(spark, storage):
@@ -99,8 +105,9 @@ def test_arrival_same_capture_prefers_latest_source_generation_over_hash(spark, 
     bronze = bronze.withColumn("record_hash", F.when(F.col("barvlDt") == "180", F.lit("z"))
                                .when(F.col("barvlDt") == "45", F.lit("y")).otherwise(F.lit("a")))
     for frame in [bronze.orderBy("record_hash"), bronze.orderBy(F.col("record_hash").desc())]:
-        facts = transform_arrival(frame).collect()
+        facts = transform_arrival(frame).withColumn(
+            "recptn_kst", F.date_format("recptn_dt", "yyyy-MM-dd HH:mm:ss")).collect()
         assert len(facts) == 1
         assert facts[0].arrival_seconds == 60
-        assert facts[0].recptn_dt == datetime(2026, 2, 1, 0, 0, 1)
+        assert facts[0].recptn_kst == "2026-02-01 00:00:01"
         assert facts[0].source_age_sec == 4

@@ -13,7 +13,11 @@ GOLD_PREFIX = "gold/arrival_metrics_15m_delta"
 
 
 def aggregate_metrics(df, start, end):
-    observations = df.where((F.col("snapshot_ts") >= F.lit(start)) & (F.col("snapshot_ts") < F.lit(end)))
+    # Parse wall-clock boundaries in Spark's explicit KST session timezone.
+    # F.lit(naive_datetime) instead uses the Python host timezone.
+    start_ts = F.to_timestamp(F.lit(start.isoformat()))
+    end_ts = F.to_timestamp(F.lit(end.isoformat()))
+    observations = df.where((F.col("snapshot_ts") >= start_ts) & (F.col("snapshot_ts") < end_ts))
     require_nonempty(observations, "arrival window")
     if observations.where(F.col("arrival_seconds").isNotNull()).isEmpty():
         raise DataQualityError("arrival window has no valid ETA measurements")
@@ -25,7 +29,7 @@ def aggregate_metrics(df, start, end):
                     F.avg(F.when(F.col("arrival_seconds").isNotNull(),
                                  (F.col("arrival_seconds") >= 600).cast("double"))).alias("long_ratio_10m"),
                     F.max("source_age_sec").alias("max_source_age_sec")))
-    return (metrics.withColumn("window_start_ts", F.lit(start)).withColumn("window_end_ts", F.lit(end))
+    return (metrics.withColumn("window_start_ts", start_ts).withColumn("window_end_ts", end_ts)
             .withColumn("year", F.lit(end.strftime("%Y"))).withColumn("month", F.lit(end.strftime("%m")))
             .withColumn("day", F.lit(end.strftime("%d"))).withColumn("hour", F.lit(end.strftime("%H")))
             .withColumn("window_end_ymdhm", F.lit(end.strftime("%Y%m%d%H%M"))))
