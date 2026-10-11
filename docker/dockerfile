@@ -13,10 +13,10 @@ ENV PYSPARK_PYTHON=/opt/pipeline/bin/python
 ENV PYSPARK_DRIVER_PYTHON=/opt/pipeline/bin/python
 
 COPY requirements /requirements
-COPY docker/requirements.txt /requirements.txt
 USER airflow
 # Preserve Airflow's boto/async-provider constraints; Spark has its own venv.
-RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" -r /requirements.txt \
+RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" -r /requirements/airflow-verification.txt \
+    -r /requirements/llm.txt -r /requirements/airflow-kubernetes.txt \
     && PIP_USER=false /opt/pipeline/bin/pip install --no-cache-dir -r /requirements/runtime.txt \
     && pip check && /opt/pipeline/bin/pip check \
     && python -c "import shapely; from google.cloud import bigquery"

@@ -34,23 +34,21 @@ pytest -q tests/test_managed_usage.py
 
 로컬 Spark/Delta managed table의 실제 커밋을 사용하며 Databricks 실행 증거와 구분한다. ANSI 모드에서 잘못된 문자열·정수 overflow·잘못된 revision 날짜·빈 입력이 이전 Silver 내용과 버전을 보존하는지 검사한다.
 
-## 기존 샘플 export의 교체
+## 선택적 Bronze snapshot export
 
-이전 sample_export/manifest.json은 2026-01-21의 legacy 다운로드 기록이다. v2의 정상 Delta snapshot/실행 증거가 아니다. Delta 내부 Parquet 전체를 병합하면 삭제된 파일이나 이전 정정도 포함할 수 있어 merge_parquet.py 실행을 중단하도록 바꿨다.
-
-export_from_s3.py는 테이블 ROOT를 format("delta")와 versionAsOf로 읽고 날짜를 필터링한 뒤 독립된 Parquet upload snapshot을 생성한다. raw_payload·record hash·수집 시각·run ID를 보존한다. 출력 manifest는 입력 버전·날짜·건수를 담는다. S3는 --allow-s3로 명시적으로 선택한다.
+현재 Job은 합성 fixture를 managed Delta에 직접 만든다. 별도 저장 원본을 검토할 때만 [snapshot export CLI](../scripts/export_usage_snapshot.py)를 사용한다. Delta 루트와 versionAsOf로 읽고 이용 날짜를 필터링해 독립된 Parquet snapshot을 만든다. raw_payload·record hash·수집 시각·run ID와 입력 버전·행 수 manifest를 보존한다. Delta 내부 파일을 병합하지 않는다. S3 입력은 --allow-s3로 명시적으로 선택한다.
 
 ```bash
 PYTHONPATH="$PWD" SSDR_DATA_ROOT=/path/to/local/lake spark-submit \
   --packages io.delta:delta-spark_2.12:3.2.0 \
   --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
   --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-  databricks/sample_export/export_from_s3.py \
+  scripts/export_usage_snapshot.py \
   --delta-root /path/to/local/lake/v2/bronze/subway_usage_delta \
   --use-ymd 20260128 --version 0 --output .work/exports/usage-01
 ```
 
-실데이터 snapshot을 upload하려면 해당 destination·데이터 범위를 별도로 정한다. 현재 Job은 합성 fixture만 사용하며 서울 API/AWS/Discord/LLM을 호출하지 않는다. 동시에 다른 notebook/Job이 같은 managed namespace를 쓰지 않는다.
+실데이터 snapshot의 workspace upload는 별도 작업이다. 현재 Job은 API/AWS/Discord/LLM을 호출하지 않으며 다른 notebook/Job과 같은 managed namespace에 동시에 쓰지 않는다.
 
 공식 기준: [Free Edition 제한](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations), [serverless API/저장 제약](https://docs.databricks.com/aws/en/compute/serverless/limitations), [OAuth CLI 인증](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-u2m), [bundle sync 범위](https://docs.databricks.com/aws/en/dev-tools/bundles/reference#sync).
 
@@ -61,8 +59,8 @@ PYTHONPATH="$PWD" SSDR_DATA_ROOT=/path/to/local/lake spark-submit \
 실제 결과를 새 경로에 기록하는 예:
 
 ```bash
-python scripts/record_databricks_run.py --profile SSDR_PORTFOLIO \\
-  --run-id 44336808137994 --local-evidence .work/managed-usage/my-run/evidence.json \\
+python scripts/record_databricks_run.py --profile SSDR_PORTFOLIO \
+  --run-id 44336808137994 --local-evidence .work/managed-usage/my-run/evidence.json \
   --output-dir .work/databricks-native/my-run
 ```
 

@@ -7,7 +7,7 @@ from src.ingestion.bronze import bronze_frame, USAGE_COLUMNS
 from src.platforms.managed_usage import UsageTables, publish_silver, version, fixture_snapshot
 from src.platforms.usage_fixture import seed_fixture, verify_fixture_replay
 from src.quality.checks import DataQualityError
-from databricks.sample_export.export_from_s3 import export_snapshot
+from scripts.export_usage_snapshot import export_snapshot
 
 pytestmark = pytest.mark.spark
 

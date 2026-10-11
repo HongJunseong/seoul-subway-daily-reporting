@@ -10,4 +10,4 @@
 data
 .agents
 .databricks
-databricks/sample_export/output
+databricks/sample_export

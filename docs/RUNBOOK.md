@@ -10,7 +10,7 @@ source .venv/bin/activate
 pip install -r requirements/dev.txt
 python scripts/demo.py --output-dir .work/demo/run-01
 python scripts/verify_report.py .work/demo/run-01/reports/subway_report_20260201.md
-pytest -q --ignore=tests/test_dags.py
+pytest -q --ignore=tests/test_dags.py --ignore=tests/test_kubernetes_profiles.py
 ruff check src dags scripts tests
 ```
 
@@ -20,9 +20,9 @@ Airflow 검증은 호환성을 위해 별도 환경을 쓴다.
 
 ```bash
 python3.11 -m venv .venv-airflow
-.venv-airflow/bin/pip install apache-airflow==2.7.3 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
+.venv-airflow/bin/pip install "apache-airflow[cncf.kubernetes]==2.7.3" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
 .venv-airflow/bin/pip install pytest==8.4.2
-AIRFLOW_HOME="$PWD/.work/airflow" PYTHONPATH="$PWD:$PWD/dags" .venv-airflow/bin/pytest -q tests/test_dags.py
+AIRFLOW_HOME="$PWD/.work/airflow" PYTHONPATH="$PWD:$PWD/dags" .venv-airflow/bin/pytest -q tests/test_dags.py tests/test_kubernetes_profiles.py
 ```
 
 ## API·S3 실행 준비
@@ -79,7 +79,7 @@ PYTHONPATH="$PWD" spark-submit --packages io.delta:delta-spark_2.12:3.2.0,org.ap
 
 ## Kubernetes 후보 설정
 
-k8s/airflow-values.yaml은 src와 DAG를 같은 이미지에 포함하고 git-sync/init clone을 사용하지 않는다. 이미지 태그는 ssdr-airflow:portfolio-v4다. 저장소 루트의 docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 . 명령으로 빌드할 수 있다. 로컬 클러스터에 이미지를 제공한 후 namespace, Secret, Airflow Helm 릴리스를 준비해야 한다. Secret 생성은 새 k8s/create-secret-v2.sh를 사용한다. 기존 create-secret.sh는 보존된 이전 설정이며 v2 실행 경로가 아니다.
+k8s/airflow-values.yaml은 src와 DAG를 같은 이미지에 포함하고 git-sync/init clone을 사용하지 않는다. 이미지 태그는 ssdr-airflow:portfolio-v4다. 저장소 루트의 docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 . 명령으로 빌드할 수 있다. 로컬 클러스터에 이미지를 제공한 후 namespace, Secret, Airflow Helm 릴리스를 준비해야 한다. Secret 생성은 프로젝트 상대 경로로 .env를 읽는 k8s/create-secret.sh 한 경로를 사용한다.
 
 DAG 활성화 전에 Airflow UI의 Admin → Pools에서 ssdr_delta_writer를 1 slot으로 생성한다. pool이 없으면 Spark 태스크는 대기한다. CLI는 airflow pools set ssdr_delta_writer 1 serialize_delta_writers를 사용할 수 있다.
 

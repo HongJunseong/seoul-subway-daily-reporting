@@ -21,7 +21,7 @@ jobs:
           java-version: "17"
       - run: pip install -r requirements/dev.txt
       - run: ruff check src dags scripts tests
-      - run: pytest -q --ignore=tests/test_dags.py
+      - run: pytest -q --ignore=tests/test_dags.py --ignore=tests/test_kubernetes_profiles.py
       - run: python scripts/demo.py --output-dir .work/demo/ci
       - run: python scripts/recovery_experiment.py --output-dir .work/recovery/ci
       - run: python scripts/managed_usage_experiment.py --output-dir .work/managed-usage/ci

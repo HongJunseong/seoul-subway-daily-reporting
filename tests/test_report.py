@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from src.report.build_report_context_daily import summarize_usage, summarize_arrival, report_dates, ReportDataError
 from src.report.generate_daily_report import render_report
-from src.alerts.check_gold_arrival_delay_15m_and_notify import summarize_alert
+from src.alerts.notify_arrival_eta_15m import summarize_alert
 
 
 def usage():

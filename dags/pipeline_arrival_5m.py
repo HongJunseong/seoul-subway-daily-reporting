@@ -20,6 +20,6 @@ with DAG(dag_id="pipeline_arrival_5m", start_date=pendulum.datetime(2026, 1, 1, 
                         bash_command=spark_command("src/processing/build_gold_arrival_metrics_15m_spark.py",
                                                    '--as_of "$AS_OF"'))
     qa = BashOperator(executor_config=task_executor_config("spark"), pool=DELTA_WRITE_POOL, task_id="gold_arrival_eta_qa_notify", env=AS_OF_ENV, append_env=True,
-                      bash_command=spark_command("src/alerts/check_gold_arrival_delay_15m_and_notify.py",
+                      bash_command=spark_command("src/alerts/notify_arrival_eta_15m.py",
                                                  '--as_of "$AS_OF"'))
     silver >> gold >> qa

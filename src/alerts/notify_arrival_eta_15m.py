@@ -1,4 +1,4 @@
-"""Compatibility CLI name; alerts describe sampled ETA, not measured service delay."""
+"""Notify on sampled ETA distributions; this is not a service-delay measurement."""
 from __future__ import annotations
 import argparse
 from pyspark.sql import functions as F

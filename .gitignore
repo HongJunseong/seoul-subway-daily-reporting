@@ -60,7 +60,7 @@ adminuser-role.yaml
 core
 core.*
 
-# Databricks deployment state and local exports
+# Databricks deployment state and historical private local exports
 .databricks/
 databricks/sample_export/output/
 databricks/sample_export/merged/

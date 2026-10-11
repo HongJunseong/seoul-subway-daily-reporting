@@ -1,7 +1,6 @@
 from __future__ import annotations
 import os
 from pyspark.sql import SparkSession
-from src.common.config import load_s3_config
 
 
 def build_spark(app_name: str) -> SparkSession:
@@ -20,11 +19,3 @@ def build_spark(app_name: str) -> SparkSession:
     spark = builder.getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
     return spark
-
-
-def get_bucket() -> str:
-    return load_s3_config().bucket
-
-
-def s3a(bucket: str, key: str) -> str:
-    return f"s3a://{bucket}/{key.lstrip('/')}"
