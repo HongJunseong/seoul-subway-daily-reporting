@@ -13,5 +13,6 @@
 - 회귀 테스트를 실행하고 실제 결과·남은 작업을 docs/SESSION_HANDOFF.md에 기록한다.
 - 현재 운영 경로에는 Kafka가 필요하지 않다. 새 기술은 문제와 검증 방법으로 선택한다.
 - .agents/skills/write-commit/SKILL.md를 따른다. 기능과 테스트를 함께 커밋한다.
+- 브랜치는 작업 목적에 맞는 feature/, fix/, refactor/ 이름을 사용한다. 현재 개발 브랜치는 feature/de-portfolio다.
 - 승인된 자율 개발 범위의 로컬 커밋은 재확인 없이 진행한다. push·배포는 해당 요청 범위를 따른다.
 - 사용자 변경을 함께 스테이징하거나 Git 저자를 바꾸거나 AI 공동저자를 추가하지 않는다.

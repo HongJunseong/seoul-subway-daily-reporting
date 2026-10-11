@@ -3,7 +3,7 @@
 ## 2026-10-10 완료한 로컬 고도화
 
 사용자는 Kafka가 필수가 아니라면 제거하고, DE 포트폴리오 고도화·커밋 스킬·agent 파일을 자율적으로 진행하도록 요청했다.
-브랜치는 codex/de-portfolio-hardening이다. 변경은 로컬 커밋으로 기록했으며 push와 실서비스 배포는 실행하지 않았다.
+개발 브랜치에서 변경을 로컬 커밋으로 기록했으며 push와 실서비스 배포는 실행하지 않았다.
 
 ### 구현
 
@@ -85,7 +85,7 @@ UNC 경로 apply_patch와 기본 WSL 접근은 제한되어 승인된 WSL Bash �
 
 이번 작업 시작 시 Linux Git은 clean이었다. 기존 Secret 스크립트·.env·서비스 데이터는 수정하거나 스테이징하지 않았다. 승인된 WSL 세션에서 구현·검사·로컬 커밋을 진행했다. 초기 PyArrow 탐색 중 native 종료가 있어 메타데이터 projection과 동기 pandas 읽기로 바꿨고 이후 실제 감사 CLI·회귀 검사는 정상 종료했다. crash dump는 로그/커밋에 포함하지 않도록 ignore했다.
 
-로컬 커밋은 `codex/de-portfolio-hardening`의 git log에서 확인한다. 다음 검증은 live 자료와 운영 환경 접근이 포함되므로 이번 완료 범위와 구분한다.
+로컬 커밋은 개발 브랜치의 git log에서 확인한다. 다음 검증은 live 자료와 운영 환경 접근이 포함되므로 이번 완료 범위와 구분한다.
 
 후속 로컬 커밋: af1b05d(Delta 감사), 050e59c(태스크 관측), 78406d3(복구 실험). 문서·샘플 커밋은 바로 다음 git log 항목에 기록한다.
 
@@ -125,7 +125,7 @@ UNC 경로 apply_patch와 기본 WSL 접근은 제한되어 승인된 WSL Bash �
 
 실제 scheduler·분산 executor·Docker/Kubernetes·S3 writer의 동시성/복구, 실제 API 지속 수집·응답 상한·결측·신선도 baseline은 여전히 미검증이다. TaskInstance의 실행 시간과 운영 queue/pool 대기를 구분한다. live 로드맵 항목은 완료로 바꾸지 않았다.
 
-이번 시작의 Linux Git 상태는 clean이었다. .env·기존 Secret 스크립트·운영 데이터는 변경/스테이징하지 않았다. Windows Git의 ownership 경고는 글로벌 설정을 바꾸지 않고 WSL Git으로 확인했다. 변경은 codex/de-portfolio-hardening의 기능별 로컬 커밋으로 기록하며 push·배포는 하지 않는다.
+이번 시작의 Linux Git 상태는 clean이었다. .env·기존 Secret 스크립트·운영 데이터는 변경/스테이징하지 않았다. Windows Git의 ownership 경고는 글로벌 설정을 바꾸지 않고 WSL Git으로 확인했다. 변경은 개발 브랜치의 기능별 로컬 커밋으로 기록하며 push·배포는 하지 않는다.
 
 로컬 구현 커밋: 33f3121(실제 Airflow 연결 실행·CI·회귀 검사). 문서와 공개 증거는 다음 로컬 커밋에 기록한다.
 
@@ -180,7 +180,7 @@ Docker engine 28.3.0은 응답하지만 docker-desktop Kubernetes API는 127.0.0
 
 유지보수 중인 Airflow/chart/provider와 운영 metadata DB 조합, 실제 Pod 메모리/CPU·queue/pool 대기, 실수집/API·S3 baseline·원격 CI는 후속 검증이다. fixture DB 보관 이미지를 운영용으로 권장하지 않는다. 기존 사용자 파일·.env·Secret과 실서비스 데이터는 보존했다.
 
-write-commit 스킬에 따라 기능별 로컬 커밋을 진행한다. 브랜치는 codex/de-portfolio-hardening이며 push하지 않는다.
+write-commit 스킬에 따라 기능별 로컬 커밋을 진행한다. 개발 브랜치에서 기록하며 push하지 않는다.
 
 ## 2026-10-11 후속 검증 — 실제 Kubernetes 장애 복구와 재처리
 
@@ -328,7 +328,7 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 
 ## 2026-10-11 포트폴리오 저장소 정리·공개 준비
 
-사용자가 미사용·중복 코드를 정리하고 GitHub push를 요청했다. 시작 시 codex/de-portfolio-hardening의 151f026이었고 사용자 staged/untracked 변경은 없었다. 원격 origin/main은 c4a341a이며 기존 고도화 커밋 26개가 아직 원격에 없었다. 같은 작업 브랜치의 누적 고도화와 이번 정리를 공개 대상으로 삼는다. main 직접 병합·force push·Git 저자 변경·실서비스 배포는 범위에 넣지 않는다.
+사용자가 미사용·중복 코드를 정리하고 GitHub push를 요청했다. 시작 시 개발 브랜치 HEAD는 151f026이었고 사용자 staged/untracked 변경은 없었다. 원격 origin/main은 c4a341a이며 기존 고도화 커밋 26개가 아직 원격에 없었다. 같은 작업 브랜치의 누적 고도화와 이번 정리를 공개 대상으로 삼는다. main 직접 병합·force push·Git 저자 변경·실서비스 배포는 범위에 넣지 않는다.
 
 ### 현재 경로 정리
 
@@ -353,8 +353,21 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 
 ### 공개와 남은 작업
 
-사용자 요청에 따라 origin의 codex/de-portfolio-hardening에 일반 push하는 범위다. 로컬 검증과 원격 GitHub Actions 결과는 구분하고 push 후 원격 HEAD/CI 상태를 확인한다. 실제 장기 수집·S3 운영/복구·순수 pool 대기·더 큰 입력·유지보수 플랫폼 조합의 검증은 기존 로드맵대로 남는다. 정리는 이 항목의 완료 증거가 아니다.
+사용자 요청에 따라 origin의 개발 브랜치에 일반 push하는 범위다. 로컬 검증과 원격 GitHub Actions 결과는 구분하고 push 후 원격 HEAD/CI 상태를 확인한다. 실제 장기 수집·S3 운영/복구·순수 pool 대기·더 큰 입력·유지보수 플랫폼 조합의 검증은 기존 로드맵대로 남는다. 정리는 이 항목의 완료 증거가 아니다.
 
 이번 정리의 구현 커밋: d8bab1b(미사용·중복 경로 정리와 호출부/회귀), 0488b9e(전체 행 해시 공통화와 회귀). 탐색 안내와 실제 검사 기록은 별도 docs(portfolio) 커밋으로 묶는다.
 
 공개 확인: 첫 일반 push 성공 후 원격 작업 브랜치 HEAD가 819d8dba830054275adc36ec6ad5ae1ffd97a156과 일치했다. 기존 26개와 이번 3개 커밋이 공개됐고 GitHub Actions 실행 38140252332가 시작됐다. 커밋 후 최종 비밀/링크 검사도 29개 커밋·279개 변경 blob·161개 링크에서 통과했다. GitHub의 UTC 환경에도 같은 의미가 되도록 새 hash 회귀 fixture의 datetime에 명시적 KST를 지정했다. TZ=UTC에서 fingerprint·compaction 28 passed, 28.66초이며 기존 177개와 중복되는 검사다. 이 테스트 보완과 공개 기록은 일반 후속 커밋으로 push하며 이미 공개된 이력을 재작성하지 않는다.
+
+## 2026-10-11 원격 CI의 시간대 오류 수정·브랜치 규칙
+
+다음 작업을 확인하던 중 PR #1의 원격 CI 결과를 읽었다. 최신 입력 e8495dc의 실행 38140365929(push)·38140415377(PR)에서 dags·airflow-integration·container-integration은 SUCCESS였고 pipeline은 163 passed/2 failed였다. 승인된 기존 정리·공개 작업의 CI 실패를 보완했다.
+
+- 첫 실패는 실제 15분 Gold 코드가 naive datetime을 F.lit으로 넘겨 Python 호스트의 UTC를 적용한 문제였다. KST 월말 자정 입력이 9시간 다른 구간으로 해석돼 빈 입력 gate에서 차단됐다. 경계 선택과 저장 컬럼을 같은 ISO 문자열→Spark Asia/Seoul timestamp로 처리한다. CI 호스트의 TZ는 UTC로 명시해 이 계약을 계속 검사한다.
+- 두 번째는 올바른 원천 시각을 Python collect의 호스트 표시 시각과 비교한 검사 문제였다. Spark의 KST date_format으로 확인하고 원천 나이 4초·최신 ETA 60초 선택은 유지했다. 15분 집계 회귀는 저장된 시작/끝 timestamp와 window key의 KST 일치도 검사한다.
+- 수정 전 로컬 TZ=UTC 대상 검사도 같은 두 실패를 재현했다(3 passed/2 failed, 61.23초). 수정 후 UTC 전체 파이프라인 165 passed, 157.22초, KST 대상 5 passed, 70.07초. 대상 검사는 전체에 포함되며 중복 합산하지 않는다. Airflow·컨테이너의 세 원격 job 성공과 구분한다. Ruff와 diff whitespace도 통과했다.
+- 사용자가 브랜치 접두사 변경을 요청했다. 로컬·원격 이름은 feature/de-portfolio로 정리하고 GitHub rename API의 응답 HEAD가 기존 e8495dc와 같음을 확인했다. GitHub의 head branch rename 동작으로 기존 PR #1이 닫히므로 같은 커밋에서 새 PR을 만든다. 커밋 저자/기존 commit SHA/공유 이력은 재작성하지 않는다.
+- AGENTS.md와 write-commit의 브랜치 규칙을 feature/, fix/, refactor/로 맞췄다. 날짜별 과거 기록에서는 당시 개발 브랜치의 불필요한 이름 표기를 생략하고 실제 실행·실패·커밋·출력 증거는 보존한다.
+- private: .work/next-pr-checks.json, next-ci-failure.log, ci-utc-repro.log, ci-utc-regression.log, ci-kst-targeted.log, branch-rename.json, branch-fetch.log. 수정 push 후 새 HEAD의 원격 CI를 확인한다.
+
+다음 고도화의 우선순위는 제한된 실제 원천의 여러 날 관측으로 누락·신선도·응답 상한·파일 분포를 판단할 근거를 만드는 것이다. 다음으로 실제 입력의 Databricks 관리형 처리/SQL 제공 및 더 큰 입력의 Kubernetes pool 대기·자원 측정을 검토한다. 현재 질문에서 API 장기 호출·실데이터 workspace upload·새 배포를 시작하지 않았다.
