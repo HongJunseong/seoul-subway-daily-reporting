@@ -5,6 +5,9 @@ variables:
   namespace:
     description: Dedicated synthetic Unity Catalog schema
     default: workspace.ssdr_v2_fixture
+  quality_namespace:
+    description: New isolated schema per quality experiment; existing tables are preserved
+    default: workspace.ssdr_v2_fixture_quality_demo
   use_ymd:
     default: "20260128"
 
@@ -13,6 +16,7 @@ sync:
     - src
     - fixtures
     - databricks/notebooks
+    - databricks/sql
   exclude:
     - '**/__pycache__/**'
     - '**/*.pyc'
@@ -54,6 +58,29 @@ resources:
             - task_key: gold
           notebook_task:
             notebook_path: ./databricks/notebooks/03_verify_fixture.py
+
+    usage_quality:
+      name: ssdr-v2-free-quality-and-sql
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      timeout_seconds: 900
+      parameters:
+        - name: project_root
+          default: ${workspace.file_path}
+        - name: namespace
+          default: ${var.quality_namespace}
+      tasks:
+        - task_key: quality_experiment
+          notebook_task:
+            notebook_path: ./databricks/notebooks/04_usage_quality_experiment.py
+          max_retries: 0
+        - task_key: serving_views
+          depends_on:
+            - task_key: quality_experiment
+          notebook_task:
+            notebook_path: ./databricks/notebooks/05_usage_serving.py
+          max_retries: 1
 
 targets:
   free:
