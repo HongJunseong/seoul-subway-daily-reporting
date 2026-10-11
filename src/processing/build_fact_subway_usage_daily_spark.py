@@ -21,14 +21,14 @@ def transform_usage(df, use_ymd: str):
     prepared = (df.withColumn("use_ymd", F.col("USE_YMD").cast("string"))
                 .withColumn("line_name", F.trim("SBWY_ROUT_LN_NM"))
                 .withColumn("station_name", F.trim("SBWY_STNS_NM"))
-                .withColumn("ride_count", F.col("GTON_TNOPE").cast("long"))
-                .withColumn("alight_count", F.col("GTOFF_TNOPE").cast("long")))
+                .withColumn("ride_count", F.expr("try_cast(GTON_TNOPE AS BIGINT)"))
+                .withColumn("alight_count", F.expr("try_cast(GTOFF_TNOPE AS BIGINT)")))
     reject_rows(prepared, F.col("use_ymd").isNull() | (F.col("use_ymd") != use_ymd) |
                 F.col("line_name").isNull() | (F.col("line_name") == "") |
                 F.col("station_name").isNull() | (F.col("station_name") == ""), "usage keys/date")
     reject_rows(prepared, F.col("REG_YMD").isNull() |
                 (~F.col("REG_YMD").rlike("^[0-9]{8}$")) |
-                F.to_date("REG_YMD", "yyyyMMdd").isNull(), "usage revision date")
+                F.try_to_timestamp("REG_YMD", F.lit("yyyyMMdd")).isNull(), "usage revision date")
     order = Window.partitionBy(*KEYS).orderBy(F.col("REG_YMD").desc_nulls_last(),
                                              F.col("ingested_at").desc_nulls_last(),
                                              F.col("record_hash").desc())

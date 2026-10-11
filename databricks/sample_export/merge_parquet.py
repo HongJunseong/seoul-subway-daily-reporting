@@ -1,24 +1,5 @@
-from pyspark.sql import SparkSession
-from pathlib import Path
-
-INPUT_DIR = "databricks/sample_export/output"
-OUTPUT_DIR = "databricks/sample_export/merged"
-
-spark = (
-    SparkSession.builder
-    .appName("merge-parquet")
-    .getOrCreate()
+"""Retired unsafe export entry point: use export_from_s3.py instead."""
+raise SystemExit(
+    "Direct reads of Delta internal Parquet are unsupported. "
+    "Use export_from_s3.py with the Delta table ROOT and an explicit date/version."
 )
-
-df = spark.read.parquet(INPUT_DIR)
-
-# 파일 병합
-df = df.coalesce(1)
-
-Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-
-df.write.mode("overwrite").parquet(OUTPUT_DIR)
-
-print("Merged parquet written to:", OUTPUT_DIR)
-
-spark.stop()

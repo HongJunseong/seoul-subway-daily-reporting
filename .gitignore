@@ -59,3 +59,8 @@ adminuser-role.yaml
 # Native runtime crash dumps
 core
 core.*
+
+# Databricks deployment state and local exports
+.databricks/
+databricks/sample_export/output/
+databricks/sample_export/merged/

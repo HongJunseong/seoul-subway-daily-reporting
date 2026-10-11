@@ -1,39 +1,21 @@
 # Databricks notebook source
-from pyspark.sql.functions import sum as _sum, col
-
-silver_df = spark.table("silver_subway_usage")
-
-gold_df = (
-    silver_df
-    .groupBy("use_ymd", "station_name")   # 네 silver에서 표준화한 컬럼 기준
-    .agg(_sum("total_cnt").alias("daily_total"))
-    .orderBy(col("daily_total").desc())
-)
-
-display(gold_df.limit(20))
-
-gold_df.write.format("delta").mode("overwrite").saveAsTable(
-    "gold_subway_usage_daily_station"
-)
+from pathlib import Path
+import sys
+dbutils.widgets.text("project_root", "")
+dbutils.widgets.text("namespace", "workspace.ssdr_v2_fixture")
+dbutils.widgets.text("use_ymd", "20260128")
+project_root = Path(dbutils.widgets.get("project_root"))
+if not project_root.is_absolute() or not (project_root / "src/platforms/managed_usage.py").is_file():
+    raise ValueError("project_root must be the absolute uploaded project/workspace directory")
+sys.path.insert(0, str(project_root))
+spark.conf.set("spark.sql.session.timeZone", "Asia/Seoul")
+from src.platforms.managed_usage import UsageTables
+tables = UsageTables(dbutils.widgets.get("namespace"))
+use_ymd = dbutils.widgets.get("use_ymd")
 
 # COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT * FROM gold_subway_usage_daily_station ORDER BY daily_total DESC LIMIT 20;
-
-# COMMAND ----------
-
-# 노선별 TOP
-
-gold_line_df = (
-    silver_df
-    .groupBy("use_ymd", "line_name")
-    .agg(_sum("total_cnt").alias("daily_total"))
-    .orderBy(col("daily_total").desc())
-)
-
-display(gold_line_df.limit(20))
-
-gold_line_df.write.format("delta").mode("overwrite").saveAsTable(
-    "gold_subway_usage_daily_line"
-)
+from src.platforms.managed_usage import publish_gold
+import json
+evidence = publish_gold(spark, tables, use_ymd)
+print(json.dumps(evidence, sort_keys=True))
+display(spark.table(tables.name("station")).where(f"use_ymd='{use_ymd}'"))

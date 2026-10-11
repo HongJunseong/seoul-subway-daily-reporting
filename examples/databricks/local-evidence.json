@@ -1,0 +1,35 @@
+{
+  "synthetic": true,
+  "execution_environment": "local-spark-managed-delta-contract",
+  "spark_version": "3.5.7",
+  "verified": true,
+  "dates": [
+    "20260128",
+    "20260129"
+  ],
+  "totals": {
+    "20260128": 680,
+    "20260129": 660
+  },
+  "business_snapshot": {
+    "silver": {
+      "rows": 6,
+      "sha256": "7dd568fb32ba37424a109593490cb0d5127c1c7ded6d39cc5cb8e676fffce167"
+    },
+    "station": {
+      "rows": 6,
+      "sha256": "2dae2e9f059eab98ecc51260baf90571d1e179b2716b495df865fb40a625513b"
+    },
+    "line": {
+      "rows": 4,
+      "sha256": "0615d87bc59dfb5e7db12a3fce89a232b7ba252db894073214338999636e18de"
+    }
+  },
+  "bronze_unchanged": true,
+  "table_versions": {
+    "bronze": 0,
+    "silver": 2,
+    "station": 2,
+    "line": 2
+  }
+}
