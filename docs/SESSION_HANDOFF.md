@@ -392,3 +392,24 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 - 사용자 요청 범위로 같은 개발 브랜치에 일반 push한다. 새 HEAD의 원격 실행 상태는 .work/observation-ci-final.json과 observation-pr-checks-final.json에 별도로 보존한다. 이전 HEAD의 CI 성공을 새 코드의 원격 검증으로 대체하지 않는다.
 
 남은 작업은 승인된 기간/호출량의 실제 여러 날 수집과 결측·identity 변동·원천 시각·처리 품질의 장기 측정이다. 캡처 파일이 없는 전체 날짜의 원인은 이 비교 도구로 추정할 수 없으며 별도 scheduler 계획/실행 기록이 필요하다. 실제 Databricks 입력 upload·S3 운영·더 큰 Kubernetes 입력 검증은 별도 범위다.
+
+## 2026-10-11 승인된 7일 관측·README 소개 틀
+
+사용자가 기간 질문에 “제일좋을것같은걸로해줘”라고 답해 추천한 7일 소량 관측을 선택했다. 2026-10-12~18, 매일 17:50 KST에 도착 3회(5분 간격)와 D-4 승하차 한 날짜를 수집한다. 하루 최대 13 GET, 전체 최대 91 GET이며 원문은 로컬에만 보관한다. AWS·Databricks upload·Discord·LLM은 이 승인에 포함하지 않는다.
+
+- scripts/run_source_observation_day.py는 기존 capture_sources.capture를 재사용한다. 새 캠페인 최대 7일과 SHA-256으로 고정한 계획, 실제 KST 날짜/시각, 5분 시작 허용 범위, session GET 상한과 날짜 변경 차단을 확인한다.
+- 원자적인 일간 디렉터리 예약은 중복·동시 실행·실패·프로세스 중단 뒤에도 같은 날 새 API 호출을 막는다. 예약을 삭제하거나 다른 캠페인으로 재시도하지 않는다. 누락 상태를 API 실패로 추론하지 않으며 원본 재처리는 별도 CLI의 책임이다.
+- .work/source-campaign-20261012-18/plan.json과 plan.sha256을 만들었다. 초기 status는 7일 모두 not_due이고 오늘 run 점검은 outside_period, 실제 GET 0이다.
+- 앱의 heartbeat 자동화 “지하철 원천 7일 소량 관측”(ID 7, ACTIVE)을 이 채팅에 생성했다. 일일 17:50의 7회 예약이며 종료 날짜/CLI 범위로도 추가 호출을 차단한다. 완료된 저장 원본의 처리·품질·7개 해시 검증과 날짜별 집계를 수행하고, 의미 있는 실패/조치 필요/최종 완료 때 알린다. PC와 앱이 실행 중이어야 하며 늦거나 놓친 날은 소급 수집하지 않는다.
+- 사용자가 main README의 기존 소개 틀을 선호했다. 기존 배지·소개 문장·구분선과 Project Overview → System Architecture → Data Layer Design → Data Pipelines → Reporting → Databricks → Kubernetes → Validation → Limitations/Future Work → Execution Flow 흐름을 살렸다. 오래된 Kafka 그림·실제 지연 해석·검증되지 않은 S3 운영 설명은 현재 구현과 증거에 맞추고 상세 실험은 연결 문서로 정리했다. 키 없는 실행 anchor는 유지했다.
+
+### 검증과 공개 기록
+
+- 앞 단계의 34514bd push/PR 원격 CI는 네 job 모두 SUCCESS다. push 첫 Airflow 실행은 Spark 시작 전 Maven의 Delta JAR을 찾지 못해 실패했으나 같은 SHA의 PR 실행과 실패 job 재실행은 성공했다. .work/observation-ci-airflow-artifact/seed.log, observation-ci-final.json, observation-ci-pr.json, observation-pr-checks-final.json에 보존하고 PR #2 설명에도 구분했다.
+- 관측 제어 추가 후 UTC 전체 파이프라인 209 passed, 149.32초. 계획 해시 고정 보완과 두 검사 추가 후 원천 관련 60 passed, 1.42초. 이 60개는 기존 검사와 중복이며 새 두 개만 별도 추가된다. 앞서 통과한 Airflow/Pod 12개를 포함해 서로 다른 검사 총 223개가 통과했다.
+- 새 관측 제어 검사는 기간/시각 밖 호출 차단·월말/D-4·시작 허용 경계·동시 실행 1회·중단 후 예약 보존·14번째 GET/날짜 변경 차단·수정된 계획 거부를 확인한다. 실제 API는 테스트에서 호출하지 않는다.
+- Ruff 전체, diff whitespace, 문서 상대 링크 165개·공개 JSON·DAG CLI·비밀 값 미포함 확인을 통과했다. README는 문서 변경이므로 이를 위한 별도 구현 추종 테스트는 만들지 않았다.
+- private: .work/campaign-{init.log,status-initial.json,before-period-check.json,unit-01.log,unit-final.log,unit-sealed.log,regression-01.log,ruff-sealed.log,audit-final.log}. main의 README 비교본은 .work/readme-main-reference.md다.
+- 관측 제어 기능과 README 소개 구성은 목적별 커밋으로 나누고 사용자 요청 범위에서 같은 feature/de-portfolio에 일반 push한다. 새 원격 결과는 .work/campaign-ci-final.json과 campaign-pr-checks-final.json으로 별도 확인한다.
+
+실제 7일 수집은 아직 시작 전이다. 7일이 지나도 전체 하루/전체 역 커버리지·S3 운영·실데이터 Databricks 실행·분산 Spark 성능은 이 소량 관측으로 증명되지 않는다. 종료 시 확보한 날짜와 슬롯, 미확인 날짜, 응답 상한/identity 변동, 원천 시각과 처리 품질을 그대로 보고한다.
