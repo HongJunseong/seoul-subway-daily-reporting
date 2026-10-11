@@ -33,3 +33,10 @@
 실제 실행 결과는 SESSION_HANDOFF.md, 검증 절차는 RUNBOOK.md, 구현 선택은 adr/에 기록한다.
 AWS·서울 API·Discord·LLM·Kubernetes 실배포는 로컬 fixture 검증과 구분한다.
 과거 미수집 도착 스냅샷은 복원할 수 없다. 원본 보관 후 처리 실패만 재처리로 복구할 수 있다.
+
+## 플랫폼 실행 경계 (2026-10-11)
+- src/platforms/managed_usage.py는 같은 승하차 변환을 Databricks managed Delta에 적용한다. 날짜 제한 MERGE는 인접 날짜를 보존한다. S3 경로 writer의 replaceWhere와 구분한다.
+- 기존 Free Edition에서 serverless Job 네 태스크 SUCCESS, Bronze 불변·재처리·업무 컬럼 해시의 로컬 일치를 확인했다. examples/databricks/에는 실제 API로 읽은 실행 증거가 있다.
+- KubernetesExecutor는 태스크별 Pod 자원·namespace RBAC·PVC를 사용한다. 실제 Airflow 모델의 태스크 17개 병합/직렬화와 공식 chart 렌더를 확인했다. Spark는 Pod 내부 local[2]다.
+- fixture 배포는 schedule=None, 서비스 Secret 미주입, synthetic 보고서·PVC 보존 경로를 강제한다. Docker Desktop Kubernetes에서 실제 scheduler·태스크 12개·worker 강제 삭제 후 새 Pod 재시도·로그 PVC 보존·동일 원본의 7개 테이블 해시 일치를 확인했다. KUBERNETES.md와 examples/kubernetes/에 실행 증거가 있다.
+- 이미지의 Airflow·Spark Python 환경을 분리한다. 운영 metadata DB는 ssdr-metadata Secret으로 별도 연결한다. 보관된 PostgreSQL 이미지는 합성 fixture용으로만 제한한다.

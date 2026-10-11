@@ -75,7 +75,17 @@ python scripts/recovery_experiment.py --output-dir .work/recovery/my-run
 
 DAG 구조 검사에 더해 저장된 합성 Bronze에서 `usage_daily → gold_daily → report_daily`를 실제 태스크로 실행했다. API 재수집 분기는 skipped, Spark 변환·날짜 XCom·두 DAG 트리거·보고서 생성은 실제 코드로 처리했다. **태스크 12개 성공과 보고서 해시 검증**을 확인했고, 실제 실행 시간과 미측정 queue를 구분해 [실행 증거](examples/airflow/evidence.md)에 남겼다.
 
-[재현 명령](docs/AIRFLOW_OFFLINE.md)은 별도 SQLite DB와 두 가상환경을 사용한다. 로컬 순차 실행이며 실수집·scheduler·분산 executor·S3 운영 검증은 추가로 필요하다.
+[재현 명령](docs/AIRFLOW_OFFLINE.md)은 별도 SQLite DB와 두 가상환경을 사용한다. 이 실험은 로컬 순차 실행이다. 실제 Kubernetes scheduler/executor 검증은 아래 플랫폼 증거에 별도로 기록했다. 실수집·S3 운영 검증은 추가로 필요하다.
+
+## Databricks와 Kubernetes 실행 경계
+
+승하차 변환 함수는 하나로 유지하고 저장·실행 방식만 분리했다. Airflow는 수집 시각과 보고서 의존성을 관리하고, Databricks는 같은 변환을 Unity Catalog managed Delta에서 실행한다. 플랫폼 선택과 쓰기 방식의 차이는 [ADR](docs/adr/002-execution-platforms.md)에 기록했다.
+
+**Databricks Free Edition에서 serverless Job의 네 태스크를 실제로 실행해 모두 SUCCESS를 확인했다.** 정정 후 680·인접 날짜 660 유지, 원본 불변, 재처리 결과의 모든 업무 컬럼 해시가 로컬 Spark 실행과 일치했다. [실행 증거](examples/databricks/README.md)에는 Job/Run ID와 197.11초의 측정 범위를 담았다. [재현 절차](databricks/README.md)는 공식 CLI 인증과 bundle 배포를 사용한다.
+
+KubernetesExecutor를 Docker Desktop의 실제 클러스터에서 실행했다. **태스크 12개 성공, 실행 중인 Gold worker 삭제 후 다른 Pod 재시도 성공, 삭제된 worker 로그 13개 보존**을 확인했다. 같은 Bronze 재실행에서도 Delta 테이블 7개의 전체 데이터 해시와 원본 버전이 유지됐다. control·spark·report 자원 프로필, namespace 권한, lake/log PVC와 writer pool 1 slot을 사용한다. [실행 증거](examples/kubernetes/README.md)와 [재현 절차](docs/KUBERNETES.md)를 제공한다. Spark는 태스크 Pod 내부 local[2]다.
+
+실제 Docker 이미지 빌드와 컨테이너 안의 태스크 12개·보고서 해시 검증도 통과했다. [컨테이너 실행 증거](examples/container/README.md)는 순차 태스크 실행과 클러스터 scheduler 검증의 차이를 명시한다.
 
 ## 자동화
 
@@ -85,10 +95,10 @@ DAG 구조 검사에 더해 저장된 합성 Bronze에서 `usage_daily → gold_
 - `gold_daily`: D-1 원본 재처리 → 일간 도착 Gold → 알림과 보고서 각각 실행.
 - `report_daily`: 날짜와 데이터 품질 확인 → 기본 템플릿 보고서 생성. LLM 해설은 선택 기능.
 
-Docker Compose와 Kubernetes 설정을 제공한다. 이번 변경에서 실제로 검증한 범위는 로컬 Spark/Delta 처리, 실제 Airflow DagBag·템플릿 검사, Compose 설정 파싱이다. 컨테이너 빌드·Kubernetes 배포·S3 운영·실제 API의 지속 수집은 별도 검증 대상이다. GitHub Actions는 파이프라인·DAG 검증, 합성 데모·복구 실험, 실제 로컬 Airflow 연결 실행을 별도 job으로 정의했다.
+Docker Compose와 Kubernetes 설정을 제공한다. GitHub Actions는 파이프라인·managed Delta 계약·DAG/Pod 병합·합성 복구 실험·실제 로컬 Airflow 연결 실행·Docker 컨테이너 실행을 별도 job으로 정의했다. 원격 CI, S3 운영과 실제 API 지속 수집은 아직 검증하지 않았다. 컨테이너와 클러스터 실행의 최신 상태는 검증 문서에 기록한다.
 
 ## 문서와 남은 작업
 
 [데이터 계약](docs/DATA_CONTRACTS.md), [실행·복구 runbook](docs/RUNBOOK.md), [프로젝트 맥락](docs/PROJECT_CONTEXT.md), [로드맵](docs/ROADMAP.md), [검증 범위](docs/VALIDATION.md), [작업 인수인계](docs/SESSION_HANDOFF.md)를 관리한다. [AGENTS.md](AGENTS.md)와 저장소의 [커밋 스킬](.agents/skills/write-commit/SKILL.md)은 이후 작업에서도 같은 기준을 유지한다.
 
-다음 평가는 실제 수집 기간의 누락·신선도·응답 상한 도달 빈도, 실패 후 복구 시간, 파일 수·크기에 근거해야 한다. 작은 합성 데이터 실험으로 대규모 처리 성능이나 전체 서울 지하철 커버리지를 주장하지 않는다. Databricks notebook은 이전 학습 기록이며 v2 운영 코드의 검증 근거로 사용하지 않는다.
+다음 평가는 실제 수집 기간의 누락·신선도·응답 상한 도달 빈도, 실패 후 복구 시간, 파일 수·크기에 근거해야 한다. 작은 합성 데이터 실험으로 대규모 처리 성능이나 전체 서울 지하철 커버리지를 주장하지 않는다. Databricks의 새 v2 notebook은 같은 변환을 실제 Job에서 실행했다. legacy export manifest는 이전 학습 기록으로 구분한다.

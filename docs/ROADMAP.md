@@ -42,3 +42,17 @@
 ## 작업 선택
 미완료 live 항목을 문서·합성 결과로 완료 처리하지 않는다. 외부 접근이 없으면 독립적인 코드·재현·검증 작업을 진행한다.
 새 기능이 검증 목표를 늘리지 않으면 추가하지 않는다.
+
+## Phase 5 — 플랫폼과 실행 증거
+- [x] 공통 승하차 변환의 Databricks managed Delta adapter
+- [x] ANSI 불량 수치·날짜 차단, 날짜별 MERGE와 인접 날짜 보존
+- [x] 기존 Free Edition serverless Job 네 태스크 실제 성공과 재처리 해시 비교
+- [x] KubernetesExecutor 자원 프로필, 고정 chart/provider, namespace RBAC, lake/log PVC 설정
+- [x] 공식 Helm 렌더·실제 Airflow 태스크 17개 Pod 병합과 직렬화 검사
+- [x] 실제 Kubernetes scheduler→worker Pod→보고서 실행 및 PVC binding
+- [x] worker 실패 후 다른 Pod 재시도, 삭제된 Pod의 로그 보존 확인
+- [x] 동일 Bronze의 실제 Pod 재처리에서 7개 Delta 테이블 전체 해시·원본 버전 불변
+- [ ] 실제 Pod peak 메모리/CPU·queue/pool 대기로 자원 설정 조정
+- [ ] 유지보수 중인 Airflow/chart/provider 조합과 운영 metadata DB 검증
+
+Databricks 성공은 합성 승하차 fixture, Kubernetes 성공은 단일 node 합성 lake를 대상으로 한다. 실수집·S3·실시간 관측·대규모 성능의 증거로 확대하지 않는다.

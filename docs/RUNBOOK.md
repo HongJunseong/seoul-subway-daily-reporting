@@ -41,7 +41,7 @@ Compose init은 ssdr_delta_writer pool을 1 slot으로 생성한다. 모든 Spar
 
 웹 UI는 localhost:8080, 로컬 기본 계정은 airflow/airflow다. 기본 DAG는 paused다. 먼저 arrival_collect_5m을 활성화하고 실제 Bronze snapshot 저장을 확인한 뒤 pipeline_arrival_5m과 usage_daily를 활성화한다. 최초 15분 구간이나 도착 D-1 관측이 없는 첫날은 처리/보고서가 실패할 수 있다. 실제 관측을 수집한 다음 재실행하며 누락을 정상 데이터로 대체하지 않는다.
 
-Compose는 로컬 개발용 설정이다. 이번 작업에서 설정 파싱은 통과했지만 Docker 이미지 빌드와 전체 scheduler 실행은 검증되지 않았다.
+Compose는 로컬 개발용 설정이다. 설정 파싱과 후속 Docker 이미지 빌드는 통과했다. Compose scheduler 전체 실행은 별도 미검증이다. 컨테이너 Spark 명령은 /opt/pipeline/bin/spark-submit을 사용한다.
 
 ## 재처리
 
@@ -83,8 +83,14 @@ k8s/airflow-values.yaml은 src와 DAG를 같은 이미지에 포함하고 git-sy
 
 DAG 활성화 전에 Airflow UI의 Admin → Pools에서 ssdr_delta_writer를 1 slot으로 생성한다. pool이 없으면 Spark 태스크는 대기한다. CLI는 airflow pools set ssdr_delta_writer 1 serialize_delta_writers를 사용할 수 있다.
 
-이 Helm 설정은 실제 클러스터에서 검증되지 않았다. 배포 전에 사용할 chart와 values schema, 저장소/PVC·자원·작업 Pod 이미지·S3 자격 증명을 확인한다. 과거 Kafka namespace나 릴리스는 이 코드 변경만으로 삭제되지 않으며 기존 리소스 정리는 별도 운영 작업이다.
+합성 fixture는 실제 Docker Desktop 클러스터에서 Helm 설치·PVC binding·scheduler 실행·worker 복구를 검증했다. 운영 배포 전에는 metadata DB·다중 node storage class·작업 Pod 이미지·S3 자격 증명을 별도로 검증한다. 과거 Kafka namespace나 릴리스는 이 코드 변경만으로 삭제되지 않으며 기존 리소스 정리는 별도 운영 작업이다.
 
 ## v1 데이터
 
 v2 prefix의 새 계약과 기존 테이블 스키마는 다르다. 사용 가능한 승하차 날짜는 API 재수집으로 v2를 생성할 수 있다. 과거 arrival은 기존 원문의 필드·수집 시각을 확인하는 명시적인 migration이 필요하며 아직 자동 migration을 제공하지 않는다. 기존 테이블을 v2 경로로 복사하거나 overwrite하지 않는다.
+
+## Databricks와 Kubernetes 재현
+
+Databricks는 [전용 문서](../databricks/README.md)의 공식 CLI OAuth와 bundle을 사용한다. 기본 Job은 namespace=workspace.ssdr_v2_fixture, max_concurrent_runs=1, 일정 없음이다. 같은 managed namespace를 다른 notebook/Job에서 동시에 쓰지 않는다. Bronze/Silver의 입력 버전을 고정하고 날짜 제한 MERGE로 결과를 교체한다. Gold 두 테이블은 별도 트랜잭션이며 부분 성공 시 같은 원본을 재처리한다.
+
+Kubernetes의 chart/provider·태스크 자원·RBAC·PVC·합성 배포와 worker 삭제·재시도 실험은 [KUBERNETES](KUBERNETES.md)를 따른다. 운영 profile은 관리되는 external metadata DB의 ssdr-metadata Secret과 검증된 storage class가 필요하다. 합성 namespace는 시간 기반 수집을 비활성화하며 live Secret을 사용하지 않는다. S3 writer pool 1 slot은 Pod 자원 프로필과 별도로 유지한다.

@@ -128,3 +128,90 @@ UNC 경로 apply_patch와 기본 WSL 접근은 제한되어 승인된 WSL Bash �
 이번 시작의 Linux Git 상태는 clean이었다. .env·기존 Secret 스크립트·운영 데이터는 변경/스테이징하지 않았다. Windows Git의 ownership 경고는 글로벌 설정을 바꾸지 않고 WSL Git으로 확인했다. 변경은 codex/de-portfolio-hardening의 기능별 로컬 커밋으로 기록하며 push·배포는 하지 않는다.
 
 로컬 구현 커밋: 33f3121(실제 Airflow 연결 실행·CI·회귀 검사). 문서와 공개 증거는 다음 로컬 커밋에 기록한다.
+
+## 2026-10-11 플랫폼 고도화 — Databricks와 첫 컨테이너 실행
+
+이 절은 Kubernetes 활성화 전의 중간 기록이다. 최종 이미지·회귀 수·실제 클러스터 결과는 아래 후속 검증 절을 기준으로 한다.
+
+사용자는 Databricks와 Kubernetes를 포트폴리오에서 실제로 활용하도록 요청했다. 기존 Free Edition workspace를 지정하고 공식 CLI OAuth 인증을 완료했다. Docker/WSL도 직접 켰다. 합성 fixture Job과 로컬 컨테이너 검증을 실행했으며 push·서울 API·AWS·Discord·LLM 호출은 하지 않았다.
+
+### 구현
+
+- 공통 승하차 변환에 ANSI-safe try_cast/try_to_timestamp를 적용했다. malformed 수치·overflow·불량 revision 날짜·빈 입력은 정상 출판되지 않는다.
+- managed_usage adapter는 기존 변환을 Unity Catalog managed Delta에 적용한다. 입력 Delta 버전을 고정하고 날짜 제한 MERGE로 인접 날짜를 보존한다. Gold는 별도 테이블 트랜잭션이며 재처리로 부분 커밋을 복구한다.
+- 네 notebook과 databricks.yml은 seed → Silver → Gold → 재처리 검증 Job을 정의한다. max_concurrent_runs=1, 일정 없음, 전용 workspace.ssdr_v2_fixture namespace만 합성 실험에 사용했다.
+- 내부 Parquet 병합 export를 중단했다. Delta 루트/versionAsOf/date 필터로 독립 snapshot을 만들고 lineage·버전 manifest를 남긴다. S3 export는 --allow-s3 opt-in이다.
+- scripts/record_databricks_run.py는 실제 Job/task SUCCESS와 native 실행·원본 불변·680/660·로컬 전체 업무 컬럼 해시 비교를 요구한다.
+- KubernetesExecutor control/spark/report 프로필을 실제 다섯 DAG에 연결했다. image/env/Secret reference/PVC/service account를 보존하고 모든 Spark writer의 pool 1 slot을 유지한다.
+- 공식 chart 1.11.0, Airflow 2.7.3, provider 7.8.0/client 23.6.0의 렌더·PodGenerator 병합·DAG 직렬화 검사와 CI artifact를 추가했다.
+- fixture는 시간 기반 schedule을 제거하고 live Secret을 주입하지 않는다. synthetic 보고서는 lake PVC의 reports에 저장한다.
+- Docker 이미지에 source·fixture·재현 도구를 포함했다. Airflow와 pipeline Python을 분리하고 고정 JRE stage와 양쪽 pip check를 사용한다.
+- 운영 metadata DB는 외부 ssdr-metadata Secret으로 연결하도록 바꿨다. default bitnami PostgreSQL 11 image는 실제 registry에 없었다. fixture만 확인한 bitnamilegacy PostgreSQL 15.4 amd64 digest를 사용하며 운영 검증으로 설명하지 않는다.
+
+### 실제 결과
+
+- Databricks Job 1103992482650397, Run 44336808137994: 네 태스크 모두 SUCCESS. Spark.version=4.2.0, Job 전체 197.11초.
+- 날짜별 합계 20260128=680, 20260129=660. Bronze 버전 0 불변, Silver/역 Gold/노선 Gold 버전 3.
+- 로컬 managed Delta Spark 3.5.7과 Silver 6행·역 Gold 6행·노선 Gold 4행의 모든 업무 컬럼 SHA256 일치. examples/databricks/에 실제 생성 결과를 복사했다.
+- 첫 native Run 471413789256360은 errorifexists 모드를 serverless가 거부해 실패했다. 지원되는 error 모드로 첫 테이블을 생성한 두 번째 Run에서 성공했다. 실패 기록은 보존했다.
+- 로컬 OSS saveAsTable overwrite/replaceWhere가 기존 managed 테이블을 truncate하는 문제를 확인해 날짜 제한 MERGE로 교체했다.
+- 첫 bundle sync의 넓은 glob이 dependency/cache를 포함했다. 비밀 파일 미업로드를 확인하고 sync.paths를 세 source 디렉터리로 제한했다. 해당 bundle 경로의 불필요한 파일만 제거했다. 기존 default 테이블과 타 notebook은 보존했다.
+- 공식 chart의 base/fixture 두 렌더 성공. Airflow의 실제 태스크 17개 Pod 병합·직렬화 성공. public evidence의 actual_pod_execution=false는 그대로 유지했다.
+- 최종 Docker 이미지 빌드 성공, image ID sha256:ebd43dbe4b8b002993fa050ffde800702fd0c325d4eb3e83598c85de278f138d. 두 pip check 정상.
+- 컨테이너 ssdr-airflow-fixture-20261011-a: exit 0, OOMKilled=false. usage_daily → gold_daily → report_daily 12개 태스크 success·API 수집 1개 skipped·각 시도 1회.
+- 컨테이너 내부 연결 실행 55.935353초, 이용량 680·D-1 도착/유효 ETA 4/4·보고서/context 해시 검증 성공. 복사한 보고서도 verify_report로 검증했다. examples/container/에 증거 보존.
+- 이미지 내부에서도 Kubernetes 프로필을 활성화해 실제 태스크 17개 직렬화와 모든 fixture schedule=None을 확인했다.
+- 소량 합성 시간은 운영 SLA·처리량·대규모 성능으로 해석하지 않는다. 컨테이너 실행은 순차 TaskInstance.run이며 scheduler/분산 executor 실행이 아니다.
+
+### 회귀·빌드 검증
+
+- pipeline: 77 passed, 77.40초 (tests/test_dags.py·test_kubernetes_profiles.py는 별도 환경).
+- Airflow/Pod: 12 passed, 0.81초, 기존 Pydantic 경고 8개. 총 89개.
+- Airflow 마지막 재실행에서 PYTHONPATH의 dags 경로를 누락해 import 오류가 났고, 문서/CI와 같은 PYTHONPATH 설정으로 수정한 실행에서 통과했다.
+- Ruff·별도 pycache compileall·git diff --check 통과. CI YAML와 문서 상대 링크는 최종 확인한다.
+- 기존 Airflow base의 pgdg 저장소 종료·Debian 패키지 404로 apt 빌드가 실패했다. digest가 고정된 호환 JRE stage로 해결했다.
+- 기존 한 Python 환경은 aiobotocore/botocore 충돌이 있어 분리했다. base PIP_USER 설정이 pipeline venv 설치에 적용되는 오류도 PIP_USER=false로 해결했다.
+- Windows에서 전체 컨테이너 폴더를 복사하면 scheduler 로그 symlink 권한 오류가 있어 JSON/보고서만 별도 verified-02 경로로 보존했다. 실패한 부분 복사는 .work에 남겨 덮어쓰지 않았다.
+- 로컬 증거: .work/databricks-native/verified-02, .work/managed-usage/verified-01, .work/kubernetes/render-fixture-public, .work/container/verified-02. OAuth/config/deploy 로그는 ignored .work이며 공개/커밋하지 않는다.
+
+### 남은 작업
+
+Docker engine 28.3.0은 응답하지만 docker-desktop Kubernetes API는 127.0.0.1:6443 연결 거부다. 사용자에게 Settings → Kubernetes의 Enable/Running 상태를 확인해 달라고 요청했다. Helm 설치·PVC binding·scheduler→Pod 실행·다른 Pod로의 실패 재시도·Pod 삭제 후 로그 보존은 미검증이다.
+
+유지보수 중인 Airflow/chart/provider와 운영 metadata DB 조합, 실제 Pod 메모리/CPU·queue/pool 대기, 실수집/API·S3 baseline·원격 CI는 후속 검증이다. fixture DB 보관 이미지를 운영용으로 권장하지 않는다. 기존 사용자 파일·.env·Secret과 실서비스 데이터는 보존했다.
+
+write-commit 스킬에 따라 기능별 로컬 커밋을 진행한다. 브랜치는 codex/de-portfolio-hardening이며 push하지 않는다.
+
+## 2026-10-11 후속 검증 — 실제 Kubernetes 장애 복구와 재처리
+
+사용자가 Docker Desktop Kubernetes를 활성화했다. 기존 docker-desktop node는 Ready, Kubernetes 1.32.2였고 기존 리소스는 보존했다. 새 namespace ssdr-fixture-20261011에 fixture만 설치했다. API·AWS·Discord·LLM 호출과 push는 수행하지 않았다.
+
+### 최종 실행 결과
+
+- 실제 Helm 설치와 migration 완료, scheduler 2/2·triggerer 2/2·webserver 1/1. lake/log 각 2Gi와 metadata 8Gi의 RWO PVC가 Bound다.
+- 첫 실제 scheduler/KubernetesExecutor 실행 runtime-01: 세 DAG success, 태스크 12개 success·API 수집 1개 skipped, worker Pod 13개, 376.452561초.
+- Silver 성공 후 실제 running Gold worker UID 121b7c6d-0d19-4167-b100-87df3f946867을 UID precondition으로 종료했다. scheduler가 재시도했고 새 UID b9f0ab4f-2995-40c4-8b15-7995e586ce9c, 시도 2가 exit 0/Succeeded로 끝났다.
+- 종료·삭제된 worker 로그 13개가 PVC에서 읽혔다. 7개 Delta 테이블 루트의 전체 컬럼 해시·행 수·버전을 기록했다.
+- 최종 이미지의 runtime-02: 세 DAG success, 태스크 12개 success·API 수집 1개 skipped, worker Pod 12개, 240.209483초. 로그 12개 보존.
+- 두 실행의 Delta 테이블 7개 전체 데이터 해시 일치, Bronze usage 버전 2/arrival 버전 5 불변. Silver/Gold는 버전 0→1의 새 커밋이며 행 내용은 같다. 보고서 이용량 680·D-1 도착/유효 ETA 4/4, 복사한 보고서 manifest도 검증했다.
+- 최종 image ID sha256:15fbf2798c006efef73add9d61f747b0f6e1eaabe28e3135f9ed314fa10f7d4c. 컨테이너 b의 순차 TaskInstance 실행도 exit 0/OOMKilled=false, 12 success·1 skipped, 79.324771초다. 실제 scheduler 증거와 구분한다.
+- examples/kubernetes의 runtime-* JSON은 실제 생성 파일을 복사했다. 구성 JSON은 actual_pod_execution=false, 실제 실행 JSON은 true다. examples/container는 최종 b 실행으로 갱신했다.
+- private 경로: .work/kubernetes/runtime-01, runtime-02, reports-runtime-01, reports-runtime-02, render-fixture-bootstrap; .work/container/final. Secret·OAuth·원문 로그·보고서는 커밋하지 않는다.
+
+### 수정과 최종 검사
+
+- 첫 Helm --wait는 post-install migration hook과 ready init 사이에서 기다렸다. 자신의 새 릴리스만 정리·재설치했고 fixture bootstrap Job을 일반 Job으로 변경해 해결했다. PVC와 기존 클러스터 리소스는 보존했다.
+- Docker Desktop 활성화 전 준비했던 자체 kind fixture cluster는 workload를 배포하지 않았다. Docker ownership label을 확인하고 자신의 kind cluster만 삭제했다. 실제 실행은 docker-desktop에서 수행했다.
+- 첫 이미지의 Airflow provider는 NumPy 2 ABI 오류를 출력했다. pipeline Python은 유지하고 Airflow NumPy 1.26.4·Deprecated 1.3.1로 맞췄다. 양쪽 pip check, shapely/google.cloud.bigquery import를 빌드에서 검증했다. 최종 scheduler import와 native 재실행에는 ABI 오류가 없다.
+- fixture bootstrap 렌더 검사에서 create-user Job의 실제 component label이 create-user-job인 것을 확인해 guard를 수정했다. 최종 렌더와 태스크 17개 병합·직렬화가 통과했다.
+- 파이프라인 전체 81 passed, 123.15초. 새 PVC 비교 검사 2 passed, 0.01초. 별도 Airflow/Pod 12 passed, 1.20초와 기존 Pydantic 경고 8개. 서로 다른 검사 총 95개.
+- Airflow pip check: No broken requirements found. 최종 Docker build의 양쪽 pip check와 ABI import, 순차 컨테이너 실행, 실제 Kubernetes 재실행이 모두 성공했다.
+- 최종 Ruff correctness·별도 pycache compileall·git diff --check 통과. CI YAML의 4개 job과 문서 내부 링크 47개, 공개 JSON 10개와 생성 원본의 byte 동일성을 확인했다. 실제 runtime JSON을 동일 검증 함수로 재검사하고 Delta snapshot 비교도 통과했다. 원격 CI는 미실행이다.
+
+### 남은 작업과 보존
+
+실제 서울 API 장기 수집의 결측·신선도·페이지 상한 baseline, 운영 S3 읽기/쓰기·재처리 복구, peak Pod 메모리/CPU·queue/pool 대기와 유지보수 Airflow/chart/provider·metadata DB 조합이 남았다. 단일 node의 소량 합성 시간을 SLA·대용량 처리량으로 해석하지 않는다. Spark는 local[2]이며 분산 Spark가 아니다.
+
+fixture 릴리스와 PVC는 추가 확인을 위해 보존했고 모든 시간 기반 schedule은 None이다. 기존 사용자 데이터·Secret·.env·Git 저자를 보존했다. write-commit 스킬로 목적별 로컬 커밋을 기록하며 push하지 않는다.
+
+최종 로컬 구현 커밋: 29b7080(Databricks managed Delta), a3b17f6(Kubernetes 자원·실제 복구·재처리 검사), ff17b97(CI). 문서와 공개 실행 증거는 다음 docs(portfolio) 커밋에 기록한다.
