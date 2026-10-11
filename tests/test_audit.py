@@ -169,3 +169,25 @@ def test_invalid_arrival_values_cannot_be_hidden_by_window_or_null_filter(column
     if column == "arrival_seconds":
         assert result["arrival"]["valid_eta_rows"] == 1
         assert result["arrival"]["missing_eta_rows"] == 1
+
+
+def test_source_age_distribution_and_station_identity_are_sample_metrics():
+    data = frames()
+    fact = data["silver/fact_subway_arrival_delta"]
+    fact["source_age_sec"] = [0, 10, 100]
+    fact["line_id"] = [1002, 1007, 1002]
+    result = audit(data)["arrival"]
+    assert result["median_source_age_seconds"] == 10
+    assert result["p95_source_age_seconds"] == pytest.approx(91)
+    assert result["observed_line_count"] == 2
+    assert result["observed_station_line_identity_count"] == 2
+
+
+def test_missing_source_clock_has_no_distribution_estimate():
+    data = frames()
+    fact = data["silver/fact_subway_arrival_delta"]
+    fact["recptn_dt"] = pd.NaT
+    fact["source_age_sec"] = 0
+    result = audit(data)["arrival"]
+    assert result["median_source_age_seconds"] is None
+    assert result["p95_source_age_seconds"] is None

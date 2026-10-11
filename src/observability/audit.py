@@ -149,7 +149,11 @@ def arrival_metrics(bronze, silver, start, end, as_of, cadence_seconds=300):
                       missing_eta_ratio=float(fact.arrival_seconds.isna().mean()) if len(fact) else None,
                       invalid_eta_rows=int((fact.arrival_seconds.notna() & ~valid_eta).sum()), missing_source_timestamp_rows=int(fact.recptn_dt.isna().sum()),
                       future_source_timestamp_rows=int((source_age < 0).sum()),
-                      max_source_age_seconds=float(source_age.max()) if len(source_age) else None)
+                      max_source_age_seconds=float(source_age.max()) if len(source_age) else None,
+                      median_source_age_seconds=float(source_age.median()) if len(source_age) else None,
+                      p95_source_age_seconds=float(source_age.quantile(0.95)) if len(source_age) else None,
+                      observed_line_count=int(fact.line_id.nunique()),
+                      observed_station_line_identity_count=len(fact[["line_id", "station_id"]].drop_duplicates()))
     return result
 
 
