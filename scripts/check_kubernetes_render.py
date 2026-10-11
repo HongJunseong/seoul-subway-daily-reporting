@@ -45,6 +45,8 @@ def validate_documents(documents, expected_image, fixture=False):
             job = bootstrap.get(name)
             if not job or "helm.sh/hook" in (job["metadata"].get("annotations") or {}):
                 raise ValueError("fixture bootstrap must be regular Jobs before Helm readiness wait")
+        if env.get("SSDR_TASK_RESOURCE_METRICS") != "true":
+            raise ValueError("fixture worker resource measurements must be enabled")
         if (env.get("SSDR_FIXTURE_MODE") != "true" or env.get("SSDR_DATA_KIND") != "synthetic"
                 or env.get("SSDR_REPORT_OUTPUT_DIR") != "/opt/airflow/fixture-lake/reports"):
             raise ValueError("fixture must disable schedules and persist explicitly synthetic reports")
@@ -82,7 +84,12 @@ def main():
         # Helm errors may include manifest fragments. Do not dump them to public logs.
         raise RuntimeError("Helm render failed; inspect values/schema locally")
     docs = list(yaml.safe_load_all(result.stdout))
-    image = "ssdr-airflow:portfolio-v2"
+    images = yaml.safe_load((root / "k8s/airflow-values.yaml").read_text())["images"]
+    overrides = yaml.safe_load((root / "k8s/fixture-values.yaml").read_text()).get("images", {}) if args.fixture else {}
+    effective = {name: images[name] | overrides.get(name, {}) for name in ("airflow", "pod_template")}
+    if any(effective["airflow"][key] != effective["pod_template"][key] for key in ("repository", "tag")):
+        raise ValueError("scheduler and worker must use the same reviewed image")
+    image = effective["airflow"]["repository"] + ":" + effective["airflow"]["tag"]
     pod = validate_documents(docs, image, args.fixture)
     args.output_dir.mkdir(parents=True)
     template = yaml.safe_dump(pod, sort_keys=False)
@@ -91,6 +98,8 @@ def main():
                 "chart_version": expected, "airflow_version": "2.7.3",
                 "image": image, "fixture": args.fixture,
                 "worker_template_sha256": hashlib.sha256(template.encode()).hexdigest(),
+                "task_resource_metrics_enabled": any(e["name"] == "SSDR_TASK_RESOURCE_METRICS"
+                                                     and e.get("value") == "true" for e in pod["spec"]["containers"][0].get("env", [])),
                 "namespace_scoped_rbac": True, "actual_pod_execution": False}
     (args.output_dir / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps(evidence, indent=2))

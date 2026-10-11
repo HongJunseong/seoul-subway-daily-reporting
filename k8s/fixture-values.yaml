@@ -16,6 +16,8 @@ env:
     value: /opt/airflow/fixture-lake/reports
   - name: SSDR_TASK_POD_PROFILES
     value: "true"
+  - name: SSDR_TASK_RESOURCE_METRICS
+    value: "true"
   - name: SSDR_FIXTURE_MODE
     value: 'true'
 config:

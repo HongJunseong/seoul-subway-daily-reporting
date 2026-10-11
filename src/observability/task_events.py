@@ -5,6 +5,7 @@ import logging
 import math
 from datetime import datetime, timezone
 from src.alerts.notify_pipeline import notify_failure
+from src.observability import container_resources
 
 PREFIX = "SSDR_TASK_EVENT "
 log = logging.getLogger(__name__)
@@ -48,11 +49,16 @@ def task_event(context, event, now=None):
 
 def emit(context, event):
     value = task_event(context, event)
+    if event != "started":
+        resources = container_resources.finish(context)
+        if resources is not None:
+            value["container_resources"] = resources
     log.info("%s%s", PREFIX, json.dumps(value, ensure_ascii=False, allow_nan=False))
     return value
 
 
 def on_task_start(context):
+    container_resources.begin(context)
     emit(context, "started")
 
 
