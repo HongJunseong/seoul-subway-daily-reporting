@@ -94,7 +94,8 @@ def test_actual_delta_compaction_preserves_duplicate_null_microsecond_rows_and_n
     from delta.tables import DeltaTable
     from src.common.storage import table_path
     from src.ingestion.ingest_subway_arrival_realtime import save_to_bronze_delta
-    from scripts.compaction_experiment import fingerprint, version, inventory
+    from scripts.compaction_experiment import version, inventory
+    from src.observability.fingerprints import delta_fingerprint as fingerprint
 
     hour = datetime(2026, 1, 31, 23, tzinfo=KST)
     row = dict(statnId="10020001", statnNm="가상역", subwayId="1002", updnLine="상행",

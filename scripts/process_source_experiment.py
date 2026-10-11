@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.capture_sources import new_output, write_json
 from scripts.local_spark import local_spark
+from src.observability.fingerprints import delta_fingerprint
 from src.common.dates import KST, validate_ymd
 from src.observability.audit import DeltaAuditReader, audit_lake
 from scripts.audit_lake import save_audit
@@ -90,17 +91,9 @@ def fingerprints(spark, lake):
     result = {}
     for key in TABLES:
         path = str(lake / "v2" / key)
-        frame = spark.read.format("delta").load(path)
-        if frame.count() > 10000:
-            raise ValueError("unexpectedly large bounded source experiment")
-        from pyspark.sql import functions as F
-        encoded = frame.select(F.to_json(F.struct(*sorted(frame.columns)), {
-            "timestampFormat": "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX", "ignoreNullFields": "false",
-        }).alias("payload"))
-        rows = sorted(row.payload for row in encoded.collect())
-        digest = hashlib.sha256(("\n".join(rows) + "\n").encode()).hexdigest()
         version = int(DeltaTable.forPath(spark, path).history(1).select("version").first()[0])
-        result[key] = {"rows": len(rows), "sha256": digest, "delta_version": version}
+        rows = delta_fingerprint(spark, path, version, allow_empty=True)
+        result[key] = rows | {"delta_version": version}
     return result
 
 

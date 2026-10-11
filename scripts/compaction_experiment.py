@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.capture_sources import new_output, write_json
 from scripts.local_spark import local_spark
+from src.observability.fingerprints import delta_fingerprint
 from src.common.dates import KST
 from src.common.storage import table_path
 
@@ -70,18 +71,6 @@ def inventory(path, version, partition):
 def version(spark, path):
     from delta.tables import DeltaTable
     return int(DeltaTable.forPath(spark, str(path)).history(1).select("version").first()[0])
-
-
-def fingerprint(spark, path, revision):
-    from pyspark.sql import functions as F
-    frame = spark.read.format("delta").option("versionAsOf", revision).load(str(path))
-    payloads = frame.select(F.to_json(F.struct(*sorted(frame.columns)), {
-        "timestampFormat": "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX", "ignoreNullFields": "false",
-    }).alias("payload")).limit(MAX_ROWS + 1).collect()
-    if not payloads or len(payloads) > MAX_ROWS:
-        raise ValueError("empty or oversized bounded fixture")
-    rows = sorted(row.payload for row in payloads)
-    return {"rows": len(rows), "sha256": hashlib.sha256(("\n".join(rows) + "\n").encode()).hexdigest()}
 
 
 def sample_query(spark, path, revision, partition, start):
@@ -152,7 +141,7 @@ def rebuild(spark):
     for end in (datetime(2026, 2, 1), datetime(2026, 2, 1, 0, 15)):
         build_arrival_silver(spark, end)
         build_arrival_metrics(spark, end)
-    return {key: fingerprint(spark, table_path(key), version(spark, table_path(key))) for key in (SILVER, GOLD)}
+    return {key: delta_fingerprint(spark, table_path(key), version(spark, table_path(key)), max_rows=MAX_ROWS) for key in (SILVER, GOLD)}
 
 
 def experiment(output, *, snapshots=36, rows_per_snapshot=1000):
@@ -170,7 +159,7 @@ def experiment(output, *, snapshots=36, rows_per_snapshot=1000):
         seeded_seconds = seed(spark, snapshots, rows_per_snapshot)
         path = Path(table_path(BRONZE))
         before = version(spark, path)
-        before_rows, before_files = fingerprint(spark, path, before), inventory(path, before, partition)
+        before_rows, before_files = delta_fingerprint(spark, path, before, max_rows=MAX_ROWS), inventory(path, before, partition)
         downstream_before = rebuild(spark)
         # A dedicated fixture is the sole writer; there is no general CLI for existing tables.
         from delta.tables import DeltaTable
@@ -181,11 +170,11 @@ def experiment(output, *, snapshots=36, rows_per_snapshot=1000):
         after = version(spark, path)
         if after != before + 1:
             raise ValueError("unexpected concurrent commit in dedicated fixture")
-        after_rows, after_files = fingerprint(spark, path, after), inventory(path, after, partition)
+        after_rows, after_files = delta_fingerprint(spark, path, after, max_rows=MAX_ROWS), inventory(path, after, partition)
         log = path / "_delta_log" / f"{after:020d}.json"
         actions = [json.loads(line) for line in log.read_text().splitlines()]
         verify_change(before_rows, after_rows, before_files, after_files, actions)
-        if fingerprint(spark, path, before) != before_rows:
+        if delta_fingerprint(spark, path, before, max_rows=MAX_ROWS) != before_rows:
             raise ValueError("old full snapshot was not preserved after compaction")
         read_samples = paired_reads(spark, path, before, after, partition, hour)
         downstream_after = rebuild(spark)
