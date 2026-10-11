@@ -68,3 +68,7 @@ ANSI 모드의 잘못된 문자열·overflow·revision 날짜·빈 입력이 이
 SQL 품질 계약의 같은 합계/다른 역 identity와 누락 Gold 날짜 차단은 실제 로컬 Delta 회귀로 검증했다. warehouse 조회는 정상 복구 후의 값·품질·메타데이터를 확인했다. enterprise 권한·managed quality monitoring·SQL 비용 개선·운영 AWS 연동은 미검증이다.
 
 최종 파이프라인 회귀 94 passed, 111.09초. 최종 SQL 대상 2 passed(63.62초)와 recorder 9 passed(0.12초)는 전체에 포함된다. 앞선 Airflow/Pod 12개와 합친 현재 서로 다른 검사 수는 106개다.
+
+## 실제 원천의 제한 수집과 재처리
+
+사용자 허용 후 실제 서울 도착 API 세 번·날짜 지정 승하차 한 번을 호출했다. 5분 간격 세 snapshot의 응답 상한·표본 identity·원천 시각 나이·ETA 결측을 측정하고 기존 처리 코드의 7개 테이블 재처리 일치를 확인했다. [실제 증거](../examples/observed/evidence.md)와 [절차](SOURCE_OBSERVATION.md)에 기록했다. 장기 수집·전체 역 커버리지·S3·Databricks/Kubernetes의 실제 원천 운영 검증으로 확대하지 않는다.

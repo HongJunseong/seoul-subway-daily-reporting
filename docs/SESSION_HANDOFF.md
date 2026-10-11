@@ -241,3 +241,23 @@ fixture 릴리스와 PVC는 추가 확인을 위해 보존했고 모든 시간 �
 - S3 운영·실수집 baseline·peak 자원·유지보수 Airflow 조합은 기존 로드맵대로 남는다. 사용자 파일·.env·기존 테이블을 보존했고 commit skill에 따라 로컬 커밋한다.
 
 Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·SQL 소비 계약·native 기록·회귀 검사). 문서와 공개 실행 증거는 다음 docs(databricks) 커밋에 기록한다.
+
+## 2026-10-11 실제 원천 제한 관측·재처리
+
+사용자에게 서울 API 소량 호출을 질문했고 허용받았다. 기존 로컬 API 키를 사용했으며 AWS·Databricks·Kubernetes·Discord·LLM 호출·push는 수행하지 않았다.
+
+- capture_sources는 명시적 --fetch와 새 .work 경로, 1..3개 도착 슬롯·300초 이상 간격·승하차 최대 10페이지·자동 retry/redirect 없는 논리 요청 집계를 사용한다. 실패는 예외 종류만 기록하고 빈/불완전 원본을 정상 0건으로 저장하지 않는다. 지연 슬롯의 따라잡기 요청도 피한다.
+- 실제 시작 2026-10-11T17:49:53.329397+09:00, 마지막 관측 2026-10-11T17:59:53.438266+09:00. 5분 간격 도착 세 번·승하차 한 번, 논리 GET 4회. 도착 Bronze 3000행, Silver 2987행; 응답 상한 3/3; 표본 노선 19·역/노선 identity 682.
+- D-4 승하차 20261007 원천 617행·Silver 617행, Silver/역 Gold 전체 업무 행 일치. 이용 날짜와 관측 날짜를 구분했다.
+- 유효 ETA 2987, NULL ETA 0, 누락 원천 시각 0; 원천 생성 시각 나이 중앙값 68.0초·p95 517.0초·최대 1201.0초. 운행 지연이나 승객 대기시간으로 해석하지 않는다.
+- process_source_experiment는 저장된 완료 캡처만 읽고 기존 Bronze/Silver/Gold 코드로 새 로컬 Delta lake를 처리했다. 같은 원본 재처리에서 7개 테이블 전체 컬럼/행 SHA256·행 수 일치, Bronze 버전 불변. timestamp 해시는 마이크로초를 보존한다. 최초 처리·재처리·해시 비교 64.225656초다.
+- 품질 상태 degraded, 실제 issue [{"severity": "warning", "code": "arrival_response_at_limit"}, {"severity": "warning", "code": "arrival_source_clock_ahead"}]. ALL 응답 상한 때문에 전체 네트워크 관측을 정상 완전 데이터로 설명하지 않는다.
+- 원천 반복 자연키 13개는 모두 서로 다른 payload와 recptnDt였다. 같은 capture에서 hash 순서로 과거 관측이 선택될 수 있음을 발견해 ingested_at→recptn_dt→record_hash 순서로 보완했다. source 시각이 없는 행보다 확인된 최신 source 시각을 먼저 선택한다. 실제 저장 원본의 정제 행에서도 가장 최신 source 시각 선택을 별도 확인했다. 원천이 미래인 관측은 시각을 보정하지 않고 경고한다.
+- 감사에 표본 identity 수와 원천 생성 시각 나이 중앙값/p95를 추가했다. 원천 시각 없는 fallback 0초는 분포에서 제외한다.
+- 최종 회귀: 111 passed in 162.27s (0:02:42). 첫 전체 106 passed, 135.61초 후 opt-in·naive 시각·상한 거부 검사와 작은 표시 시계 차이 검사를 보완했다. 두 번째 전체 108 passed, 135.44초도 보존했다. 첫 저장 원본 검사에서 단조 시계와 표시 시각 간 최대 0.01908초 차이로 계획 시각 검사가 실패했다. 실제 시각을 변경하지 않고 1초 범위만 허용하는 guard와 초과 거부 회귀를 추가한 뒤 새 처리 출력 경로에서 재실행했다. 실패 로그와 이전 처리 결과도 보존했다. 새 source 테스트는 외부 API를 호출하지 않는다. 이전 Airflow/Pod 12개는 이번에 재실행하지 않았다.
+- Ruff·별도 pycache compileall·git diff --check 확인. 공개 examples/observed/evidence.json은 생성 원본과 byte 동일성·재처리 조건·기존 API 키 미포함을 확인해 복사했다.
+- private: .work/source-observation-20261011-01 (captured raw JSON), .work/source-processing-20261011-03 (lake·audit·evidence), .work/source-capture-01.log, source-processing-01.log(시각 guard 실패), source-processing-02.log(기존 hash 순서), source-processing-03.log(최종 source 시각 순서), regression-source-04.log. 원문·정제 데이터·.env는 커밋하지 않는다.
+
+10분 관측은 장기 baseline의 시작이다. 전체 역/시간대 커버리지 정책·같은 키의 모든 retry를 포함한 일일 요청 예산·장기 신선도·S3 저장/복구·플랫폼 실수집 운영·peak 자원은 미완료다. 이 세 snapshot의 일간 Gold는 일부 관측 요약이며 미수집 D-1 보고서는 만들지 않았다. 사용자 변경·기존 데이터·Git 저자를 보존하며 write-commit 스킬의 로컬 커밋을 기록한다.
+
+구현 로컬 커밋: a30a6f4(같은 수집의 최신 원천 생성 시각 선택), 536d768(제한 수집·원본 처리·감사·회귀). 문서와 실제 집계 증거는 다음 docs(portfolio) 커밋에 기록한다. 원격 push는 하지 않는다.

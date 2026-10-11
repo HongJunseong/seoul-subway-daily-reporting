@@ -1,6 +1,6 @@
 # 품질 감사와 복구 증거
 
-이 도구는 저장된 원본과 처리 결과에서 관측 가능한 사실을 남긴다. API 호출·AWS 접근·Discord 전송 없이 로컬 Delta 테이블을 읽는다. 공개 샘플은 모두 합성 fixture다. 실운영 baseline은 실제 수집 기간과 태스크 로그를 확보한 뒤 별도로 기록한다.
+이 도구는 저장된 원본과 처리 결과에서 관측 가능한 사실을 남긴다. API 호출·AWS 접근·Discord 전송 없이 로컬 Delta 테이블을 읽는다. examples/operations는 합성 fixture이며 examples/observed는 별도 소량 실수집 실험이다. 실운영 baseline은 실제 수집 기간과 태스크 로그를 확보한 뒤 별도로 기록한다.
 
 ## 로컬 데이터 감사
 
@@ -39,7 +39,8 @@ python scripts/audit_lake.py \
 | 누락 bucket | Bronze에서 관측이 없는 시간 구간이다. API 실패, 열차 부재, 전체 역·노선 커버리지를 증명하지 않는다. |
 | 미처리 snapshot | Bronze 시각 중 Silver에 없는 시각 수다. 행 단위 완전성이나 작업 실패 원인까지 증명하지 않는다. |
 | ETA | 전체 Silver 관측, 유효 ETA, NULL ETA, 잘못된 ETA를 구분한다. 음수·무한대·소수·잘못된 문자열을 유효 표본에 넣지 않는다. |
-| 원천 시각 차이 | recptn_dt가 있는 관측만 source_age_sec를 집계한다. 원천 시각이 없어 대체된 0초는 최신성의 증거가 아니다. |
+| 원천 시각 차이 | recptn_dt가 있는 관측만 source_age_sec의 중앙값·95백분위수·최댓값을 집계한다. 원천 시각이 없어 대체된 0초는 최신성의 증거가 아니다. |
+| 표본 identity | 노선 수와 (노선 ID, 역 ID) 고유 수다. 역명이 같아도 다른 노선 identity를 합치지 않으며 전체 네트워크 커버리지로 해석하지 않는다. |
 | 응답 상한 | response_at_limit가 표시된 고유 snapshot 수다. 누락량이나 전체 네트워크 관측 여부를 추정하지 않는다. |
 | 파일·읽기 | Delta 활성 add action의 파일 수·크기와 날짜 후보 파일, 실제 로컬 읽기 시간을 남긴다. 후보 bytes는 해당 날짜 전체이며 구간의 실제 IO bytes·AWS 비용이 아니다. |
 

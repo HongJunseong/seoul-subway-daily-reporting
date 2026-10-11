@@ -95,6 +95,12 @@ KubernetesExecutor를 Docker Desktop의 실제 클러스터에서 실행했다. 
 
 실제 Docker 이미지 빌드와 컨테이너 안의 태스크 12개·보고서 해시 검증도 통과했다. [컨테이너 실행 증거](examples/container/README.md)는 순차 태스크 실행과 클러스터 scheduler 검증의 차이를 명시한다.
 
+## 실제 원천 관측
+
+서울 API를 실제로 5분 간격 세 번 수집한 도착 3,000행과 D-4(20261007) 승하차 617행을 별도 로컬 Delta에서 처리했다. 같은 원본 재처리의 7개 테이블 전체 행 해시·Bronze 버전 불변을 확인했다. **도착 응답 세 번 모두 1,000건 상한에 도달**해 품질 경고를 남겼다. ALL 요청을 전체 네트워크 커버리지로 설명하지 않는다.
+
+[실제 관측 증거](examples/observed/evidence.md)와 [제한 수집·원본 재처리 절차](docs/SOURCE_OBSERVATION.md)는 표본 범위와 원천 생성 시각 나이도 기록한다. 10분 규모 실험이며 지속 수집 baseline·실제 S3 운영 검증은 추가로 필요하다.
+
 ## 자동화
 
 - `arrival_collect_5m`: 실제 수집 시각으로 원문 저장.

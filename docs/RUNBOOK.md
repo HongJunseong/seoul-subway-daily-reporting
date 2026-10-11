@@ -94,3 +94,7 @@ v2 prefix의 새 계약과 기존 테이블 스키마는 다르다. 사용 가�
 Databricks는 [전용 문서](../databricks/README.md)의 공식 CLI OAuth와 bundle을 사용한다. 기본 Job은 namespace=workspace.ssdr_v2_fixture, max_concurrent_runs=1, 일정 없음이다. 같은 managed namespace를 다른 notebook/Job에서 동시에 쓰지 않는다. Bronze/Silver의 입력 버전을 고정하고 날짜 제한 MERGE로 결과를 교체한다. Gold 두 테이블은 별도 트랜잭션이며 부분 성공 시 같은 원본을 재처리한다.
 
 Kubernetes의 chart/provider·태스크 자원·RBAC·PVC·합성 배포와 worker 삭제·재시도 실험은 [KUBERNETES](KUBERNETES.md)를 따른다. 운영 profile은 관리되는 external metadata DB의 ssdr-metadata Secret과 검증된 storage class가 필요하다. 합성 namespace는 시간 기반 수집을 비활성화하며 live Secret을 사용하지 않는다. S3 writer pool 1 slot은 Pod 자원 프로필과 별도로 유지한다.
+
+## 운영 저장소와 분리한 실제 원천 실험
+
+서울 API만 허용된 경우 [SOURCE_OBSERVATION](SOURCE_OBSERVATION.md)의 명시적 --fetch 캡처와 네트워크 없는 저장 원본 처리 명령을 사용한다. 기존 경로를 덮어쓰지 않으며 .work 새 디렉터리만 허용한다. 실패·빈 응답·불완전 페이지는 정상 출판을 막는다. 실시간 D-1 관측이 없으면 과거 도착을 생성하거나 정상 일간 보고서로 보완하지 않는다.

@@ -47,3 +47,7 @@ AWS·서울 API·Discord·LLM·Kubernetes 실배포는 로컬 fixture 검증과 
 - 새 quality schema에서 음수 최신 정정이 이전 출판 내용/버전을 보존하고 정상 정정·time travel·재처리로 복구되는지 실제 serverless Job에서 확인했다.
 - 세 Unity Catalog view는 날짜 의미·합성 표시·품질 PASS·역/노선 identity를 제공한다. 실제 기존 SQL warehouse의 네 쿼리와 notebook 전체 view 행·SQL source 해시가 일치했다.
 - 기능 선택·검증 범위와 재현은 DATABRICKS_FREE.md, 실제 증거는 examples/databricks/free-edition*에 있다. enterprise RBAC·managed monitoring·실제 AWS 연동 경험으로 확대하지 않는다.
+
+## 실제 원천 제한 관측 (2026-10-11)
+
+기존 서울 키로 5분 간격 도착 세 번·D-4 승하차 하루를 별도 로컬 실험에서 수집했다. 도착 세 응답 모두 1,000건 상한에 도달했다. 기존 Bronze/Silver/Gold 코드로 처리하고 7개 테이블 전체 행 해시·Bronze 버전 불변을 검증했다. SOURCE_OBSERVATION.md와 examples/observed에 실제 집계 증거를 기록했다. 원문·정제 행은 ignored .work에만 보관한다. 장기 baseline·S3·플랫폼 실수집 운영은 남는다.
