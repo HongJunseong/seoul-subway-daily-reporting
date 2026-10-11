@@ -356,3 +356,5 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 사용자 요청에 따라 origin의 codex/de-portfolio-hardening에 일반 push하는 범위다. 로컬 검증과 원격 GitHub Actions 결과는 구분하고 push 후 원격 HEAD/CI 상태를 확인한다. 실제 장기 수집·S3 운영/복구·순수 pool 대기·더 큰 입력·유지보수 플랫폼 조합의 검증은 기존 로드맵대로 남는다. 정리는 이 항목의 완료 증거가 아니다.
 
 이번 정리의 구현 커밋: d8bab1b(미사용·중복 경로 정리와 호출부/회귀), 0488b9e(전체 행 해시 공통화와 회귀). 탐색 안내와 실제 검사 기록은 별도 docs(portfolio) 커밋으로 묶는다.
+
+공개 확인: 첫 일반 push 성공 후 원격 작업 브랜치 HEAD가 819d8dba830054275adc36ec6ad5ae1ffd97a156과 일치했다. 기존 26개와 이번 3개 커밋이 공개됐고 GitHub Actions 실행 38140252332가 시작됐다. 커밋 후 최종 비밀/링크 검사도 29개 커밋·279개 변경 blob·161개 링크에서 통과했다. GitHub의 UTC 환경에도 같은 의미가 되도록 새 hash 회귀 fixture의 datetime에 명시적 KST를 지정했다. TZ=UTC에서 fingerprint·compaction 28 passed, 28.66초이며 기존 177개와 중복되는 검사다. 이 테스트 보완과 공개 기록은 일반 후속 커밋으로 push하며 이미 공개된 이력을 재작성하지 않는다.

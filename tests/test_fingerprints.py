@@ -3,6 +3,7 @@ import hashlib
 import json
 import pytest
 from src.observability.fingerprints import delta_fingerprint
+from src.common.dates import KST
 
 
 @pytest.mark.parametrize("revision,cap", [(0, 0), (0, -1), (0, True), (-1, 2), (True, 2), (None, 2)])
@@ -16,7 +17,7 @@ def test_full_row_hash_preserves_null_duplicates_microseconds_pinned_version_and
     from pyspark.sql import types as T
     schema = T.StructType([T.StructField("value", T.LongType()), T.StructField("observed_at", T.TimestampType()),
                            T.StructField("note", T.StringType())])
-    stamp = datetime(2026, 1, 31, 23, 59, 59, 123456)
+    stamp = datetime(2026, 1, 31, 23, 59, 59, 123456, tzinfo=KST)
     frame = spark.createDataFrame([(7, stamp, None)]*2, schema)
     root = tmp_path/"original"
     frame.write.format("delta").save(str(root))
