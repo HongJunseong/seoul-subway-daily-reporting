@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "data_kind": "observed",
+  "metadata_only": true,
+  "as_of_kst": "2026-10-11T22:26:44+09:00",
+  "start_day": "20261011",
+  "end_day": "20261011",
+  "calendar_days": 1,
+  "unique_capture_manifests": 1,
+  "duplicate_manifests_ignored": 0,
+  "source_manifest_sha256": [
+    "383acedb074bc85ca0e928ef13f39e9814d0fa3150dd224a0e280b75e56cdb4d"
+  ],
+  "days_without_declared_capture_slots": [],
+  "days_with_collected_snapshots": [
+    "20261011"
+  ],
+  "daily": [
+    {
+      "planned_day_kst": "20261011",
+      "arrival": {
+        "collected": 3,
+        "failed": 0,
+        "missed_schedule": 0,
+        "not_recorded_due": 0,
+        "future": 0
+      },
+      "arrival_get_attempts": 3,
+      "arrival_response_rows": 3000,
+      "response_at_limit_snapshots": 3,
+      "usage": {
+        "collected": 1,
+        "failed": 0,
+        "not_recorded": 0
+      },
+      "usage_get_attempts": 1,
+      "usage_observations": [
+        {
+          "usage_day": "20261007",
+          "rows": 617
+        }
+      ],
+      "capture_starts": 1,
+      "capture_status_counts": {
+        "collected": 1,
+        "incomplete": 0,
+        "running": 0
+      },
+      "declared_slots": 3,
+      "request_outcome_success_rate": 1.0,
+      "declared_due_slot_collection_rate": 1.0,
+      "arrival_request_elapsed_seconds": {
+        "samples": 3,
+        "min": 0.140296,
+        "median": 0.141184,
+        "p95": 0.17936829999999998,
+        "max": 0.183611
+      },
+      "latest_snapshot_at_kst": "2026-10-11T17:59:53.438266+09:00",
+      "latest_snapshot_age_at_as_of_seconds": 16010.561734
+    }
+  ],
+  "limitations": [
+    "Rates use only slots declared in supplied capture manifests, not a full-day schedule",
+    "A day without a manifest has unknown collection coverage; it is not an API failure",
+    "not_recorded_due is missing metadata, not proof of a failed or skipped API request",
+    "Elapsed seconds measure the request and local-save attempt duration; snapshot age is measured at the explicit as-of",
+    "Response rows are observations, not unique stations or complete network coverage",
+    "Usage observations describe usage_day; repeated dates are not added as unique daily usage",
+    "Metadata-only analysis does not verify raw rows, Silver quality or Delta replay",
+    "GET counts cover these captures only, not other collectors or the API key's total usage",
+    "Daily arrival outcomes are assigned by planned slot date, usage outcomes by capture start date"
+  ]
+}

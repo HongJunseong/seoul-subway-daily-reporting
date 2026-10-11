@@ -38,7 +38,7 @@ scripts의 CLI는 아래 문제를 재현하거나 실행 증거를 수집한다
 |---|---|
 | 키 없는 재현과 보고서 검증 | demo.py, seed_bronze.py, verify_report.py — [RUNBOOK](RUNBOOK.md) |
 | 품질·실패 복구·파일 유지보수 | audit_lake.py, recovery_experiment.py, compaction_experiment.py — [관측](OBSERVABILITY.md), [유지보수](STORAGE_MAINTENANCE.md) |
-| 실제 원천 제한 관측과 저장 원본 재처리 | capture_sources.py, process_source_experiment.py — [원천 관측](SOURCE_OBSERVATION.md); API 호출은 별도 opt-in |
+| 실제 원천 제한 관측과 저장 원본 재처리 | capture_sources.py, process_source_experiment.py, summarize_source_observations.py — [원천 관측](SOURCE_OBSERVATION.md); API 호출은 별도 opt-in |
 | Airflow 연결과 태스크 요약 | airflow_offline.py, summarize_tasks.py — [로컬 실행](AIRFLOW_OFFLINE.md) |
 | Kubernetes 구성·실행·자원 증거 | check_kubernetes_render.py, check_kubernetes_overrides.py, kubernetes_fixture.py, capture_kubernetes_files.py, summarize_kubernetes_resources.py — [Pod 실행](KUBERNETES.md), [자원](KUBERNETES_RESOURCES.md) |
 | managed Delta 계약과 실제 Job 증거 | managed_usage_experiment.py, record_databricks_run.py, record_databricks_free.py — [Databricks](../databricks/README.md) |

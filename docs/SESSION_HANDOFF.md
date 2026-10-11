@@ -371,3 +371,24 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 - private: .work/next-pr-checks.json, next-ci-failure.log, ci-utc-repro.log, ci-utc-regression.log, ci-kst-targeted.log, branch-rename.json, branch-fetch.log. 수정 push 후 새 HEAD의 원격 CI를 확인한다.
 
 다음 고도화의 우선순위는 제한된 실제 원천의 여러 날 관측으로 누락·신선도·응답 상한·파일 분포를 판단할 근거를 만드는 것이다. 다음으로 실제 입력의 Databricks 관리형 처리/SQL 제공 및 더 큰 입력의 Kubernetes pool 대기·자원 측정을 검토한다. 현재 질문에서 API 장기 호출·실데이터 workspace upload·새 배포를 시작하지 않았다.
+
+## 2026-10-11 날짜별 원천 수집 기록 비교
+
+사용자 요청의 push는 먼저 실행했으며 feature/de-portfolio가 origin과 같은 0ce2a75라 Everything up-to-date였다. 다음 고도화로 이미 저장한 실제 원천 메타데이터를 여러 날짜에 걸쳐 비교하는 도구를 만들었다. 새 기간의 외부 API 수집은 별도 opt-in 질문에 답이 없어 시작하지 않았다.
+
+- src/observability/source_baseline.py와 scripts/summarize_source_observations.py는 capture.json만 읽고 API·원문·Delta·클라우드·알림에 접근하지 않는다. 관측 날짜는 KST로 나누며 자정을 넘긴 슬롯과 승하차 이용 날짜를 구분한다.
+- collected/failed/missed_schedule/not_recorded_due/future를 분리한다. 계획 자체가 없는 날짜는 수집 범위 미확인이다. 시도 결과 성공률과 선언된 도래 슬롯 수집률의 분모를 명시하며 전체 하루 운영 성공률이나 HTTP 가용성으로 표현하지 않는다.
+- 실제 논리 GET 수, 응답 행·상한 도달, 요청·저장 시도 시간 표본, 명시적 분석 시점의 마지막 관측 나이를 기록한다. 원천 생성 시각/정제 품질은 기존 처리 감사의 책임이다.
+- 같은 메타데이터 사본은 canonical JSON 해시로 제외한다. 같은 시작 시각의 다른 중간/최종 기록은 자동 병합하지 않고 선택을 요구한다. 완료 상태·요청 수·수치·시각·원문 상한이 모순된 기록은 비교 결과를 만들지 않는다. 기존 출력 경로도 보존한다.
+- 기존 .work/source-observation-20261011-01의 메타데이터를 .work/source-baseline-20261011-02로 분석했다. 기준 시각은 실제 실행 시점 2026-10-11T22:26:44+09:00이다. 1일·도착 3/3 성공·응답 상한 3회·도착 GET 3회·승하차 GET 1회·20261007 이용량 617행이다. 장기 관측이나 하루 전체 커버리지로 확대하지 않는다.
+- examples/observed/collection-summary.json의 manifest 해시가 기존 공개 evidence.json의 capture 객체와 일치한다. 원문·정제 행은 계속 private .work에 남긴다. SOURCE_OBSERVATION·REPOSITORY_GUIDE·ROADMAP에서 실행 방법과 준비/미완료 경계를 기록했다.
+
+### 실제 검증과 공개
+
+- TZ=UTC 전체 파이프라인 193 passed, 148.10초. 추가된 28개 검사는 실패/일정 놓침/미확인 구분, 중단·미래 슬롯, 중복·충돌, 자정/월말, 잘못된 숫자·시각·호출 예산, 순서 독립성, 원문 미출력, CLI·기존 출력 보존을 확인한다.
+- Airflow/Pod 12 passed, 1.11초, 기존 Pydantic 경고 8개. 전체 서로 다른 검사 205개다. 처음 로컬 실행은 PYTHONPATH의 dags를 빠뜨려 import 오류(2 failed/8 errors)였으며 문서·CI의 환경 설정을 적용한 후 통과했다. DAG 코드는 변경하지 않았다.
+- Ruff 전체와 diff whitespace 통과. 문서 상대 링크 164개·공개 JSON·DAG CLI 경로·현재 파일/기존 32개 커밋의 비밀 값 미포함 검사를 통과했다. 실제 API 호출·새 Pod·Databricks 실행은 이번 검증에 포함하지 않는다.
+- private: .work/observation-unit-01.log, observation-unit-02.log, observation-regression-01.log, observation-airflow-{01,02}.log, observation-ruff.log, observation-audit.log, observation-baseline-02.log, source-baseline-20261011-02/{summary.json,summary.md}. 최초 baseline-01은 미래 분석 시각의 개발 출력이므로 공개에 사용하지 않았다.
+- 사용자 요청 범위로 같은 개발 브랜치에 일반 push한다. 새 HEAD의 원격 실행 상태는 .work/observation-ci-final.json과 observation-pr-checks-final.json에 별도로 보존한다. 이전 HEAD의 CI 성공을 새 코드의 원격 검증으로 대체하지 않는다.
+
+남은 작업은 승인된 기간/호출량의 실제 여러 날 수집과 결측·identity 변동·원천 시각·처리 품질의 장기 측정이다. 캡처 파일이 없는 전체 날짜의 원인은 이 비교 도구로 추정할 수 없으며 별도 scheduler 계획/실행 기록이 필요하다. 실제 Databricks 입력 upload·S3 운영·더 큰 Kubernetes 입력 검증은 별도 범위다.
