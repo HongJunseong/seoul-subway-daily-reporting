@@ -93,12 +93,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v2 .
+      - run: docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 .
       - run: mkdir -p .work/container
       - run: |
           docker run --name ssdr-fixture-ci --entrypoint python \
             -e PYTHONPATH=/opt/airflow:/opt/airflow/dags -e SSDR_TASK_POD_PROFILES=false \
-            ssdr-airflow:portfolio-v2 /opt/airflow/scripts/airflow_offline.py \
+            ssdr-airflow:portfolio-v4 /opt/airflow/scripts/airflow_offline.py \
             --output-dir /opt/airflow/.work/container/ci \
             --pipeline-python /opt/pipeline/bin/python > .work/container/run.log 2>&1
       - name: Preserve container results even after a failed run

@@ -2,8 +2,8 @@
 import os
 
 PROFILES = {
-    "control": {"requests": {"cpu": "100m", "memory": "256Mi"},
-                "limits": {"cpu": "500m", "memory": "1Gi"}},
+    "control": {"requests": {"cpu": "250m", "memory": "512Mi"},
+                "limits": {"cpu": "1", "memory": "1Gi"}},
     "spark": {"requests": {"cpu": "1", "memory": "2Gi"},
               "limits": {"cpu": "2", "memory": "3Gi"}},
     "report": {"requests": {"cpu": "250m", "memory": "512Mi"},

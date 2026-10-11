@@ -6,11 +6,11 @@ executor: KubernetesExecutor
 images:
   airflow:
     repository: ssdr-airflow
-    tag: portfolio-v2
+    tag: portfolio-v4
     pullPolicy: Never
   pod_template:
     repository: ssdr-airflow
-    tag: portfolio-v2
+    tag: portfolio-v4
     pullPolicy: Never
 extraEnvFrom: |
   - secretRef:
@@ -42,10 +42,10 @@ webserver:
 workers:
   resources:
     requests:
-      cpu: "100m"
-      memory: 256Mi
+      cpu: "250m"
+      memory: 512Mi
     limits:
-      cpu: "500m"
+      cpu: "1"
       memory: 1Gi
 postgresql:
   enabled: false
