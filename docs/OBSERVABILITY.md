@@ -88,3 +88,7 @@ python scripts/summarize_tasks.py \
 ## 다음 운영 검증
 
 실수집 자료·태스크 로그의 코드 commit, 실행 환경, 수집 시작·종료 시각을 함께 기록한다. 날짜별 감사 결과와 실행 로그를 보존해 누락 bucket·응답 상한·ETA 결측·최신성·처리 시간을 비교한다. 실제 파일 수·읽기 시간이 확인된 뒤 compaction 또는 파티션 변경의 전후를 측정한다. 실서비스 접근과 배포는 별도 작업 범위다.
+
+## 파일 수와 조회 시간에 근거한 유지보수
+
+실수집 도착 3,000행의 활성 파일 6개를 계기로 더 큰 합성 입력에서 [닫힌 시간 compaction](STORAGE_MAINTENANCE.md)을 실험했다. 활성 파일 수/bytes와 버전 고정 root 조회를 비교하고 전체 행·인접 파일·다운스트림 재처리 일치를 확인한다. bytes는 실제 스캔 IO나 S3 비용으로 바꾸어 표시하지 않는다. source replay는 Bronze 버전을 보존하지만 OPTIMIZE 유지보수는 dataChange=false 커밋을 만든다.

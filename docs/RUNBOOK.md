@@ -102,3 +102,7 @@ Kubernetes의 chart/provider·태스크 자원·RBAC·PVC·합성 배포와 work
 ## Kubernetes 자원 관측
 
 fixture의 worker 계측과 실제 Pod/로그 연결은 [KUBERNETES_RESOURCES](KUBERNETES_RESOURCES.md)를 따른다. CPU는 표본 구간 평균이며 executor queue에는 Pod 준비 시간이 포함된다. missing/partial/다른 cgroup 상한은 검증 성공으로 기록하지 않는다. 운영 환경 계측 활성화와 실수집 부하 시험은 별도로 판단한다.
+
+## Delta 파일 유지보수 검증
+
+[STORAGE_MAINTENANCE](STORAGE_MAINTENANCE.md)는 별도 합성 lake의 닫힌 시간 compaction과 버전 고정 조회를 재현한다. 기존 lake를 받는 운영 CLI는 제공하지 않는다. 원본 재처리와 물리 파일 유지보수의 커밋 의미를 구분하며, 운영 S3 유지보수 도입 전에는 같은 writer pool 직렬화·실측 비용·보존 정책 검증이 필요하다.

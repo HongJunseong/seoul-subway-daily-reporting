@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "verified": true,
+  "data_kind": "synthetic",
+  "spark_version": "3.5.7",
+  "delta_version": "3.2.0",
+  "input": {
+    "snapshots": 36,
+    "rows_per_snapshot": 1000,
+    "rows": 36000,
+    "cadence_seconds": 300,
+    "first_snapshot_kst": "2026-01-31T22:00:00+09:00",
+    "seeding_seconds": 36.227858
+  },
+  "selected_hour_kst": "2026-01-31T23:00:00+09:00",
+  "partition": {
+    "year": "2026",
+    "month": "01",
+    "day": "31",
+    "hour": "23"
+  },
+  "before": {
+    "version": 35,
+    "logical_rows": {
+      "rows": 36000,
+      "sha256": "3318f6cf8b39d1c3d7ae6c00cbd7515dba7ed8385ed86e3bd48962a6d09fb645"
+    },
+    "files": {
+      "active_table_files": 72,
+      "selected_hour_files": 24,
+      "selected_hour_bytes": 1532105,
+      "selected_min_file_bytes": 62457,
+      "selected_max_file_bytes": 64394,
+      "outside_files": 48,
+      "outside_paths_and_sizes_sha256": "1ff0dcc8dea2c44dbc0c08917db3cb5202e7b2b42cdab2a3a893efdab81b0e0f"
+    }
+  },
+  "after": {
+    "version": 36,
+    "logical_rows": {
+      "rows": 36000,
+      "sha256": "3318f6cf8b39d1c3d7ae6c00cbd7515dba7ed8385ed86e3bd48962a6d09fb645"
+    },
+    "files": {
+      "active_table_files": 49,
+      "selected_hour_files": 1,
+      "selected_hour_bytes": 1177906,
+      "selected_min_file_bytes": 1177906,
+      "selected_max_file_bytes": 1177906,
+      "outside_files": 48,
+      "outside_paths_and_sizes_sha256": "1ff0dcc8dea2c44dbc0c08917db3cb5202e7b2b42cdab2a3a893efdab81b0e0f"
+    }
+  },
+  "optimize": {
+    "seconds": 0.93975,
+    "num_files_added": 1,
+    "num_files_removed": 24,
+    "data_change_false": true
+  },
+  "adjacent_partition_files_unchanged": true,
+  "time_travel_rows_match": true,
+  "downstream_replay": {
+    "full_rows_before": {
+      "silver/fact_subway_arrival_delta": {
+        "rows": 24000,
+        "sha256": "afc580186e4bc8679d44211dafde3bf006917d30d3f61203ead89b053a1b5dee"
+      },
+      "gold/arrival_metrics_15m_delta": {
+        "rows": 2000,
+        "sha256": "bd42602d22dfa592c92283be9d9b6eee6f45e427b0b58a524d0da6a6ffbac54b"
+      }
+    },
+    "full_rows_after": {
+      "silver/fact_subway_arrival_delta": {
+        "rows": 24000,
+        "sha256": "afc580186e4bc8679d44211dafde3bf006917d30d3f61203ead89b053a1b5dee"
+      },
+      "gold/arrival_metrics_15m_delta": {
+        "rows": 2000,
+        "sha256": "bd42602d22dfa592c92283be9d9b6eee6f45e427b0b58a524d0da6a6ffbac54b"
+      }
+    },
+    "bronze_version_unchanged": true
+  },
+  "second_compaction_noop": true,
+  "read_samples": {
+    "hour": {
+      "query_result": {
+        "rows": 12000,
+        "eta_sum": 7220400,
+        "payload_chars": 2459609
+      },
+      "before_seconds": [
+        0.605719,
+        0.613071,
+        0.692488,
+        0.661564,
+        0.693011
+      ],
+      "after_seconds": [
+        0.186118,
+        0.179209,
+        0.16937,
+        0.167422,
+        0.17295
+      ],
+      "before_median_seconds": 0.661564,
+      "after_median_seconds": 0.17295
+    },
+    "last_15_minutes": {
+      "query_result": {
+        "rows": 3000,
+        "eta_sum": 1805700,
+        "payload_chars": 614901
+      },
+      "before_seconds": [
+        0.662446,
+        0.585347,
+        0.559446,
+        0.538675,
+        0.524051
+      ],
+      "after_seconds": [
+        0.192089,
+        0.156256,
+        0.179347,
+        0.142936,
+        0.154489
+      ],
+      "before_median_seconds": 0.559446,
+      "after_median_seconds": 0.156256
+    }
+  },
+  "elapsed_seconds": 72.477143,
+  "limitations": [
+    "Dedicated local[2] synthetic lake; no API, cloud, Kubernetes or production workload",
+    "Five paired warm reads per query/version; OS/JVM/cache effects remain",
+    "Candidate active file bytes are not measured IO bytes or S3 request cost",
+    "Compaction creates a dataChange=false Bronze commit; source replay does not",
+    "No VACUUM or automatic maintenance schedule; old snapshots remain readable"
+  ]
+}

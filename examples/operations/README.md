@@ -10,3 +10,5 @@
 - 파일 크기·해시는 이번 실행 결과다. 재실행 시 파일 구성·시간·버전이 달라질 수 있으나 업무 결과와 검증 조건은 같아야 한다.
 
 [실행 절차와 지표 해석](../../docs/OBSERVABILITY.md)에 명령과 제한을 기록했다. 원본 lake는 .work 아래에만 보존하며 Git에는 이 요약 파일만 넣는다.
+
+[compaction.md](compaction.md)와 [compaction.json](compaction.json)은 더 큰 합성 36,000행의 닫힌 시간 파일 유지보수 결과다. 파일 수·버전·조회 표본과 전체 행·인접 파일·원본 재처리 보존을 확인했다. 기존 recovery/quality 실험의 lake와 분리한다.

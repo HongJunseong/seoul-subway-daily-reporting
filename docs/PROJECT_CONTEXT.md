@@ -55,3 +55,7 @@ AWS·서울 API·Discord·LLM·Kubernetes 실배포는 로컬 fixture 검증과 
 ## Kubernetes 자원 측정 (2026-10-11)
 
 fixture에서만 SSDR_TASK_RESOURCE_METRICS=true를 켜 worker cgroup v2를 읽는다. terminal callback과 실제 Pod UID·자원 상한을 연결해 scheduler/host 수치를 배제한다. DAG 트리거의 약 463MiB 메모리와 CPU quota 포화를 근거로 control을 CPU 250m/1, 메모리 512Mi/1Gi로 조정했다. 같은 합성 원본의 결과 보존과 전후 수치는 KUBERNETES_RESOURCES.md에 기록한다. Spark/report는 초기 예산을 유지하며 실수집 규모·순수 pool 대기는 미검증이다.
+
+## 저장 파일 유지보수 실험 (2026-10-11)
+
+compaction_experiment는 새로운 .work 합성 lake에서만 36,000행을 만든다. 닫힌 한 시간의 OPTIMIZE 전후 전체 행·인접 파일·Silver/15분 Gold 재처리를 검사한다. source replay의 Bronze 버전 불변과 유지보수의 dataChange=false 새 커밋을 구분한다. STORAGE_MAINTENANCE.md와 examples/operations/compaction.md에 조회 표본·선택 범위를 기록한다. 자동 일정·S3 쓰기·VACUUM은 수행하지 않는다.

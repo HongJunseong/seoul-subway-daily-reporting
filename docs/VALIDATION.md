@@ -76,3 +76,7 @@ SQL 품질 계약의 같은 합계/다른 역 identity와 누락 Gold 날짜 차
 ## 실제 Kubernetes 자원과 설정 조정 (2026-10-11)
 
 [전후 자원 증거](../examples/kubernetes/resources.md)는 같은 합성 Bronze의 실제 worker 12개씩과 PVC callback을 연결한다. control DAG 트리거의 약 463MiB와 CPU 제한 40/40 period를 확인해 요청 메모리를 512Mi로, CPU 요청/상한을 250m/1로 조정했다. 후속 관측의 CPU 제한은 0/21 period이며 7개 Delta 전체 해시·원본 버전·보고서 해시가 유지됐다. 최종 파이프라인 137개(142.99초), Airflow/Pod 12개(1.68초), 태스크 17개 병합과 base/fixture 렌더를 통과했다. CPU는 구간 평균·메모리는 callback까지의 컨테이너 최고값이다. 운영 크기·순수 pool 대기·성능 개선율은 검증하지 않았다.
+
+## 작은 Delta 파일 유지보수 (2026-10-11)
+
+별도 합성 36,000행의 닫힌 한 시간에서 파일 24→1·전체 행/인접 파일 보존·dataChange=false를 확인했다. 이후 과거 전체 snapshot과 월말 자정의 Silver/15분 Gold를 다시 읽고 재처리했으며 원본 버전과 결과가 유지됐다. 같은 compaction의 두 번째 실행은 물리 no-op이다. 다섯 쌍의 버전 고정 warm 조회 표본을 [실제 증거](../examples/operations/compaction.md)에 보존했다. 최종 대상 Delta/정책 검사 21개, 앞선 파이프라인 전체 158개·Airflow/Pod 12개가 통과했다. 운영 S3 비용·대용량·자동 유지보수 주기는 검증하지 않았다.

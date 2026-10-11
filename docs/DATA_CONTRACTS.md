@@ -54,3 +54,7 @@ snapshot_ts는 API 응답 이후의 실제 수집 시각이다. recptn_dt는 원
 실데이터 검증에서 최소 다음을 기록한다: 수집 시작/끝, 응답 건수·상한 도달 여부, 원천/수집 시각 차이, 정상 snapshot 수, 키별 결측 ETA 비율, 처리 실행 시간, 최신 Gold 날짜·window, Delta 버전, 실패·재시도·복구 시간. 현재 샘플은 이 운영 baseline의 대체물이 아니다.
 
 Bronze 보존·VACUUM·S3 lifecycle 기간은 아직 확정하지 않았다. 운영 기간·복구 요구·저장 비용을 측정한 뒤 정한다. 원문과 Delta 로그를 무작정 삭제하면 재처리와 time travel이 손상될 수 있다.
+
+## 원본 재처리와 파일 유지보수
+
+원본 재처리는 Bronze에 쓰지 않으며 같은 입력의 Silver/Gold 업무 결과를 유지한다. 별도 합성 [파일 유지보수 실험](STORAGE_MAINTENANCE.md)의 OPTIMIZE는 dataChange=false의 새 Bronze 커밋을 만든다. 물리 버전은 증가하지만 raw_payload·lineage·중복·NULL을 포함한 전체 행과 인접 파티션 파일을 보존해야 한다. 이 실험은 운영 자동 유지보수나 VACUUM을 활성화하지 않는다.

@@ -295,3 +295,33 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 단일 node 소량 합성 범위에서 control 자원 예약·CPU 제한을 측정하고 조정했다. 순수 pool 대기·더 큰 원본/동시 작업의 자원·실수집 장기 커버리지·운영 S3 쓰기/복구·유지보수 Airflow/chart/provider와 metadata DB는 남는다. fixture 릴리스/PVC와 이전 이미지 태그는 확인용으로 보존했고 시간 기반 schedule은 None이다. 승인된 write-commit 스킬 범위에서 기능별 로컬 커밋하며 push하지 않는다.
 
 구현 로컬 커밋: f3c1eca(worker 계측·collector 계약·회귀·fixture opt-in), 64c0d12(실측 control 조정·v4 이미지/CI 태그). 문서와 실제 전후 증거는 다음 docs(portfolio) 커밋에 기록한다. 원격 push는 하지 않았다.
+
+## 2026-10-11 닫힌 시간 compaction·조회 표본·재처리
+
+사용자의 다음 고도화 요청에서 로드맵의 파일 수/읽기 실측 항목을 진행했다. 기존 실수집 도착 3,000행이 활성 파일 6개인 것을 계기로 기존 원본을 바꾸지 않는 별도 합성 실험을 만들었다. 외부 API·AWS·Databricks·Kubernetes·Discord·LLM 호출·배포·push는 없으며 기존 fixture/원본/사용자 변경·Secret·Git 저자를 보존했다.
+
+### 구현과 최종 결과
+
+- scripts/compaction_experiment.py는 새 .work 하위의 합성 lake만 만들며 기존 lake/출력 경로를 받지 않는다. 25..48 snapshot×1..1000행의 bounded 입력만 허용하며 기본 36,000행이다. fingerprint의 driver 수집도 48,000행 이하로 제한한다.
+- 기존 save_to_bronze_delta로 KST Jan31 22:00부터 Feb01 00:55까지 5분 합성 입력을 append한다. 실제 수집 시각으로 해석하지 않는다. Spark 3.5.7 local[2]·Delta Spark 3.2.0이다.
+- 닫힌 Jan31 23시 파티션만 DeltaTable.optimize().where(predicate).executeCompaction()으로 합친다. KST/정각/자정/월말·열린 시간·미래·predicate 입력을 검사한다. 파일 스캔은 format(delta) root/versionAsOf, 파일 목록은 활성 add metadata다. 내부 Parquet를 직접 읽지 않는다.
+- 최종 .work/compaction-20261011-03: Bronze 36,000행 전체 해시 일치, 대상 파일 24→1, bytes 1,532,105→1,174,152, 전체 파일 72→49. 인접 48개 파일의 path/size 해시 유지.
+- 유지보수 Bronze 버전 35→36, add/remove dataChange=false. 이후 과거 버전 35의 전체 행을 다시 읽어 동일 해시를 확인했다. 월말 자정 00:00/00:15 Silver 24,000행·15분 Gold 2,000행 전체 해시 유지, 원본 재처리 중 Bronze 버전 36 불변.
+- 반복 compaction은 added/removed 0·버전 불변. VACUUM·과거 파일 삭제·자동 일정·운영 S3 writer는 추가하지 않았다.
+- 고정 전후 버전을 각각 warm-up하고 5쌍씩 번갈아 조회했다. 한 시간 12,000행의 중앙값 0.661564→0.172950초, 마지막 15분 3,000행은 0.559446→0.156256초. count-only shortcut 대신 ETA 정수 합과 raw_payload 문자 수도 비교했다. 모든 표본을 공개했다.
+- 최종 compact 0.939750초·seed 36.227858초·전체 검증 72.477143초. 시작/seed 단계는 별도 Spark 대상 검사와 일부 겹쳐 SparkUI는 4041을 사용했다. 조회 표본은 대상 검사 종료 후 측정했고 전체 시간을 격리된 처리량 벤치마크로 해석하지 않는다.
+- 최초 실험 01도 24→1·전체 행/다운스트림 보존을 통과했다. 이후 과거 전체 snapshot 재검사를 추가할 때 광범위 문자열 교체가 함수 선언까지 바꿔 syntax error를 만들었다. 02는 실행 시작 전 문법 오류로 실패했고 lake를 만들지 않았다. 선언을 복구한 최종 03의 실제 실행으로 보완한 guard까지 확인했다. 초기 결과·02 실패 로그는 보존했다.
+- 문서 STORAGE_MAINTENANCE.md·examples/operations/compaction.*에 읽기 표본과 해석 범위, 데이터 계약의 유지보수/원본 재처리 차이를 기록했다. CI pipeline job에 같은 실험과 evidence.json artifact를 추가했지만 원격 CI는 실행하지 않았다.
+
+### 검사와 보존
+
+- 전체 파이프라인 158 passed, 143.81초. Airflow/Pod 12 passed, 1.03초, 기존 Pydantic 경고 8개. 서로 다른 검사 170개다.
+- 단위 정책 20 passed(0.24초)는 전체에 포함된다. 문법 수정 후 변경 대상 tests/test_compaction.py 21 passed(28.61초), 실제 Delta OPTIMIZE·중복/NULL/마이크로초/인접 파티션/과거 snapshot/반복 no-op 포함. 이 21개도 전체 검사에 포함되며 중복 합산하지 않는다.
+- 최종 Ruff 전체·별도 pycache compileall·diff whitespace 통과. 공개 생성 JSON byte 동일성·실제 commit 계약 재검사·문서 내부 링크 72개·CI job 4개와 실험/증거 경로를 확인했다.
+- private: .work/compaction-20261011-01, compaction-20261011-03, compaction-01.log, compaction-02.log(문법 오류), compaction-03.log, regression-compaction-01.log, airflow-compaction-01.log, compaction-final-tests.log. 합성 lake·원문 행은 공개/커밋하지 않는다.
+
+### 남은 판단
+
+닫힌 시간 compaction의 물리/논리 보존과 로컬 조회 변화는 검증됐다. 실수집 장기 파일 분포·S3 읽기/추가 쓰기 비용·pool 경합/신선도·파티션 변경·보존 정책은 남는다. 이번 약 1MB 출력과 warm 조회를 운영 개선율/비용 절감으로 주장하지 않는다. 이전 Kubernetes 순수 pool 대기/더 큰 동시 입력·유지보수 플랫폼 검증도 로드맵대로 남는다. write-commit 스킬로 기능/테스트·CI·문서의 목적별 로컬 커밋을 진행한다.
+
+구현 로컬 커밋: c17c086(닫힌 시간 compaction·조회/재처리 검증·Delta 회귀), 157ba85(CI 실험과 evidence artifact). 문서와 최종 실제 실행 JSON은 다음 docs(portfolio) 커밋에 기록한다. 원격 push는 하지 않았다.
