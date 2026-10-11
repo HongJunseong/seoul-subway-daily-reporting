@@ -31,7 +31,9 @@ Silver/Gold의 날짜 파티션을 검증 후 replaceWhere로 교체한다. 다�
 
 수집 API의 ALL 범위는 호출당 최대 1,000행이다. response_at_limit은 상한 도달 가능성을 나타내며 전체 네트워크의 완전성을 증명하지 않는다. 원천의 모든 열차가 모든 snapshot에 존재한다고 가정하지 않는다.
 
-snapshot_ts는 API 응답 이후의 실제 수집 시각이다. recptn_dt는 원천 수신 시각, event_time은 사용 가능한 원천 시각 또는 snapshot 시각이다. 집계 구간 선택은 snapshot_ts로 한다. 누락된 과거 도착 관측은 API 재조회로 복구할 수 없다.
+snapshot_ts는 API 응답 이후의 실제 수집 시각이다. recptn_dt는 원천 생성 시각, event_time은 사용 가능한 원천 시각 또는 snapshot 시각이다. 집계 구간 선택은 snapshot_ts로 한다. 누락된 과거 도착 관측은 API 재조회로 복구할 수 없다.
+
+같은 snapshot·자연키가 반복되면 최신 ingested_at, 최신 recptn_dt, record_hash 순서로 하나를 선택한다. 같은 수집의 서로 다른 원천 세대를 해시 순서로만 결정하지 않는다. NULL 원천 시각은 확인된 원천 시각 뒤에 둔다. 원천 시각이 수집보다 미래이면 시각을 임의 보정하지 않고 감사 경고로 드러낸다.
 
 잘못된 ETA는 NULL로 유지한다. 전체 관측 n과 valid_eta_n을 분리한다. 평균·분위수·긴 ETA 비율의 분모는 유효 ETA 표본이다. 같은 열차를 여러 snapshot에서 관측한 값은 서로 다른 관측이며 독립적인 열차 여행 수나 승객 대기시간이 아니다.
 

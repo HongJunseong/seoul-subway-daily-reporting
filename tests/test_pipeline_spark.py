@@ -82,3 +82,25 @@ def test_window_crosses_midnight_and_null_eta_does_not_become_zero(spark, storag
     build_arrival_metrics(spark, end)
     persisted = spark.read.format("delta").load(table_path("gold/arrival_metrics_15m_delta"))
     assert persisted.count() == 2
+
+
+def test_arrival_same_capture_prefers_latest_source_generation_over_hash(spark, storage):
+    from src.processing.build_fact_subway_arrival_spark import transform_arrival
+    row = json.loads(Path("fixtures/arrival.json").read_text())[0]["rows"][0]
+    stamp = datetime(2026, 2, 1, 0, 0, 5)
+    rows = [
+        dict(row, recptnDt="2026-01-31 23:59:50", barvlDt="180"),
+        dict(row, recptnDt="2026-02-01 00:00:01", barvlDt="60"),
+        dict(row, recptnDt=None, barvlDt="45"),
+    ]
+    save_arrival(rows, stamp, spark=spark, run_id="mixed-source-generation")
+    bronze = spark.read.format("delta").load(table_path("bronze/subway_arrival_delta"))
+    # Force the older generation to win a hash-only tie, so this verifies source-time semantics.
+    bronze = bronze.withColumn("record_hash", F.when(F.col("barvlDt") == "180", F.lit("z"))
+                               .when(F.col("barvlDt") == "45", F.lit("y")).otherwise(F.lit("a")))
+    for frame in [bronze.orderBy("record_hash"), bronze.orderBy(F.col("record_hash").desc())]:
+        facts = transform_arrival(frame).collect()
+        assert len(facts) == 1
+        assert facts[0].arrival_seconds == 60
+        assert facts[0].recptn_dt == datetime(2026, 2, 1, 0, 0, 1)
+        assert facts[0].source_age_sec == 4

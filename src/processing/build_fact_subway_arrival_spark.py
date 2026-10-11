@@ -35,7 +35,11 @@ def transform_arrival(df):
                 F.col("line_id").isNull() | F.col("station_name").isNull() |
                 (F.trim("station_name") == "") | F.col("updn_line").isNull() |
                 F.col("train_no").isNull(), "arrival natural keys")
-    order = Window.partitionBy(*KEYS).orderBy(F.col("ingested_at").desc(), F.col("record_hash").desc())
+    # An API response can contain different source generations for the same observation key.
+    # Prefer the latest generation within an equally recent capture; hash only breaks true ties.
+    order = Window.partitionBy(*KEYS).orderBy(F.col("ingested_at").desc(),
+                                             F.col("recptn_dt").desc_nulls_last(),
+                                             F.col("record_hash").desc())
     out = (out.withColumn("_revision", F.row_number().over(order)).where("_revision = 1")
            .select("snapshot_ts", "recptn_dt", "event_time", "station_id", "station_name", "line_id",
                    "updn_line", "train_no", "dest_station_id", "dest_station_name", "train_status",
