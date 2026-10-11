@@ -24,12 +24,14 @@ jobs:
       - run: pytest -q --ignore=tests/test_dags.py
       - run: python scripts/demo.py --output-dir .work/demo/ci
       - run: python scripts/recovery_experiment.py --output-dir .work/recovery/ci
+      - run: python scripts/managed_usage_experiment.py --output-dir .work/managed-usage/ci
       - uses: actions/upload-artifact@v4
         with:
           name: offline-pipeline-evidence
           path: |
             .work/demo/ci
             .work/recovery/ci
+            .work/managed-usage/ci
           retention-days: 7
   dags:
     runs-on: ubuntu-latest
@@ -41,9 +43,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install apache-airflow==2.7.3 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
+      - run: pip install "apache-airflow[cncf.kubernetes]==2.7.3" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
       - run: pip install pytest==8.4.2
-      - run: pytest -q tests/test_dags.py
+      - run: pytest -q tests/test_dags.py tests/test_kubernetes_profiles.py
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.20.0
+      - run: helm repo add apache-airflow https://airflow.apache.org
+      - run: helm pull apache-airflow/airflow --version "$(cat k8s/chart-version.txt)" --destination .work/kubernetes --untar
+      - run: python scripts/check_kubernetes_render.py --chart-dir .work/kubernetes/airflow --output-dir .work/kubernetes/render-fixture --fixture
+      - run: python scripts/check_kubernetes_overrides.py --worker-template .work/kubernetes/render-fixture/worker-pod.yaml --output .work/kubernetes/render-fixture/overrides.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kubernetes-config-evidence
+          path: .work/kubernetes/render-fixture
+          retention-days: 7
   airflow-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -64,7 +79,7 @@ jobs:
       - run: python -m venv .venv
       - run: .venv/bin/pip install -r requirements/dev.txt
       - run: python -m venv .venv-airflow
-      - run: .venv-airflow/bin/pip install apache-airflow==2.7.3 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
+      - run: .venv-airflow/bin/pip install "apache-airflow[cncf.kubernetes]==2.7.3" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
       - run: .venv-airflow/bin/pip install -r requirements/airflow-verification.txt
       - run: .venv-airflow/bin/python scripts/airflow_offline.py --output-dir .work/airflow-offline/ci --pipeline-python .venv/bin/python
       - uses: actions/upload-artifact@v4
@@ -72,4 +87,26 @@ jobs:
         with:
           name: offline-airflow-evidence
           path: .work/airflow-offline/ci
+          retention-days: 7
+  container-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v2 .
+      - run: mkdir -p .work/container
+      - run: |
+          docker run --name ssdr-fixture-ci --entrypoint python \
+            -e PYTHONPATH=/opt/airflow:/opt/airflow/dags -e SSDR_TASK_POD_PROFILES=false \
+            ssdr-airflow:portfolio-v2 /opt/airflow/scripts/airflow_offline.py \
+            --output-dir /opt/airflow/.work/container/ci \
+            --pipeline-python /opt/pipeline/bin/python > .work/container/run.log 2>&1
+      - name: Preserve container results even after a failed run
+        if: always()
+        run: docker cp ssdr-fixture-ci:/opt/airflow/.work/container/ci .work/container/ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-airflow-evidence
+          path: .work/container
           retention-days: 7
