@@ -68,3 +68,24 @@ summary.json과 summary.md에는 다음을 기록한다.
 request_outcome_success_rate의 분모는 기록된 collected + failed 시도이며, HTTP 응답 성공률과 같지 않다. declared_due_slot_collection_rate의 분모는 supplied capture 계획의 도래 슬롯이며, 일정 놓침과 기록 누락도 포함한다. 향후 슬롯은 제외한다. 계획 자체가 없는 날짜는 수집 범위 미확인으로 표시하고 실패율의 분모에 넣지 않는다. CLI 종료 코드 0은 분석 파일 생성 성공이며 원천이나 운영 파이프라인의 건강 판정이 아니다.
 
 이 도구는 장기 관측을 비교할 준비다. 한 날짜의 세 슬롯을 비교한다고 하루 전체 계획이나 여러 날 baseline이 생기지 않는다. 여러 날 실제 호출은 기간·횟수를 별도로 허용받은 뒤 기존 capture_sources.py를 재사용한다. 원천 일간 예산·다른 collector·전체 역 커버리지는 별도 관측이 필요하다.
+
+## 승인된 기간의 하루 한 번 관측
+
+[run_source_observation_day.py](../scripts/run_source_observation_day.py)는 기존 collector를 호출하는 기간·예산 제어 진입점이다. 새 캠페인은 최대 7일, 매일 도착 세 번(5분 간격)·승하차 D-4 한 날짜, GET 최대 13회로 제한한다. 원천 수집 코드를 복제하지 않는다.
+
+```bash
+python scripts/run_source_observation_day.py init \
+  --campaign-dir .work/source-campaign-new --start-day 20261012 --days 7 --daily-time 17:50
+python scripts/run_source_observation_day.py status --campaign-dir .work/source-campaign-new
+python scripts/run_source_observation_day.py run --fetch --campaign-dir .work/source-campaign-new
+```
+
+init/status는 서비스에 접근하지 않는다. run은 명시적 --fetch를 요구하고 실제 KST 오늘이 계획 기간에 속하며 계획 시각부터 5분 안에 시작할 때만 수집한다. 날짜나 현재 시각을 임의로 바꾸는 실행 인자를 제공하지 않는다. 기간 밖·시각 이전·늦은 시작에는 GET이 없다. 계획의 SHA-256을 별도로 고정하고 내용이 바뀌면 수집을 중단한다. 기간·예산·cadence 변경이나 새 캠페인은 새 승인 범위다.
+
+하루 디렉터리의 원자적 생성으로 예산을 먼저 예약한다. 중복/동시 실행·실패·프로세스 중단 뒤에는 같은 날 다시 호출하지 않는다. 예약 디렉터리를 삭제하거나 다른 캠페인으로 우회해 재수집하지 않는다. session 자체가 14번째 GET과 KST 날짜를 넘는 호출도 차단한다. 예약 기록이 남았지만 완료 기록이 없으면 실제 호출 수는 미확인으로 취급한다.
+
+campaign status의 계획 날짜와 실행 기록을 capture 비교 결과와 함께 본다. state가 없는 도래 날짜는 unrecorded_due이며 API 실패라고 단정하지 않는다. 수집이 불완전하면 process_source_experiment의 출판 gate를 통과하지 못한다. 완료된 날짜만 저장 원본에서 별도로 처리한다.
+
+현재 사용자가 허용한 계획은 **2026-10-12~18, 매일 17:50 KST, 최대 91 GET/7일**이다. .work/source-campaign-20261012-18/plan.json에 고정했으며, 20261011의 기존 10분 실험과 구분한다. 원문은 로컬에만 두며 AWS·Databricks upload·Discord·LLM은 이 계획에서 호출하지 않는다. API 키 전체 예산이나 다른 collector의 동시 호출을 제어한 것은 아니다.
+
+예약은 이 채팅의 앱 자동화로 실행한다. [공식 예약 작업 안내](https://learn.chatgpt.com/docs/automations?surface=app)에 따라 로컬 파일 작업에는 컴퓨터와 앱이 실행 중이어야 한다. 꺼져 있거나 실행이 늦어 놓친 관측은 소급 호출하지 않는다. 기간 종료 후 호출을 종료하고 확보한 날짜·미확인 날짜·처리 품질·응답 상한을 보고한다.
