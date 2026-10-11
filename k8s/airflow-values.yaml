@@ -1,7 +1,14 @@
 # Local Kubernetes portfolio profile. Build this image from the reviewed checkout.
+airflowVersion: '2.7.3'
+defaultAirflowTag: '2.7.3'
+multiNamespaceMode: false
 executor: KubernetesExecutor
 images:
   airflow:
+    repository: ssdr-airflow
+    tag: portfolio-v2
+    pullPolicy: Never
+  pod_template:
     repository: ssdr-airflow
     tag: portfolio-v2
     pullPolicy: Never
@@ -15,6 +22,8 @@ env:
     value: v2
   - name: SSDR_REPORT_MODE
     value: template
+  - name: SSDR_TASK_POD_PROFILES
+    value: 'true'
 config:
   core:
     parallelism: 2
@@ -33,13 +42,15 @@ webserver:
 workers:
   resources:
     requests:
-      cpu: "1"
-      memory: 1Gi
+      cpu: "100m"
+      memory: 256Mi
     limits:
-      cpu: "2"
-      memory: 2Gi
+      cpu: "500m"
+      memory: 1Gi
 postgresql:
-  enabled: true
+  enabled: false
+data:
+  metadataSecretName: ssdr-metadata
 redis:
   enabled: false
 logs:

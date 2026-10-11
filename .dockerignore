@@ -9,3 +9,5 @@
 .ruff_cache
 data
 .agents
+.databricks
+databricks/sample_export/output

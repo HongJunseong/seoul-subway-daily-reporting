@@ -54,3 +54,10 @@ def spark_command(script, arguments=""):
 DATE_ENV = {key.upper(): "{{ ti.xcom_pull(task_ids='compute_dates')['" + key + "'] }}"
             for key in ["target_ymd", "usage_ymd", "arrival_ymd"]}
 AS_OF_ENV = {"AS_OF": "{{ data_interval_end.in_timezone('Asia/Seoul').strftime('%Y-%m-%d %H:%M:%S') }}"}
+
+def runtime_schedule(schedule):
+    mode = os.getenv("SSDR_FIXTURE_MODE", "false").lower()
+    if mode not in {"true", "false"}:
+        raise ValueError("SSDR_FIXTURE_MODE must be true or false")
+    # Fixture Pods must never start timed live API collection.
+    return None if mode == "true" else schedule

@@ -1,14 +1,28 @@
-FROM apache/airflow:2.7.3-python3.11
+# Pinned Linux amd64 runtime images for the local portfolio environment.
+FROM eclipse-temurin:17-jre-focal@sha256:4b65dc03c8f221944e4cf5d964660c5e443fd04e0007f9b63489ddb833fe5c7e AS java
+FROM apache/airflow:2.7.3-python3.11@sha256:a8c67ae095c03868e56c2d95c9a57a1b9a47e87247d923e329cb7c15e6d47ee5
 
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-headless \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+# The old Airflow base has retired apt sources. Copy a reviewed compatible JRE.
+COPY --from=java /opt/java/openjdk /opt/java/openjdk
+RUN python -m venv /opt/pipeline && chown -R airflow:root /opt/pipeline
+ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH=$JAVA_HOME/bin:$PATH
+ENV SSDR_SPARK_BINARY=/opt/pipeline/bin/spark-submit
+ENV PYSPARK_PYTHON=/opt/pipeline/bin/python
+ENV PYSPARK_DRIVER_PYTHON=/opt/pipeline/bin/python
 
 COPY requirements /requirements
 COPY docker/requirements.txt /requirements.txt
+USER airflow
+# Preserve Airflow's boto/async-provider constraints; Spark has its own venv.
+RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" -r /requirements.txt \
+    && PIP_USER=false /opt/pipeline/bin/pip install --no-cache-dir -r /requirements/runtime.txt \
+    && pip check && /opt/pipeline/bin/pip check \
+    && python -c "import shapely; from google.cloud import bigquery"
+
 COPY --chown=airflow:root src /opt/airflow/src
 COPY --chown=airflow:root dags /opt/airflow/dags
-USER airflow
-RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" -r /requirements.txt
+COPY --chown=airflow:root scripts /opt/airflow/scripts
+COPY --chown=airflow:root fixtures /opt/airflow/fixtures
+COPY --chown=airflow:root tests/ivysettings.xml /opt/airflow/tests/ivysettings.xml

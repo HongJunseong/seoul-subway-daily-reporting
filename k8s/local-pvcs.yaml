@@ -1,0 +1,20 @@
+# Docker Desktop single-node fixture storage, not a multi-node production profile.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ssdr-fixture-lake
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ssdr-fixture-logs
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
