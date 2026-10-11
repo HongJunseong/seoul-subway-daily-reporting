@@ -21,14 +21,14 @@
 
 현재 실행 결과의 테스트 수와 명령은 SESSION_HANDOFF에 기록한다. examples/evidence.json은 저장된 합성 데모 실행 결과다. 처리 시간은 소량 로컬 입력의 전체 데모 시간으로, 서비스 SLA나 대용량 성능으로 사용하지 않는다.
 
-[관측·복구 절차](OBSERVABILITY.md)와 [operations 공개 샘플](../examples/operations/README.md)에 이번 실행 증거를 남겼다. 예외 주입은 실제 프로세스 강제 종료·인프라 장애 시험과 구분한다. callback 지표는 실제 로컬 태스크 실행으로 시간 표본을 확보했다. [Airflow 연결 실행](AIRFLOW_OFFLINE.md)은 순차 TaskInstance 실행이다. 실제 scheduler와 KubernetesExecutor의 별도 실행 증거는 아래에 기록했다. 순수 pool 대기·peak 자원은 아직 측정하지 않았다.
+[관측·복구 절차](OBSERVABILITY.md)와 [operations 공개 샘플](../examples/operations/README.md)에 이번 실행 증거를 남겼다. 예외 주입은 실제 프로세스 강제 종료·인프라 장애 시험과 구분한다. callback 지표는 실제 로컬 태스크 실행으로 시간 표본을 확보했다. [Airflow 연결 실행](AIRFLOW_OFFLINE.md)은 순차 TaskInstance 실행이다. 실제 scheduler와 KubernetesExecutor의 별도 실행 증거는 아래에 기록했다. 순수 pool 대기는 아직 분리 측정하지 않았다. 후속 합성 Kubernetes 자원 측정은 아래 별도 증거로 기록한다.
 
 ## 아직 검증하지 않은 범위
 
 - 실제 서울 API의 지속 수집, 사용 가능한 날짜 지연의 분포, 응답 상한·결측·네트워크 커버리지.
 - 실제 S3 자격 증명·권한·Delta 쓰기·읽기와 장애 복구.
 - Compose scheduler 전체 실행. Docker 이미지 빌드는 2026-10-11 후속 검증에서 통과했다.
-- 운영 Kubernetes의 다중 node PVC·remote logging, Pod peak CPU/메모리·queue/pool 대기, 유지보수 버전과 metadata DB 조합.
+- 운영 Kubernetes의 다중 node PVC·remote logging, 실수집 규모의 자원·순수 pool 대기, 유지보수 버전과 metadata DB 조합.
 - Discord 전달과 OpenAI 해설. 기본 실행·테스트에서 외부 메시지/LLM을 호출하지 않았다.
 - 정의된 GitHub Actions의 원격 실행. 로컬에서 동일 검증 명령을 실행했으나 push하지 않았다.
 
@@ -72,3 +72,7 @@ SQL 품질 계약의 같은 합계/다른 역 identity와 누락 Gold 날짜 차
 ## 실제 원천의 제한 수집과 재처리
 
 사용자 허용 후 실제 서울 도착 API 세 번·날짜 지정 승하차 한 번을 호출했다. 5분 간격 세 snapshot의 응답 상한·표본 identity·원천 시각 나이·ETA 결측을 측정하고 기존 처리 코드의 7개 테이블 재처리 일치를 확인했다. [실제 증거](../examples/observed/evidence.md)와 [절차](SOURCE_OBSERVATION.md)에 기록했다. 장기 수집·전체 역 커버리지·S3·Databricks/Kubernetes의 실제 원천 운영 검증으로 확대하지 않는다.
+
+## 실제 Kubernetes 자원과 설정 조정 (2026-10-11)
+
+[전후 자원 증거](../examples/kubernetes/resources.md)는 같은 합성 Bronze의 실제 worker 12개씩과 PVC callback을 연결한다. control DAG 트리거의 약 463MiB와 CPU 제한 40/40 period를 확인해 요청 메모리를 512Mi로, CPU 요청/상한을 250m/1로 조정했다. 후속 관측의 CPU 제한은 0/21 period이며 7개 Delta 전체 해시·원본 버전·보고서 해시가 유지됐다. 최종 파이프라인 137개(142.99초), Airflow/Pod 12개(1.68초), 태스크 17개 병합과 base/fixture 렌더를 통과했다. CPU는 구간 평균·메모리는 callback까지의 컨테이너 최고값이다. 운영 크기·순수 pool 대기·성능 개선율은 검증하지 않았다.

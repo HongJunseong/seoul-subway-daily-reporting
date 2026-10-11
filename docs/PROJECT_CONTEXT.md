@@ -51,3 +51,7 @@ AWS·서울 API·Discord·LLM·Kubernetes 실배포는 로컬 fixture 검증과 
 ## 실제 원천 제한 관측 (2026-10-11)
 
 기존 서울 키로 5분 간격 도착 세 번·D-4 승하차 하루를 별도 로컬 실험에서 수집했다. 도착 세 응답 모두 1,000건 상한에 도달했다. 기존 Bronze/Silver/Gold 코드로 처리하고 7개 테이블 전체 행 해시·Bronze 버전 불변을 검증했다. SOURCE_OBSERVATION.md와 examples/observed에 실제 집계 증거를 기록했다. 원문·정제 행은 ignored .work에만 보관한다. 장기 baseline·S3·플랫폼 실수집 운영은 남는다.
+
+## Kubernetes 자원 측정 (2026-10-11)
+
+fixture에서만 SSDR_TASK_RESOURCE_METRICS=true를 켜 worker cgroup v2를 읽는다. terminal callback과 실제 Pod UID·자원 상한을 연결해 scheduler/host 수치를 배제한다. DAG 트리거의 약 463MiB 메모리와 CPU quota 포화를 근거로 control을 CPU 250m/1, 메모리 512Mi/1Gi로 조정했다. 같은 합성 원본의 결과 보존과 전후 수치는 KUBERNETES_RESOURCES.md에 기록한다. Spark/report는 초기 예산을 유지하며 실수집 규모·순수 pool 대기는 미검증이다.

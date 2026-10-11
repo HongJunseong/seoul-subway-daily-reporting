@@ -8,11 +8,11 @@ Apache Airflow 2.7.3, Kubernetes provider 7.8.0, client 23.6.0, 공식 Helm char
 
 | 프로필 | 사용 태스크 | CPU 요청/상한 | 메모리 요청/상한 |
 |---|---|---|---|
-| control | 날짜·분기·트리거·일반 알림 | 100m / 500m | 256Mi / 1Gi |
+| control | 날짜·분기·트리거·일반 알림 | 250m / 1 | 512Mi / 1Gi |
 | spark | 수집·변환·Spark QA | 1 / 2 | 2Gi / 3Gi |
 | report | 보고서 생성 | 250m / 1 | 512Mi / 2Gi |
 
-Spark 수집도 JVM을 실행하므로 spark 프로필을 사용한다. 이 값은 초기 실행 예산이며 실제 Pod 메모리/CPU 측정으로 조정해야 한다. driver heap은 1g다. 자원 요청은 S3 writer 직렬화를 대신하지 않으며 모든 Spark 태스크의 ssdr_delta_writer pool(1 slot)은 유지한다.
+Spark 수집도 JVM을 실행하므로 spark 프로필을 사용한다. control은 실제 합성 Pod에서 DAG 트리거의 약 463MiB 메모리와 CPU quota 포화를 관측해 예약량과 CPU 상한을 조정했다. [측정·조정 근거](KUBERNETES_RESOURCES.md)를 제공한다. Spark/report는 작은 합성 입력만으로 줄일 근거가 없어 초기 예산을 유지한다. driver heap은 1g다. 자원 요청은 S3 writer 직렬화를 대신하지 않으며 모든 Spark 태스크의 ssdr_delta_writer pool(1 slot)은 유지한다.
 
 pod_override는 base 컨테이너의 자원과 프로필 label만 지정한다. Helm template의 이미지·환경변수·Secret reference·로그/데이터 mount·service account는 Airflow PodGenerator 병합으로 보존한다. SSDR_TASK_POD_PROFILES=true일 때만 적용하며 기본 로컬 실행은 Kubernetes client 없이 가능하다.
 
@@ -40,7 +40,7 @@ docker-desktop context와 단일 Ready node를 먼저 확인한다. 기존 names
 ```bash
 docker info
 kubectl --context docker-desktop get nodes
-docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v2 .
+docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 .
 kubectl --context docker-desktop create namespace ssdr-fixture-demo
 kubectl --context docker-desktop -n ssdr-fixture-demo apply -f k8s/local-pvcs.yaml
 helm upgrade --install ssdr-fixture apache-airflow/airflow \
@@ -69,14 +69,14 @@ kubectl --context docker-desktop -n ssdr-fixture-demo exec deployment/ssdr-fixtu
   --output-dir /opt/airflow/fixture-lake/evidence/recovery \
   --run-id manual__kubernetes_fixture_demo_a --delete-once-gold-worker
 kubectl --context docker-desktop -n ssdr-fixture-demo exec deployment/ssdr-fixture-scheduler -c scheduler -- \
-  python /opt/airflow/scripts/capture_kubernetes_files.py \
+  /opt/pipeline/bin/python /opt/airflow/scripts/capture_kubernetes_files.py \
   --runtime-evidence /opt/airflow/fixture-lake/evidence/recovery/evidence.json \
   --output /opt/airflow/fixture-lake/evidence/recovery/files.json
 kubectl --context docker-desktop -n ssdr-fixture-demo exec deployment/ssdr-fixture-scheduler -c scheduler -- \
   python /opt/airflow/scripts/kubernetes_fixture.py --namespace ssdr-fixture-demo \
   --output-dir /opt/airflow/fixture-lake/evidence/replay --run-id manual__kubernetes_fixture_demo_b
 kubectl --context docker-desktop -n ssdr-fixture-demo exec deployment/ssdr-fixture-scheduler -c scheduler -- \
-  python /opt/airflow/scripts/capture_kubernetes_files.py \
+  /opt/pipeline/bin/python /opt/airflow/scripts/capture_kubernetes_files.py \
   --runtime-evidence /opt/airflow/fixture-lake/evidence/replay/evidence.json \
   --output /opt/airflow/fixture-lake/evidence/replay/files.json \
   --compare /opt/airflow/fixture-lake/evidence/recovery/files.json
@@ -88,7 +88,7 @@ kubectl --context docker-desktop -n ssdr-fixture-demo exec deployment/ssdr-fixtu
 
 2026-10-11 사용자가 Kubernetes를 활성화한 뒤 Docker engine 28.3.0·Kubernetes 1.32.2의 실제 Ready node에서 검증했다. Helm 릴리스와 lake/log/metadata PVC가 준비됐고 실제 scheduler가 12개 태스크를 worker Pod로 실행했다. 첫 실험의 Pod 13개 중 Gold 첫 시도를 삭제했고 다른 Pod의 두 번째 시도가 성공했다. 로그 13개가 PVC에 남았다. 최종 이미지 재실행은 Pod 12개·로그 12개·7개 테이블 전체 해시 일치·Bronze 버전 불변을 확인했다. [공개 증거](../examples/kubernetes/README.md)에 두 실행을 분리해 보존했다.
 
-이 검증은 단일 node와 소량 합성 원본이다. 운영 API/S3·다중 node 저장·peak 자원·순수 pool 대기·대규모 성능은 아직 검증하지 않았다. 현재 fixture 릴리스와 PVC는 추가 확인을 위해 남겨 두었고 시간 기반 schedule은 비활성화돼 있다.
+이 검증은 단일 node와 소량 합성 원본이다. 별도 실험에서 worker 컨테이너의 callback까지 메모리 peak·구간 CPU·executor queue를 측정했다. 운영 API/S3·다중 node 저장·순수 pool 대기·대규모 성능은 아직 검증하지 않았다. 현재 fixture 릴리스와 PVC는 추가 확인을 위해 남겨 두었고 시간 기반 schedule은 비활성화돼 있다.
 
 근거: [Airflow 2.7 KubernetesExecutor](https://airflow.apache.org/docs/apache-airflow/2.7.0/core-concepts/executor/kubernetes.html), [chart 1.11.0 설정](https://airflow.apache.org/docs/helm-chart/1.11.0/parameters-ref.html), [2.7.3 공식 constraints](https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt).
 

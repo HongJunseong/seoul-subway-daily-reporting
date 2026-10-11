@@ -53,7 +53,8 @@
 - [x] 실제 Kubernetes scheduler→worker Pod→보고서 실행 및 PVC binding
 - [x] worker 실패 후 다른 Pod 재시도, 삭제된 Pod의 로그 보존 확인
 - [x] 동일 Bronze의 실제 Pod 재처리에서 7개 Delta 테이블 전체 해시·원본 버전 불변
-- [ ] 실제 Pod peak 메모리/CPU·queue/pool 대기로 자원 설정 조정
+- [x] 실제 합성 worker cgroup 메모리 peak·구간 CPU·executor queue 측정과 control 자원 조정
+- [ ] 순수 pool 대기·더 큰 입력/동시 실행을 분리 측정해 운영 자원 설정 판단
 - [ ] 유지보수 중인 Airflow/chart/provider 조합과 운영 metadata DB 검증
 
 Databricks 성공은 합성 승하차 fixture, Kubernetes 성공은 단일 node 합성 lake를 대상으로 한다. 실수집·S3·실시간 관측·대규모 성능의 증거로 확대하지 않는다.

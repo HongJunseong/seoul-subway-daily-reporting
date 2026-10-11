@@ -79,7 +79,7 @@ PYTHONPATH="$PWD" spark-submit --packages io.delta:delta-spark_2.12:3.2.0,org.ap
 
 ## Kubernetes 후보 설정
 
-k8s/airflow-values.yaml은 src와 DAG를 같은 이미지에 포함하고 git-sync/init clone을 사용하지 않는다. 이미지 태그는 ssdr-airflow:portfolio-v2다. 저장소 루트의 docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v2 . 명령으로 빌드할 수 있다. 로컬 클러스터에 이미지를 제공한 후 namespace, Secret, Airflow Helm 릴리스를 준비해야 한다. Secret 생성은 새 k8s/create-secret-v2.sh를 사용한다. 기존 create-secret.sh는 보존된 이전 설정이며 v2 실행 경로가 아니다.
+k8s/airflow-values.yaml은 src와 DAG를 같은 이미지에 포함하고 git-sync/init clone을 사용하지 않는다. 이미지 태그는 ssdr-airflow:portfolio-v4다. 저장소 루트의 docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 . 명령으로 빌드할 수 있다. 로컬 클러스터에 이미지를 제공한 후 namespace, Secret, Airflow Helm 릴리스를 준비해야 한다. Secret 생성은 새 k8s/create-secret-v2.sh를 사용한다. 기존 create-secret.sh는 보존된 이전 설정이며 v2 실행 경로가 아니다.
 
 DAG 활성화 전에 Airflow UI의 Admin → Pools에서 ssdr_delta_writer를 1 slot으로 생성한다. pool이 없으면 Spark 태스크는 대기한다. CLI는 airflow pools set ssdr_delta_writer 1 serialize_delta_writers를 사용할 수 있다.
 
@@ -98,3 +98,7 @@ Kubernetes의 chart/provider·태스크 자원·RBAC·PVC·합성 배포와 work
 ## 운영 저장소와 분리한 실제 원천 실험
 
 서울 API만 허용된 경우 [SOURCE_OBSERVATION](SOURCE_OBSERVATION.md)의 명시적 --fetch 캡처와 네트워크 없는 저장 원본 처리 명령을 사용한다. 기존 경로를 덮어쓰지 않으며 .work 새 디렉터리만 허용한다. 실패·빈 응답·불완전 페이지는 정상 출판을 막는다. 실시간 D-1 관측이 없으면 과거 도착을 생성하거나 정상 일간 보고서로 보완하지 않는다.
+
+## Kubernetes 자원 관측
+
+fixture의 worker 계측과 실제 Pod/로그 연결은 [KUBERNETES_RESOURCES](KUBERNETES_RESOURCES.md)를 따른다. CPU는 표본 구간 평균이며 executor queue에는 Pod 준비 시간이 포함된다. missing/partial/다른 cgroup 상한은 검증 성공으로 기록하지 않는다. 운영 환경 계측 활성화와 실수집 부하 시험은 별도로 판단한다.

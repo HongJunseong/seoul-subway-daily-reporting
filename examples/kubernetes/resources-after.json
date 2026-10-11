@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "verified": true,
+  "synthetic": true,
+  "actual_pod_execution": true,
+  "namespace": "ssdr-fixture-20261011",
+  "started_at_utc": "2026-10-11T10:47:06.649395+00:00",
+  "elapsed_seconds": 175.796396,
+  "measured_workers": 12,
+  "writer_pool_slots": 1,
+  "profiles": [
+    {
+      "profile": "control",
+      "tasks": 7,
+      "maximum_container_memory_peak_bytes": 486531072,
+      "maximum_memory_peak_to_request_ratio": 0.9062347412109375,
+      "maximum_sampled_cpu_cores": 0.9997777148811666,
+      "maximum_mean_cpu_cores": 0.9816192455683412,
+      "maximum_executor_queue_seconds": 7.611208
+    },
+    {
+      "profile": "report",
+      "tasks": 1,
+      "maximum_container_memory_peak_bytes": 341794816,
+      "maximum_memory_peak_to_request_ratio": 0.6366424560546875,
+      "maximum_sampled_cpu_cores": 0.977761848300582,
+      "maximum_mean_cpu_cores": 0.977761848300582,
+      "maximum_executor_queue_seconds": 6.970778
+    },
+    {
+      "profile": "spark",
+      "tasks": 4,
+      "maximum_container_memory_peak_bytes": 1244065792,
+      "maximum_memory_peak_to_request_ratio": 0.5793132781982422,
+      "maximum_sampled_cpu_cores": 2.036709538770053,
+      "maximum_mean_cpu_cores": 1.8299413288612953,
+      "maximum_executor_queue_seconds": 7.563727
+    }
+  ],
+  "tasks": [
+    {
+      "dag_id": "gold_daily",
+      "task_id": "compute_dates",
+      "try_number": 1,
+      "pod_uid": "c302bdac-4240-4ce6-a285-c7634d32a4e0",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.177547,
+      "executor_queue_seconds": 6.64125,
+      "container": {
+        "observed_seconds": 0.026384,
+        "memory_container_peak_bytes": 242667520,
+        "sampled_memory_peak_bytes": 242511872,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.01679,
+        "mean_cpu_cores": 0.6363720953456421,
+        "sampled_peak_cpu_cores": null,
+        "minimum_cpu_sample_interval_seconds": null,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 0,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 0,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.45200347900390625,
+      "memory_peak_to_limit_ratio": 0.22600173950195312,
+      "mean_cpu_to_request_ratio": 2.5454883813825684
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "gold_arrival",
+      "try_number": 1,
+      "pod_uid": "7a44aa82-131c-4b47-86a1-511cd64908a0",
+      "profile": "spark",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "duration_seconds": 18.238941,
+      "executor_queue_seconds": 6.976758,
+      "container": {
+        "observed_seconds": 18.060706,
+        "memory_container_peak_bytes": 1231314944,
+        "sampled_memory_peak_bytes": 1227362304,
+        "memory_limit_bytes": 3221225472,
+        "cpu_limit_cores": 2.0,
+        "cpu_usage_seconds": 32.869269,
+        "mean_cpu_cores": 1.8199326998245045,
+        "sampled_peak_cpu_cores": 2.036709538770053,
+        "minimum_cpu_sample_interval_seconds": 1.000294974001008,
+        "cpu_throttled_periods": 134,
+        "cpu_periods": 181,
+        "cpu_throttled_seconds": 2.508076,
+        "oom_kill_delta": 0,
+        "samples": 20,
+        "cpu_interval_samples": 18,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.5733757019042969,
+      "memory_peak_to_limit_ratio": 0.38225046793619794,
+      "mean_cpu_to_request_ratio": 1.8199326998245045
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "notify_gold_ready",
+      "try_number": 1,
+      "pod_uid": "3fc66dec-da44-45ca-9e47-0ad59c5e8f6d",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.189291,
+      "executor_queue_seconds": 7.597631,
+      "container": {
+        "observed_seconds": 0.034114,
+        "memory_container_peak_bytes": 239558656,
+        "sampled_memory_peak_bytes": 239300608,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.018466,
+        "mean_cpu_cores": 0.541309910772354,
+        "sampled_peak_cpu_cores": null,
+        "minimum_cpu_sample_interval_seconds": null,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 0,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 0,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.4462127685546875,
+      "memory_peak_to_limit_ratio": 0.22310638427734375,
+      "mean_cpu_to_request_ratio": 2.165239643089416
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "silver_arrival_day",
+      "try_number": 1,
+      "pod_uid": "b28cb5ee-dc04-469f-a766-adc0f59bd371",
+      "profile": "spark",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "duration_seconds": 20.153821,
+      "executor_queue_seconds": 7.563727,
+      "container": {
+        "observed_seconds": 19.954926,
+        "memory_container_peak_bytes": 1244065792,
+        "sampled_memory_peak_bytes": 1185824768,
+        "memory_limit_bytes": 3221225472,
+        "cpu_limit_cores": 2.0,
+        "cpu_usage_seconds": 36.117262,
+        "mean_cpu_cores": 1.8099421799939144,
+        "sampled_peak_cpu_cores": 2.0091895218272895,
+        "minimum_cpu_sample_interval_seconds": 0.9338621200004127,
+        "cpu_throttled_periods": 133,
+        "cpu_periods": 200,
+        "cpu_throttled_seconds": 3.309975,
+        "oom_kill_delta": 0,
+        "samples": 21,
+        "cpu_interval_samples": 20,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.5793132781982422,
+      "memory_peak_to_limit_ratio": 0.38620885213216144,
+      "mean_cpu_to_request_ratio": 1.8099421799939144
+    },
+    {
+      "dag_id": "gold_daily",
+      "task_id": "trigger_report_daily",
+      "try_number": 1,
+      "pod_uid": "86add1ba-c7e7-44f4-a26f-91b7aeca7a6b",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.312513,
+      "executor_queue_seconds": 7.611208,
+      "container": {
+        "observed_seconds": 0.095977,
+        "memory_container_peak_bytes": 242446336,
+        "sampled_memory_peak_bytes": 242184192,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.053413,
+        "mean_cpu_cores": 0.5565216485245552,
+        "sampled_peak_cpu_cores": null,
+        "minimum_cpu_sample_interval_seconds": null,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 1,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 0,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.45159149169921875,
+      "memory_peak_to_limit_ratio": 0.22579574584960938,
+      "mean_cpu_to_request_ratio": 2.226086594098221
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "compute_target_ymd",
+      "try_number": 1,
+      "pod_uid": "5d7067f4-556b-4e67-821d-f8967ece3a3d",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.176075,
+      "executor_queue_seconds": 6.693387,
+      "container": {
+        "observed_seconds": 0.026359,
+        "memory_container_peak_bytes": 239321088,
+        "sampled_memory_peak_bytes": 239063040,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.016363,
+        "mean_cpu_cores": 0.6207860161623833,
+        "sampled_peak_cpu_cores": null,
+        "minimum_cpu_sample_interval_seconds": null,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 1,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 0,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.445770263671875,
+      "memory_peak_to_limit_ratio": 0.2228851318359375,
+      "mean_cpu_to_request_ratio": 2.483144064649533
+    },
+    {
+      "dag_id": "report_daily",
+      "task_id": "generate_report",
+      "try_number": 1,
+      "pod_uid": "0f507cd0-963f-4f08-aece-8921ffa372a3",
+      "profile": "report",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "2Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.6307,
+      "executor_queue_seconds": 6.970778,
+      "container": {
+        "observed_seconds": 0.44601,
+        "memory_container_peak_bytes": 341794816,
+        "sampled_memory_peak_bytes": 340975616,
+        "memory_limit_bytes": 2147483648,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.436092,
+        "mean_cpu_cores": 0.977761848300582,
+        "sampled_peak_cpu_cores": 0.977761848300582,
+        "minimum_cpu_sample_interval_seconds": 0.44601044800219825,
+        "cpu_throttled_periods": 1,
+        "cpu_periods": 5,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 1,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.6366424560546875,
+      "memory_peak_to_limit_ratio": 0.15916061401367188,
+      "mean_cpu_to_request_ratio": 3.911047393202328
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "choose_input",
+      "try_number": 1,
+      "pod_uid": "e4cb12a5-f332-4f93-9055-6535323e8dc3",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.235781,
+      "executor_queue_seconds": 7.044139,
+      "container": {
+        "observed_seconds": 0.063464,
+        "memory_container_peak_bytes": 239915008,
+        "sampled_memory_peak_bytes": 239915008,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.031835,
+        "mean_cpu_cores": 0.5016195054227283,
+        "sampled_peak_cpu_cores": null,
+        "minimum_cpu_sample_interval_seconds": null,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 1,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 0,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.44687652587890625,
+      "memory_peak_to_limit_ratio": 0.22343826293945312,
+      "mean_cpu_to_request_ratio": 2.006478021690913
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "compute_dates",
+      "try_number": 1,
+      "pod_uid": "fe450a05-71b0-4446-aab3-9b789326e475",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 0.203412,
+      "executor_queue_seconds": 6.779389,
+      "container": {
+        "observed_seconds": 0.02932,
+        "memory_container_peak_bytes": 239869952,
+        "sampled_memory_peak_bytes": 239620096,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 0.01883,
+        "mean_cpu_cores": 0.6422344931245321,
+        "sampled_peak_cpu_cores": null,
+        "minimum_cpu_sample_interval_seconds": null,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 0,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 2,
+        "cpu_interval_samples": 0,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.4467926025390625,
+      "memory_peak_to_limit_ratio": 0.22339630126953125,
+      "mean_cpu_to_request_ratio": 2.5689379724981283
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "gold_usage",
+      "try_number": 1,
+      "pod_uid": "f6917784-6594-4e65-901c-8c86bfe6d87e",
+      "profile": "spark",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "duration_seconds": 20.340497,
+      "executor_queue_seconds": 6.846607,
+      "container": {
+        "observed_seconds": 20.159718,
+        "memory_container_peak_bytes": 1106460672,
+        "sampled_memory_peak_bytes": 1096482816,
+        "memory_limit_bytes": 3221225472,
+        "cpu_limit_cores": 2.0,
+        "cpu_usage_seconds": 36.891101,
+        "mean_cpu_cores": 1.8299413288612953,
+        "sampled_peak_cpu_cores": 2.0346701579313353,
+        "minimum_cpu_sample_interval_seconds": 1.0003145440059598,
+        "cpu_throttled_periods": 147,
+        "cpu_periods": 201,
+        "cpu_throttled_seconds": 7.080757,
+        "oom_kill_delta": 0,
+        "samples": 22,
+        "cpu_interval_samples": 20,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.5152359008789062,
+      "memory_peak_to_limit_ratio": 0.3434906005859375,
+      "mean_cpu_to_request_ratio": 1.8299413288612953
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "silver_usage",
+      "try_number": 1,
+      "pod_uid": "9648f9e7-3c27-44ef-b8d0-214b8c74ffaf",
+      "profile": "spark",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "2",
+          "memory": "3Gi"
+        },
+        "requests": {
+          "cpu": "1",
+          "memory": "2Gi"
+        }
+      },
+      "duration_seconds": 20.760589,
+      "executor_queue_seconds": 6.768294,
+      "container": {
+        "observed_seconds": 20.571402,
+        "memory_container_peak_bytes": 1171292160,
+        "sampled_memory_peak_bytes": 1169412096,
+        "memory_limit_bytes": 3221225472,
+        "cpu_limit_cores": 2.0,
+        "cpu_usage_seconds": 37.416949,
+        "mean_cpu_cores": 1.8188818085660095,
+        "sampled_peak_cpu_cores": 2.032367500408076,
+        "minimum_cpu_sample_interval_seconds": 0.5621079490010743,
+        "cpu_throttled_periods": 146,
+        "cpu_periods": 206,
+        "cpu_throttled_seconds": 8.214598,
+        "oom_kill_delta": 0,
+        "samples": 22,
+        "cpu_interval_samples": 21,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.5454254150390625,
+      "memory_peak_to_limit_ratio": 0.363616943359375,
+      "mean_cpu_to_request_ratio": 1.8188818085660095
+    },
+    {
+      "dag_id": "usage_daily",
+      "task_id": "trigger_gold_daily",
+      "try_number": 1,
+      "pod_uid": "81a27fb0-0d9f-4ff0-ba0c-87d18cf19222",
+      "profile": "control",
+      "image_id": "docker-pullable://ssdr-airflow@sha256:f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "250m",
+          "memory": "512Mi"
+        }
+      },
+      "duration_seconds": 2.329449,
+      "executor_queue_seconds": 7.001932,
+      "container": {
+        "observed_seconds": 2.157221,
+        "memory_container_peak_bytes": 486531072,
+        "sampled_memory_peak_bytes": 478269440,
+        "memory_limit_bytes": 1073741824,
+        "cpu_limit_cores": 1.0,
+        "cpu_usage_seconds": 2.11757,
+        "mean_cpu_cores": 0.9816192455683412,
+        "sampled_peak_cpu_cores": 0.9997777148811666,
+        "minimum_cpu_sample_interval_seconds": 1.001317577996815,
+        "cpu_throttled_periods": 0,
+        "cpu_periods": 21,
+        "cpu_throttled_seconds": 0.0,
+        "oom_kill_delta": 0,
+        "samples": 4,
+        "cpu_interval_samples": 2,
+        "cgroup_scope_matches_pod_limits": true
+      },
+      "memory_peak_to_request_ratio": 0.9062347412109375,
+      "memory_peak_to_limit_ratio": 0.45311737060546875,
+      "mean_cpu_to_request_ratio": 3.926476982273365
+    }
+  ],
+  "limitations": [
+    "Kernel memory peak includes bootstrap, child processes and cache through terminal callback",
+    "CPU peaks are sampled interval averages of at least 0.25 seconds, not instantaneous peaks",
+    "Executor queue includes Pod creation/scheduling/bootstrap; pure pool wait was not isolated",
+    "Successful callbacks omit activity after the callback and workers killed without a terminal event",
+    "Single local node and synthetic fixture; no production capacity or data-volume sizing claim"
+  ]
+}

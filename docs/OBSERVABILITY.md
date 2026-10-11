@@ -67,7 +67,7 @@ python scripts/summarize_tasks.py \
 - 로그가 없거나 malformed 이벤트가 있으면 exit code 2다. 집계 성공 0은 모든 태스크가 성공했다는 의미가 아니다. 결과의 failed/incomplete/conflicting 수를 확인한다.
 - callback 로그는 scheduler DB의 최종 상태를 대체하지 않는다. 로그 누락·잘림·강제 종료는 별도로 확인한다. 독립된 pool 대기 시간은 측정하지 않았다.
 
-콜백 연결과 실제 Airflow TaskInstance의 시도 번호는 로컬에서 검사했다. [로컬 Airflow 연결 실행](AIRFLOW_OFFLINE.md)으로 실제 태스크 시간 표본을 확보했다. 실제 scheduler 실행 기간의 처리 시간·대기 baseline은 아직 확보하지 않았다.
+콜백 연결과 실제 Airflow TaskInstance의 시도 번호는 로컬에서 검사했다. [로컬 Airflow 연결 실행](AIRFLOW_OFFLINE.md)으로 실제 태스크 시간 표본을 확보했다. 실제 Kubernetes 합성 실행의 executor queue와 worker 자원은 [별도 계측](KUBERNETES_RESOURCES.md)으로 확인했다. 실수집 운영 기간의 baseline과 순수 pool 대기는 남는다.
 
 ## 예외 주입 복구 실험
 

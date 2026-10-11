@@ -261,3 +261,37 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 10분 관측은 장기 baseline의 시작이다. 전체 역/시간대 커버리지 정책·같은 키의 모든 retry를 포함한 일일 요청 예산·장기 신선도·S3 저장/복구·플랫폼 실수집 운영·peak 자원은 미완료다. 이 세 snapshot의 일간 Gold는 일부 관측 요약이며 미수집 D-1 보고서는 만들지 않았다. 사용자 변경·기존 데이터·Git 저자를 보존하며 write-commit 스킬의 로컬 커밋을 기록한다.
 
 구현 로컬 커밋: a30a6f4(같은 수집의 최신 원천 생성 시각 선택), 536d768(제한 수집·원본 처리·감사·회귀). 문서와 실제 집계 증거는 다음 docs(portfolio) 커밋에 기록한다. 원격 push는 하지 않는다.
+
+## 2026-10-11 Kubernetes worker 자원 계측·실측 조정
+
+사용자의 다음 단계 요청에 따라 실제 Pod 자원과 대기 관측을 진행했다. 기존 전용 ssdr-fixture-20261011 릴리스와 합성 Bronze/PVC를 사용했으며 외부 API·AWS·Databricks·Discord·LLM 호출과 push는 하지 않았다. 기존 사용자 파일·원천·Secret·Git 저자를 보존했다.
+
+### 구현과 실행 결과
+
+- fixture에서만 SSDR_TASK_RESOURCE_METRICS=true를 켜 worker 시작/종료 callback에서 읽기 전용 cgroup v2 monitor를 연결했다. kernel 메모리 최고값, 최소 0.25초 표본의 CPU 구간 평균, CPU quota 제한·OOM 증가를 기록한다. 기본 운영 환경은 계측 비활성이다.
+- collector는 native worker UID·시도·이미지·resources와 PVC의 성공 이벤트를 연결한다. cgroup 상한과 Pod limits 일치가 필수이며 누락/부분 읽기·scheduler 수치·OOM·충돌 이벤트·비정상 수치·잘못된 CPU 표본 범위를 검증 성공으로 기록하지 않는다. 짧은 CPU 미관측 peak는 null이다.
+- metrics-server API가 없었다. 추가 cluster 권한/addon 대신 worker cgroup을 사용했으며 실제 worker에서 scope 일치를 확인했다.
+- portfolio-v3 조정 전 run manual__kubernetes_fixture_metrics_a: 12 success·1 수집 skipped·worker 12개·213.322658초. 실제 이미지 manifest ID 4051f60185dd42847279904b75e9eafa41829bdc2349eb262b1eef792e530052.
+- control 최대 memory.peak 485371904 bytes(462.89MiB), 요청 256Mi의 1.8082배였다. usage_daily.trigger_gold_daily는 관측 구간 CPU 제한 40/40 period, 태스크 4.326457초, executor queue 12.648656초였다. 상한 1Gi를 넘은 OOM은 아니다.
+- control CPU 요청/상한을 100m/500m→250m/1, 메모리 요청을 256Mi→512Mi로 조정했다. 메모리 상한 1Gi와 Spark/report 설정·writer pool 1 slot은 유지했다. 값 선택은 docs/KUBERNETES_RESOURCES.md에 기록했다.
+- portfolio-v4 조정 후 run manual__kubernetes_fixture_metrics_b: 12 success·1 수집 skipped·worker 12개·175.796396초. 실제 이미지 manifest ID f74c87c1d0003407041d402bbad7920d685939a6fbb46be7252ec1cc2f82bd00.
+- 같은 트리거 메모리 486531072 bytes(463.99MiB), 새 요청의 0.9062배. 관측 CPU 제한 0/21 period, 태스크 2.329449초, executor queue 7.001932초. control 최대 executor queue는 13.368605→7.611208초다.
+- Spark 최대 메모리 1216.44→1186.43MiB, report 381.01→325.96MiB. 소량 합성 입력이므로 자원을 줄이지 않았다. CPU는 구간 평균이며 순간 peak와 순수 pool 대기는 측정하지 않았다. 전후 두 실행의 시간 차이를 운영 성능 개선율로 해석하지 않는다.
+- 두 실행 모두 7개 Delta 루트 전체 행 해시·행 수 일치, Bronze usage 버전 2·arrival 버전 5 불변, Silver/Gold 버전 2→3이다. 이전 runtime-replay 결과와도 전체 해시 일치. 합성 보고서 이용량 680·도착/유효 ETA 4/4·manifest 해시 검증. worker 로그 각각 12개가 PVC에 보존됐다.
+- native runtime의 limitation은 상태 증거 자체에 자원 계측이 없다는 범위로 유지했다. 별도 resources JSON이 worker 계측을 제공한다. 첫 자원 JSON을 최종 collector 계약으로 다시 읽어 byte 동일성을 확인했다.
+- Helm 최종 렌더 base/fixture, 같은 v4 이미지·fixture 계측 활성/기본 비활성·namespace 권한·Secret 없는 환경과 태스크 17개 실제 병합·직렬화 검사 통과. 구성 JSON actual_pod_execution=false는 유지했다. CI Docker 태그도 현재 v4와 맞췄으나 원격 CI는 실행하지 않았다.
+
+### 검사와 증거 보존
+
+- 최종 파이프라인 전체 137 passed, 142.99초. 별도 Airflow/Pod 12 passed, 1.68초, 기존 Pydantic 경고 8개. 서로 다른 검사 총 149개다. 자원·callback 대상 38 passed, 0.36초는 전체에 포함된다.
+- 첫 전체 122 passed, 156.64초 후 collector 계약 검사를 추가했다. 최종 137개는 schema·CPU 표본 범위·cgroup scope·누락/충돌/OOM/비정상 수치 거부를 포함한다. 모든 테스트는 외부 서비스를 호출하지 않았다.
+- 두 Docker build와 Helm upgrade --wait 성공. 최종 Ruff 전체·별도 pycache compileall·diff whitespace 확인. 문서 내부 링크 74개·공개 JSON 8개·CI job 4개와 원본 byte 동일성 및 기존 비밀 값 미포함 검사를 통과했다.
+- 공개 examples/kubernetes/resources-* JSON 8개는 native/렌더 원본을 그대로 복사했다. raw 로그·보고서·Helm 전체 manifest/notes·인증 파일은 공개하지 않는다.
+- private: .work/kubernetes/resources-01, resources-02, render-metrics-final-base, render-metrics-final-fixture; docker-metrics-build.log, docker-metrics-v4-build.log, helm-metrics-upgrade.log, helm-metrics-v4-upgrade.log, kubernetes-resources-01.log, kubernetes-resources-02.log, regression-metrics-02.log, airflow-metrics-01.log.
+- 최초 공개 복사 준비 helper에서 compare_snapshots에 JSON 전체를 넘겨 타입 검사가 실패했다. snapshots 부분으로 고쳐 native 비교와 공개 복사를 확인했다. 공개 복사 이전 검증 helper의 오류이며 native/PVC 실행 결과는 변경하지 않았다.
+
+### 남은 작업
+
+단일 node 소량 합성 범위에서 control 자원 예약·CPU 제한을 측정하고 조정했다. 순수 pool 대기·더 큰 원본/동시 작업의 자원·실수집 장기 커버리지·운영 S3 쓰기/복구·유지보수 Airflow/chart/provider와 metadata DB는 남는다. fixture 릴리스/PVC와 이전 이미지 태그는 확인용으로 보존했고 시간 기반 schedule은 None이다. 승인된 write-commit 스킬 범위에서 기능별 로컬 커밋하며 push하지 않는다.
+
+구현 로컬 커밋: f3c1eca(worker 계측·collector 계약·회귀·fixture opt-in), 64c0d12(실측 control 조정·v4 이미지/CI 태그). 문서와 실제 전후 증거는 다음 docs(portfolio) 커밋에 기록한다. 원격 push는 하지 않았다.

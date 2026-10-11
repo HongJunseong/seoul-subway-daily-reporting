@@ -17,6 +17,6 @@
 
 최종 재실행의 worker image ID는 sha256:15fbf2798c006efef73add9d61f747b0f6e1eaabe28e3135f9ed314fa10f7d4c다. 첫 실험의 이미지 ID는 runtime-recovery.json에 별도로 보존했다. Airflow 환경의 NumPy ABI 문제를 수정한 최종 이미지에서 provider import와 두 Python 환경의 pip check를 통과했다.
 
-fixture schedule은 None이고 API·AWS·Discord·LLM Secret을 주입하지 않는다. Spark는 Pod 내부 local[2]다. RWO PVC는 단일 node 검증이며 분산 Spark, 다중 node 로그, peak CPU/메모리·순수 pool 대기·운영 SLA·대규모 처리량은 측정하지 않았다. 시간에는 태스크 Pod 준비·Spark/JVM 시작·DAG 트리거가 포함되고 첫 실험에는 재시도 대기도 포함된다.
+fixture schedule은 None이고 API·AWS·Discord·LLM Secret을 주입하지 않는다. Spark는 Pod 내부 local[2]다. RWO PVC는 단일 node 검증이며 분산 Spark, 다중 node 로그, 순수 pool 대기·운영 SLA·대규모 처리량은 측정하지 않았다. 후속 worker 자원 계측과 control 조정은 [별도 결과](resources.md)에 기록했다. 시간에는 태스크 Pod 준비·Spark/JVM 시작·DAG 트리거가 포함되고 첫 실험에는 재시도 대기도 포함된다.
 
 전체 Helm manifest와 Secret 값은 공개하지 않는다. [재현 절차](../../docs/KUBERNETES.md)에 배포·원본 준비·삭제 실험·재처리 비교를 기록했다.

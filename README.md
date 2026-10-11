@@ -93,6 +93,8 @@ DAG 구조 검사에 더해 저장된 합성 Bronze에서 `usage_daily → gold_
 
 KubernetesExecutor를 Docker Desktop의 실제 클러스터에서 실행했다. **태스크 12개 성공, 실행 중인 Gold worker 삭제 후 다른 Pod 재시도 성공, 삭제된 worker 로그 13개 보존**을 확인했다. 같은 Bronze 재실행에서도 Delta 테이블 7개의 전체 데이터 해시와 원본 버전이 유지됐다. control·spark·report 자원 프로필, namespace 권한, lake/log PVC와 writer pool 1 slot을 사용한다. [실행 증거](examples/kubernetes/README.md)와 [재현 절차](docs/KUBERNETES.md)를 제공한다. Spark는 태스크 Pod 내부 local[2]다.
 
+후속 실험에서는 worker 컨테이너의 메모리 peak·구간 CPU·executor queue를 실제 로그와 Pod UID로 연결했다. DAG 트리거가 메모리 예약량을 넘고 CPU quota에 제한되는 것을 확인해 **control 예약 메모리를 256→512MiB, CPU 상한을 0.5→1코어로 조정**했다. 같은 합성 원본으로 다시 실행한 [측정 결과](examples/kubernetes/resources.md)를 제공한다. 작은 합성 실험을 운영 처리량이나 순수 pool 대기로 해석하지 않는다.
+
 실제 Docker 이미지 빌드와 컨테이너 안의 태스크 12개·보고서 해시 검증도 통과했다. [컨테이너 실행 증거](examples/container/README.md)는 순차 태스크 실행과 클러스터 scheduler 검증의 차이를 명시한다.
 
 ## 실제 원천 관측
