@@ -435,3 +435,5 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 - private 로그: .work/campaign-report-{unit.log,unit-final.log,regression.log,airflow.log}. 원격 검증은 push 후 새 HEAD에서 별도로 확인한다.
 
 누락 원인은 실행 기록만으로 추정하지 않는다. 과거 관측을 다시 호출하거나 예약을 삭제하지 않았다. 실제 7일 기간 관측·전체 하루 커버리지·실데이터 Databricks upload·S3 운영·순수 pool 대기는 기존 미완료 항목이다. 기존 API opt-in 범위를 늘리지 않는다. write-commit 스킬에 따라 기능·회귀·문서·증거를 한 목적의 커밋으로 묶고 기존 push 승인 범위로 공개한다.
+
+추가 검토에서 terminal state가 아직 없는 부분 캡처도 이미 기록된 GET을 알고 있음을 확인했다. 알려진 GET 하한은 state의 총계가 있으면 그것을 사용하고, 없으면 manifest에 확인된 요청 수를 사용한다. 둘을 더해 이중 계수하지 않는다. reserved 상태의 부분 캡처가 가진 GET 1회를 합계에서 누락하지 않는 회귀를 보완하고 같은 기능의 후속 커밋으로 기록한다.

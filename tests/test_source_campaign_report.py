@@ -104,6 +104,8 @@ def test_actual_capture_start_is_preserved_separately_from_plan(campaign):
     assert result["daily"][0]["due_slots"] == 2
     assert result["daily"][0]["unconfirmed_due_slots"] == 1
     assert result["capture_summary"]["daily"][0]["arrival"]["future"] == 2
+    assert result["totals"]["known_recorded_get_attempts"] == 1
+    assert result["totals"]["days_with_unknown_get_count"] == ["20260131"]
 
 
 @pytest.mark.parametrize("mutation", ["wrong_day", "wrong_usage", "wrong_calls", "wrong_state", "wrong_cadence"])

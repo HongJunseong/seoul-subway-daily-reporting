@@ -85,7 +85,9 @@ def summarize_campaign(status, captures):
         "missed_capture_schedule_slots", "missed_start_window_slots", "unconfirmed_due_slots")}
     due = totals["due_slots"]
     totals["planned_due_slot_collection_rate"] = totals["collected_slots"] / due if due else None
-    totals["known_recorded_get_attempts"] = sum(d["recorded_get_attempts"] or 0 for d in daily)
+    totals["known_recorded_get_attempts"] = sum(
+        d["recorded_get_attempts"] if d["recorded_get_attempts"] is not None else d["manifest_recorded_get_attempts"]
+        for d in daily)
     totals["days_with_unknown_get_count"] = [d["capture_day_kst"] for d in daily
         if d["due_slots"] and d["recorded_get_attempts"] is None]
     return {
