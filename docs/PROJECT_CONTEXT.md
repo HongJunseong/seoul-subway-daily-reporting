@@ -63,3 +63,7 @@ compaction_experiment는 새로운 .work 합성 lake에서만 36,000행을 만�
 ## 저장소 실행 경로 정리 (2026-10-11)
 
 현재 코드 탐색은 REPOSITORY_GUIDE.md, 실행 증거 탐색은 examples/README.md를 기준으로 한다. 사용하지 않는 역 Excel 로더·시간 alias·S3 보조 함수, 비활성 Parquet 병합기와 오래된 다운로드 manifest를 제거했다. Secret 생성은 k8s/create-secret.sh 하나로 통합하며 dotenv·표준 입력 전달을 유지한다. 선택적 버전 고정 Bronze export는 scripts/export_usage_snapshot.py, ETA 알림은 src/alerts/notify_arrival_eta_15m.py다. 실험의 전체 행 해시는 src/observability/fingerprints.py로 공유하며 기존 공개 증거의 형식·값을 보존한다. 과거 SESSION_HANDOFF의 경로는 당시 작업 기록이다.
+
+## 표본 계획 감사 (2026-10-13)
+
+summarize_source_observations.py의 --campaign-dir 모드는 고정 plan과 상태·캡처 메타데이터를 대조한다. 예정된 도래 슬롯은 캡처가 없어도 분모에 남고, 실패·시작 놓침·미확인을 구분한다. 모르는 호출량은 null이며 알려진 합계를 전체 호출량으로 단정하지 않는다. --capture-dir의 기존 기록 비교와 운영 DAG의 연속 5분 폴링은 별도다. 실제 원본·처리 품질·재처리는 이 메타데이터 감사가 검증하지 않는다.

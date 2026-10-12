@@ -139,7 +139,11 @@ def campaign_status(folder, *, as_of=None):
         day = day_date.strftime("%Y%m%d")
         due = datetime.combine(day_date, wall, KST)
         target = folder / "days" / day
+        if not target.resolve().is_relative_to(folder):
+            raise ValueError("daily reservation escaped campaign directory")
         state_path = target / "state.json"
+        if not state_path.resolve().is_relative_to(folder):
+            raise ValueError("daily state escaped campaign directory")
         if state_path.exists():
             saved = json.loads(state_path.read_text(encoding="utf-8"))
             item = {key: saved[key] for key in ("status", "logical_get_attempts", "usage_day") if key in saved}

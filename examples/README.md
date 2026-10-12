@@ -30,3 +30,5 @@ python scripts/verify_report.py examples/subway_report_20260201.md
 ```
 
 데모 출력 context는 실행 머신의 실제 저장 경로를 기록하므로 공개 샘플과 context 해시는 다를 수 있다. 각 플랫폼의 재현 조건·실패 기록·해석 범위는 해당 증거 문서에 적혀 있다.
+
+[표본 계획 감사](observed/campaign-plan-audit.md)는 실제 고정 계획과 현재 상태·캡처 파일만 대조한다. 예정 수집 기록이 없는 날을 API 실패나 GET 0회로 확대하지 않는다. 미래 슬롯을 도래 분모에 포함하지 않으며, 원문·정제 품질·전체 하루 운영 성공률은 이 감사의 범위가 아니다.
