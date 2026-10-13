@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "executed_at_kst": "2026-10-13T18:14:09.024286+09:00",
+  "actual_api_collection": false,
+  "actual_s3_requests": 0,
+  "target_ymd": "20260201",
+  "local_process_death": {
+    "signal": "SIGKILL",
+    "exit_code": -9,
+    "kill_before": "compatibility_manifest_replace",
+    "prior_publication_bytes_preserved": true,
+    "mixed_exports_rejected": true,
+    "retry_published_complete_object": true,
+    "repeated_retry_bytes_identical": true
+  },
+  "in_memory_s3_failures": [
+    {
+      "failed_write_index": 1,
+      "old_object_preserved": true,
+      "retry_committed_complete_object": true
+    },
+    {
+      "failed_write_index": 2,
+      "old_object_preserved": true,
+      "retry_committed_complete_object": true
+    },
+    {
+      "failed_write_index": 3,
+      "old_object_preserved": true,
+      "retry_committed_complete_object": true
+    },
+    {
+      "failed_write_index": 4,
+      "old_object_preserved": true,
+      "retry_committed_complete_object": true
+    }
+  ],
+  "in_memory_s3_lost_ack": {
+    "new_complete_object_readable": true,
+    "retry_bytes_identical": true
+  },
+  "limitations": [
+    "Local process-death test is not a power-loss, disk-failure or Kubernetes experiment",
+    "S3 protocol failures were in-memory mocks, not AWS execution",
+    "Publication object isolates report/context/manifest; compatibility exports remain individually replaced",
+    "Stores commit independently; no local/S3 distributed transaction or concurrent-writer ordering guarantee"
+  ]
+}

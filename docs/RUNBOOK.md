@@ -9,7 +9,7 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements/dev.txt
 python scripts/demo.py --output-dir .work/demo/run-01
-python scripts/verify_report.py .work/demo/run-01/reports/subway_report_20260201.md
+python scripts/verify_report.py .work/demo/run-01/reports/subway_report_20260201.publication.json
 pytest -q --ignore=tests/test_dags.py --ignore=tests/test_kubernetes_profiles.py
 ruff check src dags scripts tests
 ```
@@ -106,3 +106,7 @@ fixture의 worker 계측과 실제 Pod/로그 연결은 [KUBERNETES_RESOURCES](K
 ## Delta 파일 유지보수 검증
 
 [STORAGE_MAINTENANCE](STORAGE_MAINTENANCE.md)는 별도 합성 lake의 닫힌 시간 compaction과 버전 고정 조회를 재현한다. 기존 lake를 받는 운영 CLI는 제공하지 않는다. 원본 재처리와 물리 파일 유지보수의 커밋 의미를 구분하며, 운영 S3 유지보수 도입 전에는 같은 writer pool 직렬화·실측 비용·보존 정책 검증이 필요하다.
+
+## 보고서 쓰기 중단
+
+[REPORT_PUBLICATION](REPORT_PUBLICATION.md)의 단일 발행 객체를 소비한다. 실패한 export의 해시가 맞지 않아도 이전 publication.json을 검증해 읽을 수 있다. 같은 context/출력으로 재발행해 export를 복구하며 이 과정에서 원천 API를 호출하지 않는다. 커밋 후 응답 유실은 새 완전한 객체가 존재할 수 있으므로 실패 응답만으로 미발행이라고 판단하지 않는다.

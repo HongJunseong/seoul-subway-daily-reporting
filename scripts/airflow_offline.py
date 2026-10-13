@@ -107,6 +107,7 @@ def run(output, pipeline_python):
     from airflow.utils.session import create_session
     from src.observability.task_events import summarize_events
     from scripts.verify_report import verify_report
+    from src.report.publication import read_publication
 
     def block_http(*args, **kwargs):
         raise RuntimeError("HTTP access is disabled in the offline Airflow experiment")
@@ -150,7 +151,8 @@ def run(output, pipeline_python):
     require(all(task["duration_seconds"]["samples"] == 1 for task in summary["tasks"]), "actual task timing")
     report = output / "reports/subway_report_20260201.md"
     verify_report(report)
-    context = json.loads(report.with_suffix(".context.json").read_text())
+    verify_report(report.with_suffix(".publication.json"))
+    context = read_publication(report.with_suffix(".publication.json"))["context"]
     require(context["data_kind"] == "synthetic" and context["usage"]["total_count"] == 680, "report usage")
     expected = json.loads((output / "input/seed.json").read_text())
     require(context["arrival"]["total_observations"] == expected["expected_daily_arrival_rows"]

@@ -79,6 +79,7 @@ def main():
     from airflow.utils.session import create_session
     from kubernetes import client, config, watch
     from scripts.verify_report import verify_report
+    from src.report.publication import read_publication
 
     with create_session() as session:
         pool = session.query(Pool).filter_by(pool="ssdr_delta_writer").one()
@@ -172,7 +173,8 @@ def main():
             raise RuntimeError("requested deletion probe was not executed")
         report = Path(os.environ["SSDR_REPORT_OUTPUT_DIR"]) / "subway_report_20260201.md"
         verify_report(report)
-        context = json.loads(report.with_suffix(".context.json").read_text())
+        verify_report(report.with_suffix(".publication.json"))
+        context = read_publication(report.with_suffix(".publication.json"))["context"]
         if (context["data_kind"] != "synthetic" or context["usage"]["total_count"] != 680
                 or context["arrival"]["total_observations"] != 4
                 or context["arrival"]["valid_eta_observations"] != 4):

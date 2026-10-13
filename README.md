@@ -90,7 +90,9 @@ S3 Delta writer는 **ssdr_delta_writer 1-slot pool**로 직렬화합니다. 알�
 
 ## Reporting & Alerting
 
-기본 보고서는 검증된 Gold context에서 **결정적인 템플릿**으로 생성합니다. 수치뿐 아니라 이용 날짜, 실제 관측 범위, 입력 Delta 버전과 SHA-256을 함께 남겨 결과를 추적합니다. LLM 해설과 Discord 전송은 선택 기능입니다.
+기본 보고서는 검증된 Gold context에서 **결정적인 템플릿**으로 생성합니다. 수치뿐 아니라 이용 날짜, 실제 관측 범위, 입력 Delta 버전과 SHA-256을 함께 남겨 결과를 추적합니다. 본문·context·manifest를 담은 단일 발행 객체를 마지막에 교체해 중간 쓰기 실패에도 이전 보고서를 읽도록 했습니다. [발행 중단·복구 검증](examples/operations/publication-commit.md)
+
+LLM 해설과 Discord 전송은 선택 기능입니다.
 
 15분 ETA 알림은 유효 표본 수·긴 ETA 비율·분위수를 확인합니다. 이를 시간표 대비 운행 지연이나 현재 혼잡도로 단정하지 않습니다. [샘플 보고서와 입력 근거](examples/README.md)
 
@@ -170,7 +172,7 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements/dev.txt
 python scripts/demo.py --output-dir .work/demo/my-run
-python scripts/verify_report.py .work/demo/my-run/reports/subway_report_20260201.md
+python scripts/verify_report.py .work/demo/my-run/reports/subway_report_20260201.publication.json
 pytest -q --ignore=tests/test_dags.py --ignore=tests/test_kubernetes_profiles.py
 ruff check src dags scripts tests
 ```

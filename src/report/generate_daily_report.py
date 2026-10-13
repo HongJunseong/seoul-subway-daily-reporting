@@ -9,6 +9,7 @@ from src.common.dates import now_kst, validate_ymd
 from src.common.storage import storage_prefix
 from src.common.config import load_s3_config
 from src.report.build_report_context_daily import build_report_context, ReportDataError
+from src.report.publication import publication_outputs, save_local_publication, save_s3_publication
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -73,27 +74,20 @@ def generate_daily_report(target_ymd=None, save_to_s3=True):
     elif mode != "template":
         raise ValueError("SSDR_REPORT_MODE must be template or llm")
     output_dir = Path(os.getenv("SSDR_REPORT_OUTPUT_DIR", str(PROJECT_ROOT / "data/report_text/daily")))
-    output_dir.mkdir(parents=True, exist_ok=True)
     stem = f"subway_report_{target_ymd}"
     out_path = output_dir / f"{stem}.md"
     provenance = {"schema_version": 2, "report_mode": mode,
                   "context_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
                   "report_sha256": hashlib.sha256(report_text.encode()).hexdigest(),
                   "target_ymd": target_ymd, "usage_ymd": ctx["usage_ymd"], "arrival_ymd": ctx["arrival_ymd"]}
-    outputs = {f"{stem}.md": report_text, f"{stem}.context.json": canonical,
-               f"{stem}.manifest.json": json.dumps(provenance, ensure_ascii=False, indent=2)}
-    for name, content in outputs.items():
-        temp = output_dir / (name + ".tmp")
-        temp.write_text(content, encoding="utf-8")
-        temp.replace(output_dir / name)
+    outputs = publication_outputs(report_text, canonical, provenance)
+    save_local_publication(output_dir, outputs)
     if save_to_s3 and not os.getenv("SSDR_DATA_ROOT"):
         import boto3
         cfg = load_s3_config()
         client = boto3.client("s3", region_name=cfg.region)
-        for name, content in outputs.items():
-            key = "/".join(p for p in [storage_prefix(), "report_text/daily", name] if p)
-            client.put_object(Bucket=cfg.bucket, Key=key, Body=content.encode("utf-8"),
-                              ContentType="text/markdown; charset=utf-8" if name.endswith(".md") else "application/json")
+        prefix = "/".join(p for p in [storage_prefix(), "report_text/daily"] if p)
+        save_s3_publication(client, cfg.bucket, prefix, outputs)
     return out_path
 
 

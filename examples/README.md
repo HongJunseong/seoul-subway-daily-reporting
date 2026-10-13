@@ -36,3 +36,5 @@ python scripts/verify_report.py examples/subway_report_20260201.md
 [원본 무결성 증거](observed/source-integrity.json)는 합성 파일의 동일 건수·시각 값 변경이 변환 전에 차단되는 실험이다. 서울 API를 호출하지 않았고, 기존 실제 10/11 원본은 legacy 무결성 상태로 읽기만 했다. 수집 체크섬 검증·현재 해시·출처 인증을 구분한다.
 
 - [보고서 소비 계약 오류 주입](operations/report-contract.md): 합성 Gold의 불량 건수·키·ETA·날짜를 거부하고 기존 보고서 세 파일을 보존한 실행 증거.
+
+- [발행 중단·재시도](operations/publication-commit.md): 실제 합성 writer SIGKILL 후 이전 객체 읽기와 재발행, 메모리 mock S3 실패·응답 유실 검증. 기존 공개 샘플은 이전 세 파일 형식으로 보존한다.

@@ -104,3 +104,11 @@ Databricks 성공은 합성 승하차 fixture, Kubernetes 성공은 단일 node 
 - [x] 큰 합계의 정수 wrap과 표본 가중 계산 overflow 회귀
 
 쓰기를 시작한 뒤의 다중 파일 장애·동시 발행과 실제 운영 품질은 위 검증과 별도다.
+
+## 발행 도중 장애
+
+- [x] 단일 발행 객체의 마지막 교체와 한 번 읽기로 본문/context/manifest 버전 혼합 방지
+- [x] 실제 합성 writer SIGKILL 후 이전 발행 읽기·재시도 복구
+- [x] mock S3 단계별 실패·커밋 응답 유실·같은 게시 입력의 재시도 일치
+
+호환 export 교체·전원/디스크 장애·local/S3 분산 트랜잭션·동시 writer의 최신성은 별도다. 실제 S3 운영은 미검증이다.

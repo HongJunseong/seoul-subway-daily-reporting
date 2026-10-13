@@ -476,3 +476,26 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 이번 실험은 합성 in-memory Gold 소비 검증이다. 실제 Delta 읽기는 기존 전체 회귀/원격 데모에서 별도로 검사한다. 이전 발행 보존은 데이터 검증 실패에 한정되며 다중 파일 쓰기 도중 장애나 동시 발행의 트랜잭션을 구현한 것이 아니다. 실제 7일 관측·S3 운영·실데이터 Databricks·순수 pool 대기는 미완료다. API 예약·예산과 운영 5분 수집 주기를 바꾸거나 외부 서비스를 호출하지 않았다. 새 main HEAD의 원격 CI는 push 후 확인한다.
 
 공개 전 감사에서 문서 상대 링크 176개·공개 JSON·DAG CLI 경로·로컬 비밀 값 미포함을 확인했다. 원문·정제 행과 사용자 변경은 커밋에 포함하지 않는다.
+
+## 2026-10-13 보고서 발행 도중 장애와 소비 객체
+
+사용자가 다음 작업을 요청했다. main/origin/main 49af161이 같고 사용자·staged 변경이 없는 상태에서 시작했다. 이전 Gold 소비 계약의 원격 CI 38368587399는 네 job 모두 성공했고 원격 회귀 305+12개가 통과했다.
+
+- src/report/publication.py가 본문·정확한 context 문자열·manifest를 단일 publication.json에 묶는다. 세 호환 export 뒤에 마지막으로 교체하고 독자는 한 객체 bytes를 한 번 읽어 두 해시와 schema/mode/D-4/D-1을 검증한다.
+- 로컬은 같은 디렉터리의 고유 임시 파일·flush/file fsync·replace를 사용한다. S3 adapter는 동일한 순서의 네 PUT이며 마지막이 단일 발행 객체다. local/S3는 독립 커밋이다. AWS 공식 consistency 문서의 단일 key 원자적 갱신 계약을 확인했고 REPORT_PUBLICATION에 링크했다.
+- verify_report CLI는 canonical 객체와 기존 .md 세트 모두 지원한다. bundle이 존재하면 export manifest도 일치해야 하고 손상된 bundle에 fallback하지 않는다. 기존 공개 샘플·과거 증거 bytes는 보존했다.
+- scripts/demo.py, airflow_offline.py, kubernetes_fixture.py의 재현 소비가 canonical 객체를 검증·읽도록 연결했다. 일반 생성 함수의 .md 반환은 호환을 유지한다.
+- 2026-10-13T18:14:09.024286+09:00에 별도 합성 writer를 두 export 교체 뒤 SIGKILL했다. exit -9, 기존 발행 bytes 유지·혼합 export 거부·같은 출력 재시도의 새 발행/반복 bytes 일치를 확인했다. mock S3의 네 단계 실패와 커밋 후 응답 유실도 확인했다. 실제 API/S3 요청은 0회다.
+- 공개 집계와 해석은 examples/operations/publication-commit.{json,md}, 합성 보고서/private 증거는 .work/publication-commit-experiment-20261013-01에만 보관한다. 원문·정제 행이나 비밀 값을 추가하지 않았다.
+
+### 검증과 남은 범위
+
+처음 manifest 직렬화의 키 순서 차이로 관련 일곱 검사가 실패했다. manifest 키 순서도 결정적으로 맞춰 통과했다. 모듈 분리 뒤 직접 CLI에서 src import 경로가 없어 실패하는 문제를 확인하고 저장소 루트 설정과 subprocess 회귀 두 개를 추가했다.
+
+UTC 파이프라인 330 passed, 137.76초는 새 최초 25개 검사를 포함한다. 이후 CLI 두 개·실제 SIGKILL 한 개·JSON 지수 overflow 한 개를 추가하고 최종 관련 86 passed, 2.25초를 확인했다. Airflow/Pod 12 passed, 2.14초를 포함해 서로 다른 회귀 총 346개가 통과했다. 86개는 전체와 중복인 82개와 추가 네 개이며 별도로 더하지 않는다. 전체 Ruff·diff whitespace를 확인했다. 로그는 .work/publication-commit-{regression.log,airflow.log,unit-final.log,experiment.log}다.
+
+발행 객체가 마지막에 교체되기 전 실패에서는 이전 객체를 읽는다. 교체 후 응답 유실에서는 새 완전한 객체가 이미 존재할 수 있다. 첫 성공 이전에는 canonical 발행이 없으며 기존 세 파일의 과거 게시물을 소급 변환하지 않는다. 같은 context/게시 출력의 재시도를 검증했고 새로운 Gold 버전이나 LLM 재생성의 동일 bytes를 보장하지 않는다.
+
+소비자가 canonical 객체를 읽는 경우의 일관성/가용성이다. 세 export의 트랜잭션·전원/디스크 장애·클라우드 실제 내구성·동시 writer 최신성·local/S3 분산 트랜잭션을 검증한 것이 아니다. 실제 7일 관측·S3 운영·실데이터 Databricks·순수 pool 대기는 기존 미완료다. API 일정/예산과 운영 5분 수집을 변경하지 않았다. write-commit 지침에 따라 main에서 기능·소비 경로·회귀·문서·증거를 함께 커밋·일반 push하고 새 HEAD의 CI를 확인한다.
+
+공개 전 문서 상대 링크 183개·공개 JSON·DAG CLI 경로·로컬 비밀 값 미포함 감사를 통과했다. 공개 Markdown·집계 JSON만 추가하며 raw/정제 행·비밀 값·사용자 변경을 스테이징하지 않는다.

@@ -1,23 +1,26 @@
-"""Verify a report and its input context against the publication manifest."""
+"""Verify a canonical publication object or legacy report export set."""
 from __future__ import annotations
 import argparse
-import hashlib
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.report.publication import read_publication, strict_json, verify_contents
 
 
 def verify_report(path):
     path = Path(path)
+    if path.name.endswith(".publication.json"):
+        return read_publication(path)["manifest"]
     stem = path.with_suffix("")
     context = Path(str(stem) + ".context.json")
-    manifest = json.loads(Path(str(stem) + ".manifest.json").read_text(encoding="utf-8"))
-    for file, key in [(path, "report_sha256"), (context, "context_sha256")]:
-        if hashlib.sha256(file.read_bytes()).hexdigest() != manifest[key]:
-            raise ValueError(f"Publication hash mismatch: {file.name}")
-    ctx = json.loads(context.read_text(encoding="utf-8"))
-    for key in ["target_ymd", "usage_ymd", "arrival_ymd"]:
-        if ctx[key] != manifest[key]:
-            raise ValueError(f"Publication date mismatch: {key}")
+    manifest = strict_json(Path(str(stem) + ".manifest.json").read_bytes())
+    verify_contents(path.read_bytes(), context.read_bytes(), manifest)
+    bundle = Path(str(stem) + ".publication.json")
+    if bundle.exists() and read_publication(bundle)["manifest"] != manifest:
+        raise ValueError("Publication exports differ from committed bundle")
     return manifest
 
 

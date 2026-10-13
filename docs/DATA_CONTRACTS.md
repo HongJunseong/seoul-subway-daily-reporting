@@ -47,7 +47,7 @@ snapshot_ts는 API 응답 이후의 실제 수집 시각이다. recptn_dt는 원
 
 필수 날짜·건수·키·분모 검증에 실패하면 보고서 생성도 실패한다. 기본 Markdown, 정렬된 context JSON, manifest를 함께 만든다. context는 실제 읽은 테이블 경로와 Delta 버전을 포함한다. manifest의 SHA-256은 게시된 입력·출력의 바이트 일치만 검증하며 원천의 사실성을 보장하는 서명은 아니다.
 
-발행 순서는 Markdown → context → manifest다. 로컬 파일 교체와 S3 객체 쓰기는 파일/객체별 처리이며 다중 파일 트랜잭션이 아니다. 소비자는 manifest의 해시 검증을 통과한 세트만 사용한다. 같은 날짜의 동시 수동 발행은 피한다.
+발행 순서는 Markdown → context → manifest 호환 export → 단일 publication.json이다. 새 소비자는 발행 객체를 한 번 읽어 함께 저장된 본문/context/manifest를 검증한다. 마지막 교체 전 실패 시 기존 발행을 읽을 수 있다. 호환 export는 개별 교체이며 발행 객체와 manifest가 다르면 거부한다. local/S3는 독립 커밋이고 같은 날짜 writer는 직렬 실행한다. [발행·복구 계약](REPORT_PUBLICATION.md)에 schema와 범위를 기록했다.
 
 ## 운영 측정 계약
 

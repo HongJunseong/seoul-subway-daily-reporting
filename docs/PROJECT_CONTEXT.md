@@ -77,3 +77,7 @@ summarize_source_observations.py의 --campaign-dir 모드는 고정 plan과 상�
 ## 보고서 최종 소비 계약 (2026-10-13)
 
 보고서는 Gold의 유한한 정수 건수·비어 있지 않은 identity·유효 ETA 분모와 지표를 독립 검증한다. 관측 범위가 있으면 UTC를 KST로 변환한 뒤 D-1 기준일과 시작/끝 순서를 확인한다. 검증 실패는 쓰기 전에 발생해 기존 보고서·context·manifest를 보존한다. 큰 합계의 int64 wrap과 가중 ETA 계산의 중간 곱 overflow를 피한다. examples/operations/report-contract.{md,json}는 합성 DataFrame 오류 주입의 실행 증거이며 live 원천/Delta 품질과 구분한다.
+
+## 보고서 발행 중단과 소비 (2026-10-13)
+
+publication.json은 정확한 본문·context 문자열·manifest를 함께 담고 마지막에 교체된다. 독자는 객체 한 번의 읽기로 일관된 내용을 검증한다. 호환 export 세 파일은 유지하지만 current bundle과 manifest가 다르면 거부한다. local/S3 저장은 독립 커밋이며 S3 오류는 mock으로만 검증했다. 실제 합성 자식 writer SIGKILL 뒤 이전 발행 가용성과 재시도 복구를 확인했다. REPORT_PUBLICATION.md와 examples/operations/publication-commit에 계약·증거가 있다.

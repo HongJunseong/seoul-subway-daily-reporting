@@ -79,9 +79,10 @@ def main():
         build_arrival_silver(spark, day="20260131")
         build_arrival_gold(spark, "20260131")
         report = generate_daily_report("20260201", save_to_s3=False)
-        manifest = verify_report(report)
+        manifest = verify_report(report.with_suffix(".publication.json"))
+        verify_report(report)
         evidence = {"data_kind": "synthetic fixture; not live Seoul observations",
-                    "publication_hashes_verified": True, "report_schema_version": manifest["schema_version"],
+                    "publication_hashes_verified": True, "publication_object_verified": True, "report_schema_version": manifest["schema_version"],
                     "usage_bronze_initial_rows": 6, "usage_silver_rows": 3,
                     "usage_total_before_correction": baseline, "usage_total_after_correction": corrected,
                     "cross_midnight_observations": 6, "cross_midnight_valid_eta": 5,
