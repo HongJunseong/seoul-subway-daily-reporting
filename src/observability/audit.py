@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 from src.common.dates import KST, validate_ymd
+from src.common.numbers import valid_number
 
 USAGE_KEY = ["use_ymd", "line_name", "station_name"]
 USAGE_VALUES = USAGE_KEY + ["ride_count", "alight_count", "total_count"]
@@ -83,20 +84,30 @@ def usage_metrics(bronze, silver, gold):
             "exact_repeat_rows": int(bronze.duplicated(keys + ["record_hash"]).sum()),
             "collection_runs": int(bronze.run_id.nunique()),
             "keys_with_payload_revisions": int((bronze.groupby(keys).record_hash.nunique() > 1).sum())}
+    normalized = {}
     for name, frame in [("silver", silver), ("gold", gold)]:
         if frame is not None:
-            numeric = frame[["ride_count", "alight_count", "total_count"]].apply(pd.to_numeric, errors="coerce")
-            bad = frame[USAGE_KEY].isna().any(axis=1)
-            bad |= frame[USAGE_KEY].astype("string").apply(lambda column: column.str.strip().eq("")).any(axis=1)
-            bad |= numeric.isna().any(axis=1) | (~np.isfinite(numeric)).any(axis=1)
-            bad |= (numeric < 0).any(axis=1) | (numeric % 1 != 0).any(axis=1)
-            bad |= numeric.total_count != numeric.ride_count + numeric.alight_count
+            keys_valid = frame[USAGE_KEY].apply(
+                lambda column: column.map(lambda value: isinstance(value, str) and bool(value.strip()))).all(axis=1)
+            counts = ["ride_count", "alight_count", "total_count"]
+            valid = frame[counts].apply(lambda column: column.map(lambda value: valid_number(value, integer=True)))
+            # Explicit object dtype avoids both int64 sum wrap and float inference near invalid rows.
+            numeric = pd.DataFrame({
+                column: pd.Series([int(value) if good else None for value, good in zip(frame[column], valid[column])],
+                                  index=frame.index, dtype=object) for column in counts})
+            reconciled = pd.Series(
+                [good and total == ride + alight for good, ride, alight, total in
+                 zip(valid.all(axis=1), numeric.ride_count, numeric.alight_count, numeric.total_count)],
+                index=frame.index, dtype=bool)
+            bad = ~keys_valid | ~valid.all(axis=1) | ~reconciled
             metrics[name] = {"rows": len(frame), "duplicate_key_rows": int(frame.duplicated(USAGE_KEY).sum()),
-                             "invalid_rows": int(bad.sum()), "total_count": int(numeric.total_count.sum()) if not bad.any() else None}
+                             "invalid_rows": int(bad.sum()),
+                             "total_count": sum(numeric.total_count) if not bad.any() else None}
+            if not bad.any():
+                normalized[name] = pd.concat([frame[USAGE_KEY], numeric], axis=1).sort_values(USAGE_KEY).reset_index(drop=True)
     if silver is not None and gold is not None:
-        left = silver[USAGE_VALUES].sort_values(USAGE_KEY).reset_index(drop=True)
-        right = gold[USAGE_VALUES].sort_values(USAGE_KEY).reset_index(drop=True)
-        metrics["silver_gold_business_match"] = left.astype(str).equals(right.astype(str))
+        metrics["silver_gold_business_match"] = (
+            normalized["silver"].equals(normalized["gold"]) if len(normalized) == 2 else None)
     return metrics
 
 def arrival_metrics(bronze, silver, start, end, as_of, cadence_seconds=300):

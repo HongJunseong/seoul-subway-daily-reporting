@@ -92,3 +92,11 @@ python scripts/summarize_tasks.py \
 ## 파일 수와 조회 시간에 근거한 유지보수
 
 실수집 도착 3,000행의 활성 파일 6개를 계기로 더 큰 합성 입력에서 [닫힌 시간 compaction](STORAGE_MAINTENANCE.md)을 실험했다. 활성 파일 수/bytes와 버전 고정 root 조회를 비교하고 전체 행·인접 파일·다운스트림 재처리 일치를 확인한다. bytes는 실제 스캔 IO나 S3 비용으로 바꾸어 표시하지 않는다. source replay는 Bronze 버전을 보존하지만 OPTIMIZE 유지보수는 dataChange=false 커밋을 만든다.
+
+### 승하차 감사의 타입과 합계
+
+Silver/Gold의 날짜·노선·역 키는 비어 있지 않은 문자열이어야 한다. 건수는 보고서 소비 단계와 같은 공통 숫자 계약으로 검증한다. 유한한 비음수 정수 값만 허용하며, 문자열 숫자와 boolean을 변환해서 받아들이지 않는다. 정상 정수 값으로 표현된 float는 정수로 정규화해 계층 간 업무 값을 비교한다.
+
+행별 승차+하차=합계와 전체 합계는 Python 정수로 계산한다. signed int64 범위를 넘는 여러 행의 합계가 음수로 뒤집히거나, 불량 행 옆의 큰 정수가 float 추론으로 반올림되지 않게 한다. 불량 행이 있으면 부분 합계를 출판하지 않고 total_count=null, silver_gold_business_match=null로 표시한다. 이 null은 계층 일치 여부를 검증할 수 없다는 뜻이며, invalid_rows와 failed 판정은 유지된다.
+
+tests/test_audit_usage_contract.py는 합성 타입 오류·identity·큰 정수·입력 불변성과 실제 로컬 Delta 루트 읽기/별도 CLI 프로세스의 healthy/failed exit code를 검증한다. 이 검증은 예약 실행이나 live 원천 운영의 증거가 아니다.

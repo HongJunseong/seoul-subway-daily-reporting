@@ -7,6 +7,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import pandas as pd
 from src.common.dates import date_parts, validate_ymd
+from src.common.numbers import valid_number
 from src.common.storage import table_path, public_uri
 
 
@@ -42,11 +43,7 @@ def require_keys(df, columns, name):
 
 def require_numbers(df, columns, name, *, integer=False, minimum=0):
     for column in columns:
-        def valid(value):
-            return (isinstance(value, Real) and not isinstance(value, (bool, np.bool_))
-                    and math.isfinite(value) and (minimum is None or value >= minimum)
-                    and (not integer or value % 1 == 0))
-        if not df[column].map(valid).all():
+        if not df[column].map(lambda value: valid_number(value, integer=integer, minimum=minimum)).all():
             raise ReportDataError(f"{name} has invalid numeric values")
 
 

@@ -520,3 +520,21 @@ runner 패치 이미지·전이 패키지·Docker base digest까지 고정한 �
 ## 2026-10-13 README Delta Lake 배지
 
 사용자 요청에 따라 README의 Delta Lake 배지에서 3.2.0을 제거하고 포맷 사용 표기만 남겼다. 의존성 설정은 그대로다. 문서·diff·공개 파일 감사를 확인하며 코드 변경이 없어 로컬 파이프라인 회귀는 재실행하지 않는다. 직전 main 5d4c017의 원격 CI 38381845018은 네 job과 artifact 모두 성공했다. 이번 문서 변경은 main에 커밋·일반 push한다.
+
+## 2026-10-13 코드 중심 고도화: 승하차 품질 감사
+
+사용자는 예약 수집 점검 대신 코드와 로컬 검증 중심의 고도화를 요청했다. main/origin/main 9b11d72가 같고 사용자·staged 변경이 없는 상태에서 진행했다. 예약 실행 점검과 외부 호출은 수행하지 않았다.
+
+기존 usage_metrics의 pd.to_numeric/벡터 합계 경로에서 합성 네 사례를 실제 재현했다. 양 계층의 문자열 숫자·boolean 건수·숫자 역 키를 healthy로 판정했고, 두 행의 2**62 합계를 -9223372036854775808로 기록하면서 healthy를 반환했다. 전후 결과는 private .work/usage-audit-{before,after}.log에 보존한다.
+
+- src/common/numbers.py로 기존 보고서의 유한 숫자·비음수·정수·boolean 제외 계약을 공유한다. 보고서의 숫자 허용 정책은 유지한다.
+- 감사 Silver/Gold의 identity를 비어 있지 않은 문자열로 확인하고, 숫자 문자열과 boolean을 강제 변환하지 않는다.
+- 명시적인 object dtype의 Python 정수로 행별 합계와 전체 합계를 계산한다. 불량 행 옆의 큰 정수가 float 추론으로 반올림되지 않게 한다.
+- 양 계층의 정상 정수/정수 값 float를 같은 업무 값으로 비교한다. 불량 행이 있으면 total_count와 silver_gold_business_match를 null로 남기며 failed 판정은 유지한다. 입력 DataFrame은 변경하지 않는다.
+- 새 회귀 20개에는 실제 합성 Delta 테이블 다섯 개를 기록하고 별도 CLI 프로세스에서 healthy/failed exit code·읽은 버전·정확한 합계·불량 schema 차단을 검증하는 세 사례가 포함된다. OBSERVABILITY에 타입과 null 계약을 기록했다.
+
+### 실제 검증과 범위
+
+관련 감사/보고서 98 passed, 3.65초 뒤 전체 UTC 파이프라인 354 passed, 123.27초와 Airflow/Pod 12 passed, 1.77초를 확인했다. 서로 다른 회귀 총 366개이며 관련 98개를 다시 더하지 않는다. Ruff·diff whitespace·문서 상대 링크 183개·공개 JSON·DAG CLI·비밀 값 미포함 감사를 통과했다. private 로그는 .work/usage-audit-{unit,regression,airflow}.log다.
+
+합성 in-memory 오류 주입과 실제 로컬 Delta 루트/CLI 검증이다. 서울 API·AWS·Databricks·Discord·LLM 호출, Kubernetes 배포, 예약 관측의 일정/예산 변경은 없다. 실제 장기 관측·S3·운영 metadata DB·실수집 Databricks·순수 pool 대기는 기존 미완료다. 기능·회귀·계약 기록만 main에 커밋·일반 push하고 새 HEAD의 네 CI job 결과를 확인한다.
