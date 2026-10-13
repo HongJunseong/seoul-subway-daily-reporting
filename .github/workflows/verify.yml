@@ -5,19 +5,25 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   pipeline:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       TZ: UTC
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: requirements/dev.txt
-      - uses: actions/setup-java@v4
+          cache-dependency-path: |
+            requirements/dev.txt
+            requirements/runtime.txt
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: "17"
@@ -28,7 +34,7 @@ jobs:
       - run: python scripts/recovery_experiment.py --output-dir .work/recovery/ci
       - run: python scripts/managed_usage_experiment.py --output-dir .work/managed-usage/ci
       - run: python scripts/compaction_experiment.py --output-dir .work/compaction/ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: offline-pipeline-evidence
           path: |
@@ -38,37 +44,38 @@ jobs:
             .work/compaction/ci/evidence.json
           retention-days: 7
   dags:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     env:
       AIRFLOW_HOME: ${{ github.workspace }}/.work/airflow
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/dags
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
       - run: pip install "apache-airflow[cncf.kubernetes]==2.7.3" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
       - run: pip install pytest==8.4.2
       - run: pytest -q tests/test_dags.py tests/test_kubernetes_profiles.py
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
           version: v3.20.0
       - run: helm repo add apache-airflow https://airflow.apache.org
       - run: helm pull apache-airflow/airflow --version "$(cat k8s/chart-version.txt)" --destination .work/kubernetes --untar
       - run: python scripts/check_kubernetes_render.py --chart-dir .work/kubernetes/airflow --output-dir .work/kubernetes/render-fixture --fixture
       - run: python scripts/check_kubernetes_overrides.py --worker-template .work/kubernetes/render-fixture/worker-pod.yaml --output .work/kubernetes/render-fixture/overrides.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: kubernetes-config-evidence
           path: .work/kubernetes/render-fixture
           retention-days: 7
   airflow-integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
           cache: pip
@@ -76,7 +83,7 @@ jobs:
             requirements/dev.txt
             requirements/runtime.txt
             requirements/airflow-verification.txt
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: "17"
@@ -86,17 +93,17 @@ jobs:
       - run: .venv-airflow/bin/pip install "apache-airflow[cncf.kubernetes]==2.7.3" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
       - run: .venv-airflow/bin/pip install -r requirements/airflow-verification.txt
       - run: .venv-airflow/bin/python scripts/airflow_offline.py --output-dir .work/airflow-offline/ci --pipeline-python .venv/bin/python
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: offline-airflow-evidence
           path: .work/airflow-offline/ci
           retention-days: 7
   container-integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 .
       - run: mkdir -p .work/container
       - run: |
@@ -108,7 +115,7 @@ jobs:
       - name: Preserve container results even after a failed run
         if: always()
         run: docker cp ssdr-fixture-ci:/opt/airflow/.work/container/ci .work/container/ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: container-airflow-evidence

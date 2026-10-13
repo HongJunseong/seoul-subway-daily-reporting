@@ -81,3 +81,7 @@ summarize_source_observations.py의 --campaign-dir 모드는 고정 plan과 상�
 ## 보고서 발행 중단과 소비 (2026-10-13)
 
 publication.json은 정확한 본문·context 문자열·manifest를 함께 담고 마지막에 교체된다. 독자는 객체 한 번의 읽기로 일관된 내용을 검증한다. 호환 export 세 파일은 유지하지만 current bundle과 manifest가 다르면 거부한다. local/S3 저장은 독립 커밋이며 S3 오류는 mock으로만 검증했다. 실제 합성 자식 writer SIGKILL 뒤 이전 발행 가용성과 재시도 복구를 확인했다. REPORT_PUBLICATION.md와 examples/operations/publication-commit에 계약·증거가 있다.
+
+## CI 환경 유지보수 (2026-10-13)
+
+네 CI job은 Ubuntu 24.04를 명시하고, Node 24 기반 공식 Action 다섯 개를 검증된 릴리스 SHA로 사용한다. 데이터 처리 버전과 Airflow/chart/provider는 유지한다. 전체 회귀 346개와 actionlint가 통과했으며 갱신 절차·검증 역할·완전한 환경 lock과의 차이는 RUNBOOK의 CI 절에 있다.

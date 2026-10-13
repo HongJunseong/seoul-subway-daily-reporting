@@ -110,3 +110,20 @@ fixture의 worker 계측과 실제 Pod/로그 연결은 [KUBERNETES_RESOURCES](K
 ## 보고서 쓰기 중단
 
 [REPORT_PUBLICATION](REPORT_PUBLICATION.md)의 단일 발행 객체를 소비한다. 실패한 export의 해시가 맞지 않아도 이전 publication.json을 검증해 읽을 수 있다. 같은 context/출력으로 재발행해 export를 복구하며 이 과정에서 원천 API를 호출하지 않는다. 커밋 후 응답 유실은 새 완전한 객체가 존재할 수 있으므로 실패 응답만으로 미발행이라고 판단하지 않는다.
+
+## CI 검증 환경과 갱신
+
+.github/workflows/verify.yml의 네 job은 Ubuntu 24.04를 명시한다. GitHub는 [ubuntu-latest의 Ubuntu 26.04 전환](https://github.blog/changelog/2026-09-17-ubuntu-26-generally-available-and-latest-migration/)을 2026-10-19~11-19에 진행하므로, OS 변경과 코드 회귀를 분리해 검증한다. runner 이미지의 주간 업데이트까지 고정하는 설정은 아니다.
+
+2026-10-13 기준으로 checkout 7.0.1, setup-python 7.0.0, setup-java 6.0.1, upload-artifact 7.0.2, setup-helm 5.0.1의 공식 릴리스 커밋을 사용한다. 각 uses는 전체 SHA와 버전 주석을 함께 기록한다. 다섯 Action의 action.yml에서 Node 24 런타임을 확인했다. Java 설정 도구의 갱신과 Spark의 Java 버전 선택은 별개이며 Python 3.11·Java 17·Helm 3.20.0·프로젝트 패키지 버전은 유지한다. [setup-java 공식 안내](https://github.com/actions/setup-java)는 v1~v4의 deprecation과 새 런타임 요건을 설명한다.
+
+- pipeline: UTC 회귀와 합성 Delta 데모·복구·managed usage·compaction 검증
+- dags: Airflow DAG/Pod 검사와 고정 chart의 Helm 렌더
+- airflow-integration: 분리된 두 Python 환경에서 실제 태스크·XCom·보고서 연결
+- container-integration: 저장소 Docker 이미지 내부에서 같은 연결 실행
+
+토큰 권한은 contents: read다. Python pip cache 키에는 dev.txt뿐 아니라 포함된 runtime.txt도 반영한다. pipeline/dags는 각각 15분/10분, Airflow/container 연결은 15분/20분으로 실행 상한을 둔다. 검사가 시간 상한으로 중단되면 성공으로 처리하지 않는다.
+
+갱신할 때는 공식 릴리스의 변경점·태그가 가리키는 SHA·action.yml 런타임을 확인한 뒤 워크플로 문법을 [actionlint](https://github.com/rhysd/actionlint)로 검사한다. main push 후 해당 HEAD의 네 job, 합성 처리 결과와 artifact 업로드까지 성공해야 호환성을 확인한 것이다. 실행 로그의 runner image·설치 버전과 artifact는 해당 run의 증거이며, artifact 보존 기간은 7일이다.
+
+이 설정은 전체 transitive 의존성·Docker base digest·runner 패치 이미지를 잠근 완전한 재현 환경은 아니다. 새 OS/Airflow/provider로의 운영 전환과 실제 S3·클러스터 검증은 따로 수행한다.

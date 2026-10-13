@@ -499,3 +499,20 @@ UTC 파이프라인 330 passed, 137.76초는 새 최초 25개 검사를 포함�
 소비자가 canonical 객체를 읽는 경우의 일관성/가용성이다. 세 export의 트랜잭션·전원/디스크 장애·클라우드 실제 내구성·동시 writer 최신성·local/S3 분산 트랜잭션을 검증한 것이 아니다. 실제 7일 관측·S3 운영·실데이터 Databricks·순수 pool 대기는 기존 미완료다. API 일정/예산과 운영 5분 수집을 변경하지 않았다. write-commit 지침에 따라 main에서 기능·소비 경로·회귀·문서·증거를 함께 커밋·일반 push하고 새 HEAD의 CI를 확인한다.
 
 공개 전 문서 상대 링크 183개·공개 JSON·DAG CLI 경로·로컬 비밀 값 미포함 감사를 통과했다. 공개 Markdown·집계 JSON만 추가하며 raw/정제 행·비밀 값·사용자 변경을 스테이징하지 않는다.
+
+## 2026-10-13 CI 환경 변경과 Action 유지보수
+
+사용자의 다음 고도화 요청으로 main/origin/main f344d91이 같고 작업 트리가 깨끗한 상태에서 시작했다. 직전 CI 38375889135는 네 job 성공이었다. GitHub 공식 공지는 ubuntu-latest가 2026-10-19~11-19에 Ubuntu 26.04로 전환된다고 안내한다. 코드 변경 없이 검증 OS가 바뀌는 영향을 분리하기 위해 네 job의 runner를 ubuntu-24.04로 명시했다.
+
+- checkout 7.0.1·setup-python 7.0.0·setup-java 6.0.1·upload-artifact 7.0.2·setup-helm 5.0.1의 공식 릴리스/태그와 커밋 SHA를 GitHub API로 대조하고, action.yml의 Node 24 런타임을 확인했다. uses를 전체 SHA와 읽을 수 있는 버전 주석으로 고정했다.
+- contents: read 권한, pipeline/dags 실행 상한 15분/10분을 명시했다. 기존 연결 job의 15분/20분 상한은 유지했다.
+- pipeline pip cache에 포함된 runtime.txt를 추가해 runtime 의존성 변경도 cache 키에 반영한다.
+- Python 3.11·Java 17·Helm 3.20.0·Spark/Delta·Airflow/chart/provider는 변경하지 않았다. RUNBOOK에 검증 역할·갱신 절차·고정 범위와 남은 제약을 기록했다. README의 기존 틀과 데이터 경로는 변경하지 않았다.
+
+### 검증
+
+공식 actionlint 1.7.12 릴리스 archive를 private .work에 받고 배포 checksum과 대조한 뒤 워크플로 검사를 통과했다. UTC 파이프라인 334 passed, 125.25초와 Airflow/Pod 12 passed, 0.89초로 기존 회귀 총 346개가 통과했다. 최초 로컬 Airflow 명령에 PYTHONPATH를 빠뜨려 import 오류가 났으며 CI와 동일한 .:dags 경로를 설정해 재검사했다. 워크플로에는 해당 경로가 이미 있으므로 DAG 구현을 변경하지 않았다. Ruff·diff whitespace·문서 상대 링크 183개·공개 JSON·DAG CLI·비밀 값 미포함 감사를 통과했다.
+
+로그/릴리스 메타데이터는 .work/ci-maintenance-{regression.log,airflow.log,airflow-corrected.log,before.json}, .work/ci-actions-reviewed.json에만 보관한다. CI 설정과 필요한 문서만 main에 커밋·일반 push하고, 새 HEAD의 네 원격 job 및 artifact 업로드를 확인한다. 새 CI에서 실패하면 해당 설정을 수정한 뒤 성공까지 확인한다.
+
+runner 패치 이미지·전이 패키지·Docker base digest까지 고정한 환경은 아니다. 실제 S3·운영 metadata DB·새 Airflow/provider 전환·실수집 Databricks·순수 pool 대기와 장기 관측은 기존 미완료다. 원천 API·AWS·Databricks·Discord·LLM을 호출하거나 7일 예약/예산·운영 5분 수집 주기를 변경하지 않았다.
