@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "input_kind": "synthetic",
+  "actual_api_collection": false,
+  "api_gets_this_experiment": 0,
+  "executed_at_kst": "2026-10-13T16:46:20.571268+09:00",
+  "new_capture_schema": 2,
+  "before_mutation": {
+    "status": "verified_against_capture",
+    "algorithm": "sha256",
+    "files_hashed_at_processing": 4,
+    "files_verified_against_capture": 4,
+    "limitations": [
+      "Legacy checksums were not recorded at collection and cannot be reconstructed retrospectively",
+      "Checksums detect changes relative to capture metadata, not authenticity if both files and metadata change"
+    ]
+  },
+  "mutation": {
+    "same_row_count": true,
+    "same_capture_timestamp": true,
+    "changed_value_rejected": true,
+    "spark_started": false,
+    "processing_directory_created": false
+  },
+  "historical_capture_read_only_check": {
+    "capture_day": "20261011",
+    "status": "unverified_legacy",
+    "algorithm": "sha256",
+    "files_hashed_at_processing": 4,
+    "files_verified_against_capture": 0,
+    "limitations": [
+      "Legacy checksums were not recorded at collection and cannot be reconstructed retrospectively",
+      "Checksums detect changes relative to capture metadata, not authenticity if both files and metadata change"
+    ]
+  },
+  "limitations": [
+    "Synthetic fault injection validates integrity gates, not Seoul API reliability or data quality",
+    "The historical capture was preserved; its collection-time checksums were never recorded",
+    "Checksum records are not signed source authentication"
+  ]
+}

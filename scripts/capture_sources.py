@@ -1,6 +1,7 @@
 """Small opt-in source experiment; raw observations stay in an ignored local directory."""
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -17,9 +18,11 @@ from src.ingestion.ingest_subway_usage_daily import fetch_subway_usage_daily
 
 def write_json(path, value):
     temp = path.with_suffix(".tmp")
-    temp.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+    content = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False).encode("utf-8")
+    temp.write_bytes(content)
     temp.chmod(0o600)
     temp.replace(path)
+    return hashlib.sha256(content).hexdigest()
 
 
 class CountedSession(requests.Session):
@@ -55,7 +58,7 @@ def capture(output, usage_day, *, snapshots=3, cadence_seconds=300,
     client = session or CountedSession()
     start, origin = clock(), monotonic()
     evidence = {
-        "schema_version": 1, "data_kind": "observed", "status": "running",
+        "schema_version": 2, "data_kind": "observed", "status": "running",
         "started_at_kst": start.isoformat(), "usage_day": usage_day,
         "cadence_seconds": cadence_seconds, "planned_snapshots": snapshots,
         "arrival_scope": "ALL response, maximum 1000 observations; partial coverage",
@@ -79,8 +82,8 @@ def capture(output, usage_day, *, snapshots=3, cadence_seconds=300,
             if not rows or not isinstance(rows, list) or not all(isinstance(r, dict) for r in rows):
                 raise ValueError("invalid source rows")
             ended = clock()
-            write_json(output / payload_name, {"captured_at_kst": ended.isoformat(), "rows": rows})
-            item.update(status="collected", rows=len(rows), captured_at_kst=ended.isoformat())
+            digest = write_json(output / payload_name, {"captured_at_kst": ended.isoformat(), "rows": rows})
+            item.update(status="collected", rows=len(rows), captured_at_kst=ended.isoformat(), raw_sha256=digest)
         except Exception as error:
             # Exception strings, source messages and URLs may contain credentials.
             item.update(status="failed", error_type=type(error).__name__)

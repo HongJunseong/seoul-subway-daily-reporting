@@ -67,3 +67,9 @@ compaction_experiment는 새로운 .work 합성 lake에서만 36,000행을 만�
 ## 표본 계획 감사 (2026-10-13)
 
 summarize_source_observations.py의 --campaign-dir 모드는 고정 plan과 상태·캡처 메타데이터를 대조한다. 예정된 도래 슬롯은 캡처가 없어도 분모에 남고, 실패·시작 놓침·미확인을 구분한다. 모르는 호출량은 null이며 알려진 합계를 전체 호출량으로 단정하지 않는다. --capture-dir의 기존 기록 비교와 운영 DAG의 연속 5분 폴링은 별도다. 실제 원본·처리 품질·재처리는 이 메타데이터 감사가 검증하지 않는다.
+
+## 수집 원본의 무결성 계약 (2026-10-13)
+
+새 제한 관측 capture schema 2는 저장한 UTF-8 원본 파일의 SHA-256을 수집 시점에 기록한다. process_source_experiment.py는 공통 manifest 계약과 파일 체크섬을 새 출력·Spark 실행 전에 검증한다. 행 수와 수집 시각이 같은 값 변경도 거부한다. 기존 schema 1은 원본을 보존하며 unverified_legacy로 표시한다. 처리 시 계산한 해시는 수집 당시 무결성 증거로 소급하지 않는다. 메타데이터 계획 감사는 해시 형식만 검사하며 원본 bytes 검증과 구분한다. 합성 오류 주입의 실행 증거는 examples/observed/source-integrity.json, 계약은 SOURCE_OBSERVATION.md에 있다.
+
+기본 개발 경로는 사용자 요청에 따라 main 직접 검증·커밋·일반 push다. PR은 요청할 때만 만든다. API 관측 자동화의 기간·시간·예산은 그대로 유지한다.

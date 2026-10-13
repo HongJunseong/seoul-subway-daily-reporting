@@ -113,3 +113,20 @@ campaign status의 계획 날짜와 실행 기록을 capture 비교 결과와 �
 완료 상태인데 capture.json이 없거나, D-4 날짜·호출 수·수집 날짜·간격이 서로 다르면 집계를 거부한다. 예약 디렉터리의 외부 경로 이탈도 차단한다. 늦게 시작한 실제 캡처의 시각은 원본 비교 결과에 유지하고, 고정 시작 시각과 구분한다. 출판 전 정제 품질과 재처리는 기존 process_source_experiment.py에서 별도로 검증한다.
 
 [실제 계획 감사 예시](../examples/observed/campaign-plan-audit.md)는 API 실패를 추정하지 않고 확보된 실행 기록의 범위를 보여준다.
+
+## 저장 원본의 무결성 계약
+
+새 수집은 capture schema 2로 성공한 파일마다 raw_sha256을 기록한다. SHA-256은 저장한 UTF-8 JSON의 정확한 바이트를 대상으로 하며, Bronze의 행 단위 raw_payload 해시와 구분한다. JSON 저장은 임시 파일의 원자적 교체를 유지하고 private 파일 권한은 0600이다.
+
+process_source_experiment.py는 schema·수집 메타데이터를 검증한 뒤 각 파일의 바이트 해시를 수집 당시 기록과 대조한다. 행 수·수집 시각이 같아도 값이 달라졌거나 바이트가 손상되면 출력 디렉터리 생성과 Spark 시작 전에 중단한다. 성공 파일의 해시 누락·잘못된 형식·미지원 schema·예약 밖 파일 경로도 허용하지 않는다. capture.json과 원본은 변경하지 않으며 불일치를 새 해시로 덮어 봉합하지 않는다.
+
+처리 evidence.json의 source_integrity에는 다음 범위를 기록한다.
+
+| 상태 | 의미 |
+|---|---|
+| verified_against_capture | schema 2 원본의 모든 바이트가 수집 당시 체크섬과 일치 |
+| unverified_legacy | schema 1 원본을 현재 해시했지만 수집 당시 체크섬은 없어 무결성을 소급 입증하지 못함 |
+
+기존 schema 1 원본과 공개 증거는 보존한다. 현재 해시를 과거 수집 시점의 체크섬으로 추가하지 않는다. 날짜별 메타데이터 비교는 schema 1/2 모두 지원하지만 해시 형식만 확인하며 원본 바이트 검증으로 표현하지 않는다. 고정 관측 plan schema 1과 capture schema 2는 별도 계약이다. 수집 간격·기간·GET 예산을 바꾸지 않는다.
+
+체크섬은 원본과 수집 기록 사이의 변경을 탐지한다. 원본과 메타데이터를 함께 바꾼 경우의 출처 인증을 제공하지 않으며, 정제 데이터 품질과 Delta 재처리 일치도 별도 검사다. [합성 손상 주입 증거](../examples/observed/source-integrity.json)는 네 파일 검증 후 동일 건수·시각의 값 변경을 차단한 실제 실행 결과다. 10/11 실제 원본은 읽기만 했으며 legacy 상태로 남겼다. 이번 검증에는 서울 API 호출이 없다.

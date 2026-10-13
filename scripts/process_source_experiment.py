@@ -1,7 +1,6 @@
 """Replay saved live source observations into a fresh local Delta lake; never calls an API."""
 from __future__ import annotations
 import argparse
-import hashlib
 import json
 import os
 import sys
@@ -14,6 +13,8 @@ sys.path.insert(0, str(ROOT))
 from scripts.capture_sources import new_output, write_json
 from scripts.local_spark import local_spark
 from src.observability.fingerprints import delta_fingerprint
+from src.observability.source_baseline import validate_manifest
+from src.observability.source_integrity import capture_version, integrity_summary, verify_payload
 from src.common.dates import KST, validate_ymd
 from src.observability.audit import DeltaAuditReader, audit_lake
 from scripts.audit_lake import save_audit
@@ -37,21 +38,26 @@ def load_capture(source):
     source = Path(source).resolve()
     if not source.is_relative_to((ROOT / ".work").resolve()):
         raise ValueError("saved observations must be in the private repository .work directory")
-    evidence = json.loads((source / "capture.json").read_text(encoding="utf-8"))
+    manifest_path = source / "capture.json"
+    if not manifest_path.resolve().is_relative_to(source):
+        raise ValueError("capture manifest escaped capture directory")
+    evidence = json.loads(manifest_path.read_text(encoding="utf-8"))
     if evidence.get("data_kind") != "observed" or evidence.get("status") != "collected":
         raise ValueError("incomplete capture cannot be published as a successful source experiment")
+    version = capture_version(evidence)
+    validate_manifest(evidence, datetime.now(KST))
     day = validate_ymd(evidence["usage_day"])
     slots = evidence["arrival_slots"]
-    if not 1 <= evidence["planned_snapshots"] <= 3 or len(slots) != evidence["planned_snapshots"]:
-        raise ValueError("missing planned source slots")
-    if not 300 <= evidence["cadence_seconds"] <= 3600:
-        raise ValueError("unexpected source cadence")
     payloads, hashes = [], {}
     for name, item in [("usage.json", evidence["usage"])] + [
             (f"arrival-{i:02d}.json", slot) for i, slot in enumerate(slots)]:
         if item.get("status") != "collected":
             raise ValueError("failed source request cannot be published")
-        content = (source / name).read_bytes()
+        path = source / name
+        if not path.resolve().is_relative_to(source):
+            raise ValueError("saved payload escaped capture directory")
+        content = path.read_bytes()
+        digest = verify_payload(content, item, version)
         payload = json.loads(content)
         rows = payload["rows"]
         if (not isinstance(rows, list) or not rows or not all(isinstance(r, dict) for r in rows)
@@ -68,21 +74,7 @@ def load_capture(source):
         elif len(rows) > 1000:
             raise ValueError("arrival payload exceeded request limit")
         payloads.append(payload)
-        hashes[name] = hashlib.sha256(content).hexdigest()
-    stamps = []
-    for i, slot in enumerate(slots):
-        if slot["slot"] != i:
-            raise ValueError("source slots are reordered or duplicated")
-        planned = kst_stamp(slot["planned_at_kst"])
-        if (planned - kst_stamp(evidence["started_at_kst"])).total_seconds() != i * evidence["cadence_seconds"]:
-            raise ValueError("source schedule differs from capture plan")
-        # Scheduling uses monotonic time; the wall clock can drift slightly during the run.
-        # Preserve actual timestamps and allow at most one second of wall-clock discrepancy.
-        if (kst_stamp(slot["request_started_at_kst"]) - planned).total_seconds() < -1:
-            raise ValueError("source request preceded its planned slot beyond clock tolerance")
-        stamps.append(kst_stamp(slot["captured_at_kst"]))
-    if any(right <= left for left, right in zip(stamps, stamps[1:])):
-        raise ValueError("snapshots must be distinct and chronological")
+        hashes[name] = digest
     return evidence, payloads, hashes
 
 
@@ -156,7 +148,8 @@ def process(source, output):
     evidence = {
         "schema_version": 1, "data_kind": "observed", "actual_api_collection": True,
         "saved_source_replay_verified": True, "capture": capture,
-        "source_file_sha256": hashes, "before_replay": before, "after_replay": after,
+        "source_file_sha256": hashes, "source_integrity": integrity_summary(capture, hashes),
+        "before_replay": before, "after_replay": after,
         "quality": quality, "local_processing_and_replay_seconds": processing_seconds,
         "scope": "bounded private local experiment; no S3, Databricks, Kubernetes or notification execution",
     }

@@ -437,3 +437,22 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 누락 원인은 실행 기록만으로 추정하지 않는다. 과거 관측을 다시 호출하거나 예약을 삭제하지 않았다. 실제 7일 기간 관측·전체 하루 커버리지·실데이터 Databricks upload·S3 운영·순수 pool 대기는 기존 미완료 항목이다. 기존 API opt-in 범위를 늘리지 않는다. write-commit 스킬에 따라 기능·회귀·문서·증거를 한 목적의 커밋으로 묶고 기존 push 승인 범위로 공개한다.
 
 추가 검토에서 terminal state가 아직 없는 부분 캡처도 이미 기록된 GET을 알고 있음을 확인했다. 알려진 GET 하한은 state의 총계가 있으면 그것을 사용하고, 없으면 manifest에 확인된 요청 수를 사용한다. 둘을 더해 이중 계수하지 않는다. reserved 상태의 부분 캡처가 가진 GET 1회를 합계에서 누락하지 않는 회귀를 보완하고 같은 기능의 후속 커밋으로 기록한다.
+
+## 2026-10-13 main 직접 작업과 수집 원본 무결성
+
+사용자가 PR 없이 main 직접 작업과 병합 브랜치 삭제를 요청했다. 시작 시 사용자 변경·staged 변경은 없었다. PR #3은 2026-10-13T07:30:02Z에 main f061196으로 병합됐다. 원격 main 포함 여부를 확인하고 main을 fast-forward한 뒤 feature/de-portfolio와 feature/source-campaign-audit의 로컬·원격 브랜치를 삭제했다. AGENTS.md와 write-commit 스킬에 main 직접 커밋·일반 push, PR은 요청 시 생성하는 방식을 반영했다. skill-creator의 quick_validate는 Skill is valid!로 통과했다. Git 저자와 공동저자는 변경하지 않았다.
+
+관측 자동화 ID 7은 공식 automation_update로 마지막 공개 기록의 대상만 main으로 수정했다. ACTIVE 상태·매일 17:50 RRULE·2026-10-12~18 기간·하루 13 GET/전체 91 GET·고정 계획 seal은 보존했다. 과거 미수집 관측을 복원하거나 날짜 예약을 삭제하지 않았다.
+
+### 구현과 실제 검증
+
+- capture_sources는 새 capture schema 2에 저장한 정확한 UTF-8 bytes의 raw_sha256을 기록한다. 계획 schema는 1을 유지한다. GET·수집 주기·재시도 정책은 바꾸지 않는다.
+- process_source_experiment는 공통 manifest 검증을 재사용하고 수집 당시 해시와 원본을 새 출력 디렉터리/Spark 실행 전에 대조한다. manifest·payload의 symlink 경로 이탈도 차단한다. 행 수·수집 시각이 같아도 값/bytes가 달라지면 거부한다.
+- 원래 schema 1은 원본을 바꾸지 않고 처리할 수 있으나 unverified_legacy와 수집 시 검증 파일 수 0으로 기록한다. 처리 시 계산한 해시는 수집 당시 증거로 소급하지 않는다. 메타데이터 감사의 해시 형식 검사와 원본 bytes 검사를 구분한다.
+- 2026-10-13T16:46:20.571268+09:00에 합성 원본 4파일로 실제 오류 주입을 실행했다. 원래 4개 해시는 일치했고, 행 수·수집 시각을 유지한 ETA 값 변경은 Spark 시작과 출력 생성 전에 거부됐다. 기존 10/11 실제 관측 4파일은 읽기 전용으로 확인해 legacy 미검증 표시를 확인했다. 이번 실험의 실제 API GET은 0이다. 공개 집계는 examples/observed/source-integrity.json, 원문은 ignored .work/source-integrity-experiment-20261013-01에만 있다.
+- UTC 전체 파이프라인 258 passed, 120.12초. Airflow/Pod 12 passed, 1.36초로 서로 다른 회귀 총 270개가 통과했다. 새 무결성 회귀는 23개다. 이후 공통 검증과 중복된 기존 코드를 제거하고 관련 회귀 107 passed, 1.53초·전체 Ruff·diff whitespace를 다시 확인했다. 107개는 전체 검사와 중복이며 별도로 더하지 않는다.
+- private 로그: .work/source-integrity-{regression.log,airflow.log,unit-final.log,experiment.log}. 새 원격 HEAD의 CI는 main push 후 별도로 확인한다.
+
+체크섬은 수집 메타데이터 대비 변경을 검출하며 파일·메타데이터 동시 조작의 진본 인증을 제공하지 않는다. 합성 오류 주입은 실제 원천 품질이나 장기 운영을 증명하지 않는다. 실제 7일 관측·실데이터 Databricks·S3 운영·순수 pool 대기와 대규모 성능의 미완료 항목은 그대로다. 기존 API opt-in 범위와 운영 DAG의 연속 5분 주기는 유지한다.
+
+공개 전 문서 상대 링크 171개·공개 JSON·DAG CLI 존재·로컬 비밀 값 미포함 감사를 통과했다. 원문·정제 행·실서비스 비밀 값을 추가하지 않았다.

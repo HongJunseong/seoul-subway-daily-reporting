@@ -9,6 +9,7 @@ import math
 from statistics import median
 
 from src.common.dates import KST, validate_ymd
+from src.observability.source_integrity import capture_version, validate_checksum
 
 ARRIVAL_STATES = ("collected", "failed", "missed_schedule", "not_recorded_due", "future")
 USAGE_STATES = ("collected", "failed", "not_recorded")
@@ -59,7 +60,7 @@ def validate_request(item, as_of, *, arrival):
     if item["status"] == "collected":
         if attempts == 0:
             raise ValueError("collected request requires a GET attempt")
-        integer(item["rows"], 1, 1000 if arrival else 10000, "response rows")
+        integer(item["rows"], 1, 1000 if arrival else 10000, "response row limit")
         if not begun <= stamp(item["captured_at_kst"]) <= ended:
             raise ValueError("capture outside request boundaries")
     elif any(key in item for key in ("rows", "captured_at_kst")):
@@ -68,8 +69,9 @@ def validate_request(item, as_of, *, arrival):
 
 
 def validate_manifest(manifest, as_of):
-    if type(manifest.get("schema_version")) is not int or manifest.get("schema_version") != 1 or manifest.get("data_kind") != "observed":
-        raise ValueError("expected observed source capture schema 1")
+    version = capture_version(manifest)
+    if manifest.get("data_kind") != "observed":
+        raise ValueError("expected observed source capture")
     status = manifest.get("status")
     if status not in ("running", "collected", "incomplete"):
         raise ValueError("unknown capture status")
@@ -84,6 +86,7 @@ def validate_manifest(manifest, as_of):
         raise ValueError("invalid arrival slot list")
     attempts, latest = 0, None
     for i, item in enumerate(slots):
+        validate_checksum(item, version)
         if type(item.get("slot")) is not int or item["slot"] != i:
             raise ValueError("slots must be a chronological prefix of the declared plan")
         due = started + timedelta(seconds=i * cadence)
@@ -106,6 +109,7 @@ def validate_manifest(manifest, as_of):
                 latest = captured
     usage = manifest.get("usage")
     if usage is not None:
+        validate_checksum(usage, version)
         calls, _ = validate_request(usage, as_of, arrival=False)
         if stamp(usage["request_started_at_kst"]) < started:
             raise ValueError("usage request preceded capture")
@@ -217,7 +221,7 @@ def summarize_captures(manifests, *, start_day, end_day, as_of):
             "Elapsed seconds measure the request and local-save attempt duration; snapshot age is measured at the explicit as-of",
             "Response rows are observations, not unique stations or complete network coverage",
             "Usage observations describe usage_day; repeated dates are not added as unique daily usage",
-            "Metadata-only analysis does not verify raw rows, Silver quality or Delta replay",
+            "Metadata-only analysis validates checksum syntax, not raw-file bytes, Silver quality or Delta replay",
             "GET counts cover these captures only, not other collectors or the API key's total usage",
             "Daily arrival outcomes are assigned by planned slot date, usage outcomes by capture start date",
         ],
