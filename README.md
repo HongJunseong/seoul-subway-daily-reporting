@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.7.3-017CEE)
 ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5.7-red)
-![Delta Lake](https://img.shields.io/badge/Delta%20Lake-3.2.0-00ADD8)
+![Delta Lake](https://img.shields.io/badge/Delta%20Lake-00ADD8)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white)
 ![Databricks](https://img.shields.io/badge/Databricks-Free%20Edition-FF3621)
 

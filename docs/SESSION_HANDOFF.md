@@ -516,3 +516,7 @@ UTC 파이프라인 330 passed, 137.76초는 새 최초 25개 검사를 포함�
 로그/릴리스 메타데이터는 .work/ci-maintenance-{regression.log,airflow.log,airflow-corrected.log,before.json}, .work/ci-actions-reviewed.json에만 보관한다. CI 설정과 필요한 문서만 main에 커밋·일반 push하고, 새 HEAD의 네 원격 job 및 artifact 업로드를 확인한다. 새 CI에서 실패하면 해당 설정을 수정한 뒤 성공까지 확인한다.
 
 runner 패치 이미지·전이 패키지·Docker base digest까지 고정한 환경은 아니다. 실제 S3·운영 metadata DB·새 Airflow/provider 전환·실수집 Databricks·순수 pool 대기와 장기 관측은 기존 미완료다. 원천 API·AWS·Databricks·Discord·LLM을 호출하거나 7일 예약/예산·운영 5분 수집 주기를 변경하지 않았다.
+
+## 2026-10-13 README Delta Lake 배지
+
+사용자 요청에 따라 README의 Delta Lake 배지에서 3.2.0을 제거하고 포맷 사용 표기만 남겼다. 의존성 설정은 그대로다. 문서·diff·공개 파일 감사를 확인하며 코드 변경이 없어 로컬 파이프라인 회귀는 재실행하지 않는다. 직전 main 5d4c017의 원격 CI 38381845018은 네 job과 artifact 모두 성공했다. 이번 문서 변경은 main에 커밋·일반 push한다.
