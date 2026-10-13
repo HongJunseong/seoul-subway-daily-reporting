@@ -114,7 +114,7 @@ def summarize_usage(df):
             "line_usage_stats": lines.to_dict("records")}
 
 
-def summarize_arrival(df, df_usage=None, *, expected_ymd=None):
+def summarize_arrival(df, *, expected_ymd=None):
     required = {"line_id", "station_id", "station_name", "total_events", "valid_eta_n",
                 "avg_eta_sec", "p95_eta_sec", "long_eta_ratio_5m", "snapshot_count"}
     if not required <= set(df.columns) or df.empty:

@@ -55,3 +55,11 @@ scripts의 CLI는 아래 문제를 재현하거나 실행 증거를 수집한다
 - .work, .env, 실제 원문·정제 행·개인 인증 파일은 공개하지 않는다. 역사적 private export 출력의 ignore 규칙은 보존한다.
 
 Secret 생성 진입점은 k8s/create-secret.sh 하나다. dotenv를 읽어 kubectl 표준 입력으로 전달하며 fixture 배포는 이 Secret을 사용하지 않는다. 과거 비활성 코드와 실행 메타데이터는 Git 이력에서 확인하고 현재 실행 경로에 별도 legacy 사본을 두지 않는다.
+
+## 미사용 여부 점검 (2026-10-13)
+
+DAG·CLI·notebook·Docker/Helm·CI·문서 참조와 Python import/함수 호출을 대조했다. 이번 점검에서 통째로 제거할 근거가 확인된 주 처리 모듈은 없다. 운영 DAG에서 직접 호출하지 않는 scripts도 재현·증거 수집 또는 명시적인 수동 실행 역할이 있으므로 미사용으로 분류하지 않는다.
+
+호출처가 없는 get_env, 미사용 import 6개와 내부 함수의 불필요한 인자 3개를 제거했다. unused import/재정의/지역 변수는 Ruff의 F401/F811/F841로 CI에서 검사한다. json.parse_constant 같은 콜백의 필수 인자는 함수 안에서 쓰지 않더라도 API 계약이므로 유지한다.
+
+LLM 해설과 Discord는 핵심 수집·변환·보고서 흐름에 필수는 아닌 선택 기능이다. 현재 명시적인 호출 경로와 opt-in 설정이 있으며 비활성 코드로 삭제하지 않았다. Databricks·Kubernetes 도구, 버전 고정 export와 공개 실행 증거는 각각 검증·재현 역할을 유지한다. 과거 기록과 private 데이터를 정리 대상으로 삭제하지 않는다.

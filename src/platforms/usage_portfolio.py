@@ -13,7 +13,7 @@ import re
 from pyspark.sql import functions as F
 from src.ingestion.bronze import bronze_frame, USAGE_COLUMNS
 from src.platforms.managed_usage import (
-    UsageTables, publish_silver, publish_gold, version, read_version,
+    publish_silver, publish_gold, version, read_version,
     fixture_snapshot, fingerprint, BUSINESS_COLUMNS,
 )
 from src.platforms.usage_fixture import seed_fixture, DATES

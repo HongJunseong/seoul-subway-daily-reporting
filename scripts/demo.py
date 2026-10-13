@@ -28,7 +28,6 @@ def main():
     os.environ["PYSPARK_PYTHON"] = sys.executable
     from delta import configure_spark_with_delta_pip
     from pyspark.sql import SparkSession, functions as F
-    from src.common.storage import table_path
     from src.ingestion.ingest_subway_usage_daily import save_to_bronze_delta as save_usage
     from src.ingestion.ingest_subway_arrival_realtime import save_to_bronze_delta as save_arrival
     from src.processing.build_fact_subway_usage_daily_spark import build_usage_silver

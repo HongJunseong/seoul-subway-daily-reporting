@@ -538,3 +538,22 @@ runner 패치 이미지·전이 패키지·Docker base digest까지 고정한 �
 관련 감사/보고서 98 passed, 3.65초 뒤 전체 UTC 파이프라인 354 passed, 123.27초와 Airflow/Pod 12 passed, 1.77초를 확인했다. 서로 다른 회귀 총 366개이며 관련 98개를 다시 더하지 않는다. Ruff·diff whitespace·문서 상대 링크 183개·공개 JSON·DAG CLI·비밀 값 미포함 감사를 통과했다. private 로그는 .work/usage-audit-{unit,regression,airflow}.log다.
 
 합성 in-memory 오류 주입과 실제 로컬 Delta 루트/CLI 검증이다. 서울 API·AWS·Databricks·Discord·LLM 호출, Kubernetes 배포, 예약 관측의 일정/예산 변경은 없다. 실제 장기 관측·S3·운영 metadata DB·실수집 Databricks·순수 pool 대기는 기존 미완료다. 기능·회귀·계약 기록만 main에 커밋·일반 push하고 새 HEAD의 네 CI job 결과를 확인한다.
+
+## 2026-10-13 미사용 코드와 불필요한 인자 정리
+
+사용자가 실제 쓰지 않거나 없어도 되는 부분의 점검을 요청했다. main/origin/main 30eb9b2가 같고 사용자·staged 변경이 없는 상태에서 추적 파일의 DAG·CLI·notebook·Docker/Helm·CI·문서 참조와 Python AST의 함수/인자 사용, Ruff 미사용 항목을 확인했다.
+
+- src/common/get_api.py의 get_env는 전체 코드·문서에 호출처가 없어 제거했다. 두 API key 함수와 실제 수집 호출부는 유지했다.
+- 미사용 import 6개를 제거했다: demo의 table_path, 승하차 collector의 datetime, usage_portfolio의 UsageTables, 세 테스트 파일의 Path.
+- 내부 함수의 사용하지 않는 인자 3개를 호출부와 함께 제거했다: summarize_arrival의 df_usage, build_prompt의 target_ymd, airflow_offline.run의 pipeline_python. CLI --pipeline-python은 환경 구성과 Bronze 준비에 실제로 사용하므로 유지한다.
+- json.parse_constant callback의 value는 내부에서 읽지 않더라도 JSON API 호출 규약의 필수 인자이므로 유지했다.
+- Ruff F401/F811/F841을 기존 CI 검사에 추가해 미사용 import·재정의·지역 변수가 다시 들어오는 것을 검사한다.
+- 이번 점검에서 통째로 제거할 근거가 확인된 주요 모듈/의존성은 없다. scripts의 수동 재현·증거 수집, Databricks/Kubernetes 실제 실행 증거와 선택적 export는 역할이 있어 유지한다. LLM/Discord도 기본 흐름에 필수는 아니지만 실제 선택 호출 경로가 있으므로 미사용으로 삭제하지 않았다. REPOSITORY_GUIDE에 구분을 기록했다.
+
+### 검증과 범위
+
+UTC 파이프라인 354 passed, 127.54초와 Airflow/Pod 12 passed, 1.64초로 기존 회귀 총 366개가 통과했다. 이전 HEAD에서 추출한 build_prompt와 새 함수의 동일 합성 context 결과가 같음을 별도 로컬 검사로 확인했다. API/LLM 호출은 0회다. 새 테스트를 추가하지 않고 기존 identity/원천 분리 회귀의 호출부를 변경했다.
+
+강화된 Ruff·diff whitespace·문서 상대 링크 183개·공개 JSON·DAG CLI·비밀 값 미포함 감사를 통과했다. private 점검/회귀 결과는 .work/unused-audit-*와 .work/unused-cleanup-{regression,airflow,prompt}.log에 보존한다. 코드·호출부·CI 규칙·기존 회귀·점검 기록을 main에 커밋·일반 push하고 새 HEAD의 네 원격 CI job을 확인한다.
+
+이번 점검은 저장소 내부 참조와 실제 로컬 회귀의 범위이며 동적 플랫폼 외부 소비자를 모두 증명하는 분석은 아니다. private .work·원문·정제 데이터, 공개 증거와 과거 기록을 삭제하지 않았다. 외부 API·AWS·Databricks·Discord·LLM·Kubernetes 배포를 호출하거나 예약 관측을 변경하지 않았다. 장기 실운영 검증은 기존 미완료다.

@@ -49,7 +49,7 @@ def render_report(ctx):
     return "\n".join(lines)
 
 
-def build_prompt(target_ymd, ctx):
+def build_prompt(ctx):
     return [{"role": "system", "content":
              "검증된 지하철 데이터만 한국어로 설명하라. 기준 날짜·부분 수집·ETA의 한계를 명시하라. "
              "입력에 없는 수치·비교·운행 지연·현재 혼잡도를 추정하지 말라."},
@@ -65,7 +65,7 @@ def generate_daily_report(target_ymd=None, save_to_s3=True):
     if mode == "llm":
         from openai import OpenAI
         response = OpenAI().chat.completions.create(model=os.getenv("SSDR_LLM_MODEL", "gpt-5-mini"),
-                                                    messages=build_prompt(target_ymd, ctx))
+                                                    messages=build_prompt(ctx))
         narrative = response.choices[0].message.content
         if not narrative:
             raise ReportDataError("LLM returned an empty narrative")

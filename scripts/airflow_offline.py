@@ -99,7 +99,7 @@ def triggered_run(parent_dag, parent_run_id, task_id, target_dag):
         return run_id
 
 
-def run(output, pipeline_python):
+def run(output):
     import pendulum
     import requests
     from airflow.models import DagBag, Pool
@@ -209,7 +209,7 @@ def main():
         subprocess.run([str(pipeline_python), str(ROOT / "scripts/seed_bronze.py"),
                         "--output-dir", str(output / "input")], cwd=ROOT, stdout=stream,
                        stderr=subprocess.STDOUT, check=True, timeout=300)
-    print(json.dumps(run(output, pipeline_python), ensure_ascii=False, indent=2))
+    print(json.dumps(run(output), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

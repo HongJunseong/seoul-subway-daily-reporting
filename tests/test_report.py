@@ -21,8 +21,8 @@ def arrival():
              avg_eta_sec=60., p95_eta_sec=60., long_eta_ratio_5m=0., snapshot_count=1)])
 
 
-def test_report_keeps_line_station_identity_without_cross_source_fanout():
-    context = summarize_arrival(arrival(), usage())
+def test_arrival_summary_keeps_line_station_identity_without_usage_values():
+    context = summarize_arrival(arrival())
     assert len(context["long_eta_stations"]) == 3
     assert all("total_count" not in row for row in context["long_eta_stations"])
 

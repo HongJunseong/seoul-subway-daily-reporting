@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pyspark.sql import functions as F
 from src.common.dates import date_parts, now_kst, validate_ymd
 from src.common.get_api import get_passenger_api_key
