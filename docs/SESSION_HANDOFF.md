@@ -573,3 +573,23 @@ UTC 파이프라인 354 passed, 127.54초와 Airflow/Pod 12 passed, 1.64초로 �
 새 HTTP mock 회귀 11개를 포함해 UTC 파이프라인 365 passed, 126.98초·Airflow/Pod 12 passed, 1.27초로 서로 다른 회귀 총 377개가 통과했다. 첫 관련 29개 검사는 전체와 중복이며 별도로 더하지 않는다. JSON payload와 성공 응답, timeout/연결/실제 requests HTTP 오류 응답, 예상과 다른 응답과 redirect, traceback/로그의 비밀 값 숨김, 기존 Discord 설정 무시, 실패 callback과 Gold 날짜 계약을 확인했다. Ruff·Secret 셸 구문·diff whitespace·문서 상대 링크/공개 JSON/비밀 값 미포함 검사도 통과했다.
 
 private 결과는 .work/slack-{regression,airflow}.log다. HTTP mock 외 실제 Slack·서울 API·AWS·Databricks·LLM 호출과 Kubernetes 배포는 수행하지 않았다. 실제 사용은 Slack 앱의 채널별 Incoming Webhook을 로컬 SLACK_WEBHOOK_URL에 설정하고 실행 환경에 전달해야 한다. 운영 worker는 새 코드 이미지와 갱신한 Secret을 적용해야 하며 기존 fixture 이미지는 Slack 전환 검증 증거로 소급하지 않는다. 중복 제거/자동 전송 재시도는 제공하지 않으며 Airflow 재시도 시 중복 메시지가 가능하다. 기능·설정·회귀·문서를 main에 커밋·일반 push하고 해당 HEAD의 네 CI job을 확인한다.
+
+## 2026-10-13 승하차 수집의 페이지 완전성
+
+사용자의 다음 고도화 요청으로 main/origin/main 011a200이 같고 사용자·staged 변경이 없는 상태에서 진행했다. 직전 Slack 전환 CI 38410113753의 네 job과 검증 artifact 네 개가 성공한 상태다. 이번 작업은 코드와 로컬 검증에 집중했다.
+
+기존 collector에 동일한 HTTP mock 세 사례를 주입했다. total=4의 두 반복 페이지가 rows=4·고유 자연키=2로 성공했고, total=2.9와 True도 각각 2와 1로 변환돼 성공했다. 총 건수만 맞춘 응답이 원천 내부 누락을 숨기는 문제다.
+
+- total count를 양의 JSON 정수 또는 ASCII 정수 문자열로 제한한다. boolean·float·음수·0·잘못된 문자열을 임의 변환하지 않는다. RESULT와 row의 잘못된 형태도 민감한 본문 없이 SourceError로 분류한다.
+- 요청 범위와 total로 페이지별 예상 길이를 계산하고 짧거나 초과한 페이지를 즉시 거부한다. 마지막 페이지의 정상 잔여 건수는 허용한다. 설정된 페이지 예산을 넘는 total은 첫 응답에서 추가 요청 없이 중단한다.
+- 한 수집 안에서 이용 날짜·앞뒤 공백을 제거한 노선·역명의 중복을 거부한다. 반복 페이지와 경계 중복, 동일 키의 상충 정정이 Bronze에 저장되지 않게 한다. 서로 다른 노선의 같은 역명과 다른 수집 실행의 정정 이력은 보존하며 반환 원문은 수정하지 않는다.
+- CLI가 invalid 수집 뒤 save_to_bronze_delta를 호출하지 않는 연결 검사를 추가했다. 이 검사는 HTTP/저장 mock이며 실제 Delta 쓰기 장애 실험으로 확대하지 않는다.
+- DATA_CONTRACTS·RUNBOOK·현재 컨텍스트·로드맵·README 한 줄에 계약을 반영했다. examples/operations/source-pagination.json은 동일 mock 입력의 전후 집계와 범위를 기록하며 원문·키를 포함하지 않는다.
+
+### 검증과 범위
+
+새 회귀 41개를 포함해 UTC 파이프라인 406 passed, 125.10초·Airflow/Pod 12 passed, 1.26초로 서로 다른 회귀 총 418개가 통과했다. 최초 수집/관측 관련 77개와 최종 수집 45개는 전체와 중복이며 별도로 더하지 않는다. 마지막 루프의 불필요한 빈 페이지 조건을 제거한 뒤 수집 45개를 다시 확인했다. 최종 Ruff·diff whitespace·문서 상대 링크 185개·공개 JSON·DAG CLI·비밀 값 미포함 검사도 통과했다.
+
+private 결과는 .work/usage-pages-{before,after,regression,airflow}.log다. 합성 전후 세 사례가 모두 SourceError로 바뀌었고 실제 API GET은 0회다. 원천 API·AWS·Slack·Databricks·LLM 호출, Kubernetes 배포와 예약 관측의 일정/기간/예산 변경은 수행하지 않았다. 기존 실서비스 데이터와 .env는 보존했다.
+
+이번 계약은 응답 내부 페이지 길이와 자연키 완전성이다. 원천이 처음부터 누락한 고유 역, 같은 키의 원천 값이 페이지 사이에 바뀌는 경우, 지속 수집 커버리지까지 증명하지 않는다. 실제 원천이 현재 grain에 대해 중복 키를 제공하면 이를 숨기지 않고 identity 정책을 먼저 검토해야 한다. 기본 5분 도착 수집과 원본 재처리 정책은 유지한다. 기능·회귀·계약·합성 집계 증거를 main에 커밋·일반 push하고 해당 HEAD의 네 CI job을 확인한다.

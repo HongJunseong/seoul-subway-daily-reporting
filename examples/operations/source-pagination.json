@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "verified_at_kst": "2026-10-13T23:20:43.165799+09:00",
+  "method": "Same mock API pages passed to fetch_subway_usage_daily before and after the collection contract change",
+  "live_api_get_count": 0,
+  "before": [
+    {
+      "case": "repeated_page",
+      "mock_get_count": 2,
+      "accepted": true,
+      "rows": 4,
+      "unique_identity_count": 2
+    },
+    {
+      "case": "fractional_total",
+      "mock_get_count": 1,
+      "accepted": true,
+      "rows": 2,
+      "unique_identity_count": 2
+    },
+    {
+      "case": "boolean_total",
+      "mock_get_count": 1,
+      "accepted": true,
+      "rows": 1,
+      "unique_identity_count": 1
+    }
+  ],
+  "after": [
+    {
+      "case": "repeated_page",
+      "mock_get_count": 2,
+      "accepted": false,
+      "error_type": "SourceError"
+    },
+    {
+      "case": "fractional_total",
+      "mock_get_count": 1,
+      "accepted": false,
+      "error_type": "SourceError"
+    },
+    {
+      "case": "boolean_total",
+      "mock_get_count": 1,
+      "accepted": false,
+      "error_type": "SourceError"
+    }
+  ],
+  "limitations": [
+    "HTTP mock response validation; not a live source completeness or coverage measurement",
+    "Natural-key uniqueness cannot prove that the source omitted no unique station",
+    "Duplicate revisions across separate collections remain valid Bronze history",
+    "No AWS, Slack, Databricks or Kubernetes deployment performed"
+  ]
+}

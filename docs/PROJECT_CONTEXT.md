@@ -14,7 +14,7 @@
 - 로컬 모드는 SSDR_DATA_ROOT를 사용한다. fixture는 합성 데이터이며 실제 서울시 분석 결과가 아니다.
 - 기본 보고서는 결정적 Markdown이다. LLM은 명시적으로 선택한 추가 해설이며 검증된 수치를 대체하지 않는다.
 - S3의 같은 Delta 테이블 동시 driver 쓰기를 피하기 위해 모든 Spark DAG 태스크가 1-slot pool을 공유한다.
-- Kafka는 완료 알림을 위해 별도 운영할 이유가 약해 제거했다. Slack는 선택적인 독립 태스크다.
+- Kafka는 완료 알림을 위해 별도 운영할 이유가 약해 제거했다. Slack은 선택적인 독립 태스크다.
 
 ## 관측과 복구
 - 로컬 감사 CLI는 Delta 루트·버전을 읽어 품질, 수집 시간 bucket, 처리 누락, 활성 파일 메타데이터를 남긴다.
@@ -85,3 +85,8 @@ publication.json은 정확한 본문·context 문자열·manifest를 함께 담�
 ## CI 환경 유지보수 (2026-10-13)
 
 네 CI job은 Ubuntu 24.04를 명시하고, Node 24 기반 공식 Action 다섯 개를 검증된 릴리스 SHA로 사용한다. 데이터 처리 버전과 Airflow/chart/provider는 유지한다. 전체 회귀 346개와 actionlint가 통과했으며 갱신 절차·검증 역할·완전한 환경 lock과의 차이는 RUNBOOK의 CI 절에 있다.
+
+
+## 승하차 수집의 페이지 완전성 (2026-10-13)
+
+승하차 collector는 예고 건수의 타입·페이지별 요청 길이·수집 내부 자연키 고유성을 Bronze append 전에 검증한다. 반복 페이지가 총 건수만 채우는 경우를 거부하며 서로 다른 노선의 동일 역명과 별도 수집의 정정 이력은 유지한다. 예고 건수가 설정한 페이지 예산을 넘으면 추가 요청을 중단한다. DATA_CONTRACTS와 examples/operations/source-pagination.json에 합성 재현과 범위를 기록했다. 실제 원천의 고유 역 누락·장기 커버리지와 API 관측 결과는 별도다.
