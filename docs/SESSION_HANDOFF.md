@@ -413,3 +413,27 @@ Free Edition 구현 로컬 커밋: 3eecbfb(품질 차단·Delta 변경 감사·S
 - 관측 제어 기능과 README 소개 구성은 목적별 커밋으로 나누고 사용자 요청 범위에서 같은 feature/de-portfolio에 일반 push한다. 새 원격 결과는 .work/campaign-ci-final.json과 campaign-pr-checks-final.json으로 별도 확인한다.
 
 실제 7일 수집은 아직 시작 전이다. 7일이 지나도 전체 하루/전체 역 커버리지·S3 운영·실데이터 Databricks 실행·분산 Spark 성능은 이 소량 관측으로 증명되지 않는다. 종료 시 확보한 날짜와 슬롯, 미확인 날짜, 응답 상한/identity 변동, 원천 시각과 처리 품질을 그대로 보고한다.
+
+## 2026-10-13 고정 관측 계획과 실행 기록 대조
+
+사용자가 다음 고도화를 요청했다. PR #2는 2026-10-11T14:17:17Z에 main으로 병합됐으며 origin/main c2ab046에서 feature/source-campaign-audit를 만들었다. 시작 시 사용자 변경이나 staged 변경은 없었다. 운영 DAG의 5분 주기·고정 관측 기간/예산·기존 API 예약은 변경하지 않았다.
+
+- summarize_source_observations.py에 --campaign-dir 모드를 추가했다. 기존 --capture-dir 비교를 유지하며, 날짜 범위는 봉인된 plan에서 가져온다. API·원문·Delta·환경 인증을 읽지 않는다.
+- src/observability/source_campaign.py는 고정 계획의 도래/향후 슬롯을 집계한다. 요청 실패·collector 슬롯 놓침·일일 시작 놓침·미확인을 분리하고, 알 수 없는 GET을 null로 유지한다. 알려진 합계는 미확인 날짜가 있으면 하한이다.
+- 고정 시작 시각과 실제 캡처 시작 시각을 분리하고 KST 월말·D-4 날짜를 검증한다. 상태/캡처의 날짜·간격·완료 상태·호출량 불일치와 성공 상태의 누락 캡처를 거부한다. 캠페인 달력 밖 입력·기간 변경도 거부한다.
+- campaign_status의 예약 디렉터리와 state 파일의 symlink 경로 이탈을 차단했다. 캡처 경로에도 같은 경계를 적용한다. 기존 출력·계획 seal·예약은 보존한다.
+- README의 지속 관측 표현을 제한 표본 관측으로 정리했다. 운영 DAG의 연속 5분 폴링과 하루 세 번 실험은 별도다. SOURCE_OBSERVATION에 분모·미확인 호출량·CLI와 범위를 설명했다.
+
+### 실제 읽기 전용 적용과 검증
+
+2026-10-13T01:09:20.798127+09:00에 실제 기존 계획을 감사했다. 총 계획 21슬롯 중 도래 3·향후 18이며 10/12의 state/capture가 없어 도래 3슬롯은 미확인이다. 실패 요청으로 계산하지 않았고 실제 총 GET도 단정하지 않았다. 감사 실행의 외부 API 호출은 0회다. private 결과는 .work/source-campaign-20261012-18/summaries/20261013-010920, 공개 메타데이터/해석은 examples/observed/campaign-plan-audit.{json,md}다.
+
+- UTC 전체 파이프라인 231 passed, 136.57초. 이는 새 검사 최초 20개를 포함한 결과다.
+- 이후 달력·미확인 호출량·state 파일 경로 이탈 4개를 보완했다. 최종 관측 관련 70 passed, 1.02초이며 이전 전체 검사와 중복인 66개와 새 4개로 구성된다. 기존 캠페인 18개·캡처 비교 28개·새 계획 감사 24개다.
+- Airflow/Pod 12 passed, 1.56초, 기존 Pydantic 경고 8개. 전체와 보완 검사에 포함된 서로 다른 검사 총 247개가 통과했다.
+- Ruff 전체·diff whitespace·문서 상대 링크 167개·공개 JSON·DAG CLI 존재·현재 공개 파일의 로컬 비밀 값 미포함 검사 통과. 원문·정제 행을 추가하지 않았다.
+- private 로그: .work/campaign-report-{unit.log,unit-final.log,regression.log,airflow.log}. 원격 검증은 push 후 새 HEAD에서 별도로 확인한다.
+
+누락 원인은 실행 기록만으로 추정하지 않는다. 과거 관측을 다시 호출하거나 예약을 삭제하지 않았다. 실제 7일 기간 관측·전체 하루 커버리지·실데이터 Databricks upload·S3 운영·순수 pool 대기는 기존 미완료 항목이다. 기존 API opt-in 범위를 늘리지 않는다. write-commit 스킬에 따라 기능·회귀·문서·증거를 한 목적의 커밋으로 묶고 기존 push 승인 범위로 공개한다.
+
+추가 검토에서 terminal state가 아직 없는 부분 캡처도 이미 기록된 GET을 알고 있음을 확인했다. 알려진 GET 하한은 state의 총계가 있으면 그것을 사용하고, 없으면 manifest에 확인된 요청 수를 사용한다. 둘을 더해 이중 계수하지 않는다. reserved 상태의 부분 캡처가 가진 GET 1회를 합계에서 누락하지 않는 회귀를 보완하고 같은 기능의 후속 커밋으로 기록한다.

@@ -89,3 +89,27 @@ campaign status의 계획 날짜와 실행 기록을 capture 비교 결과와 �
 현재 사용자가 허용한 계획은 **2026-10-12~18, 매일 17:50 KST, 최대 91 GET/7일**이다. .work/source-campaign-20261012-18/plan.json에 고정했으며, 20261011의 기존 10분 실험과 구분한다. 원문은 로컬에만 두며 AWS·Databricks upload·Discord·LLM은 이 계획에서 호출하지 않는다. API 키 전체 예산이나 다른 collector의 동시 호출을 제어한 것은 아니다.
 
 예약은 이 채팅의 앱 자동화로 실행한다. [공식 예약 작업 안내](https://learn.chatgpt.com/docs/automations?surface=app)에 따라 로컬 파일 작업에는 컴퓨터와 앱이 실행 중이어야 한다. 꺼져 있거나 실행이 늦어 놓친 관측은 소급 호출하지 않는다. 기간 종료 후 호출을 종료하고 확보한 날짜·미확인 날짜·처리 품질·응답 상한을 보고한다.
+
+## 고정 계획과 실제 기록 대조
+
+기존 capture 모드는 캡처 파일에 선언된 슬롯만 비교한다. 캠페인 모드는 SHA-256으로 고정한 plan.json과 날짜별 state.json을 함께 읽어, 캡처가 없는 예정 날짜도 분모에 포함한다.
+
+```bash
+.venv/bin/python scripts/summarize_source_observations.py \
+  --campaign-dir .work/source-campaign-20261012-18 \
+  --as-of '2026-10-13T01:10:00+09:00' \
+  --output-dir .work/source-campaign-20261012-18/summaries/20261013-0110
+```
+
+--as-of는 실제 분석 시점의 명시적 KST로 지정한다. 위 시각은 사용법 예시다. 기존 출력은 덮어쓰지 않는다. 이 명령은 API·원문·Delta·인증 정보를 읽지 않고, 계획 seal 및 상태·캡처 메타데이터만 검증한다.
+
+- due_slots는 고정 계획의 도래 슬롯, future_slots는 아직 예정 시각 전인 슬롯이다.
+- failed_request_slots는 캡처에 실패가 기록된 요청이다.
+- missed_start_window_slots는 CLI가 시작 시각을 놓쳐 호출하지 않았다고 명시한 슬롯이다.
+- unconfirmed_due_slots는 도래했지만 결과를 확인할 기록이 없는 슬롯이다. 호출 실패나 0회로 해석하지 않는다.
+- recorded_get_attempts가 null이면 호출량 미확인이다. 알려진 합계는 이러한 날짜가 있으면 전체 실제 호출량의 하한이다.
+- planned_due_slot_collection_rate의 분모는 고정된 하루 세 번 표본 계획이다. 운영 DAG의 24시간 5분 폴링 성공률이 아니다.
+
+완료 상태인데 capture.json이 없거나, D-4 날짜·호출 수·수집 날짜·간격이 서로 다르면 집계를 거부한다. 예약 디렉터리의 외부 경로 이탈도 차단한다. 늦게 시작한 실제 캡처의 시각은 원본 비교 결과에 유지하고, 고정 시작 시각과 구분한다. 출판 전 정제 품질과 재처리는 기존 process_source_experiment.py에서 별도로 검증한다.
+
+[실제 계획 감사 예시](../examples/observed/campaign-plan-audit.md)는 API 실패를 추정하지 않고 확보된 실행 기록의 범위를 보여준다.

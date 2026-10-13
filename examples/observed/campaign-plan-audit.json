@@ -1,0 +1,470 @@
+{
+  "schema_version": 1,
+  "data_kind": "observed",
+  "metadata_only": true,
+  "plan": {
+    "schema_version": 1,
+    "timezone": "Asia/Seoul",
+    "start_day": "20261012",
+    "end_day": "20261018",
+    "days": 7,
+    "daily_time": "17:50",
+    "snapshots": 3,
+    "cadence_seconds": 300,
+    "start_grace_seconds": 300,
+    "max_get_attempts_per_day": 13,
+    "max_get_attempts_campaign": 91
+  },
+  "as_of_kst": "2026-10-13T01:09:20.798127+09:00",
+  "daily": [
+    {
+      "capture_day_kst": "20261012",
+      "planned_at_kst": "2026-10-12T17:50:00+09:00",
+      "run_status": "unrecorded_due",
+      "expected_usage_day": "20261008",
+      "planned_slots": 3,
+      "due_slots": 3,
+      "future_slots": 0,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 3,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": 0.0
+    },
+    {
+      "capture_day_kst": "20261013",
+      "planned_at_kst": "2026-10-13T17:50:00+09:00",
+      "run_status": "not_due",
+      "expected_usage_day": "20261009",
+      "planned_slots": 3,
+      "due_slots": 0,
+      "future_slots": 3,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 0,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": null
+    },
+    {
+      "capture_day_kst": "20261014",
+      "planned_at_kst": "2026-10-14T17:50:00+09:00",
+      "run_status": "not_due",
+      "expected_usage_day": "20261010",
+      "planned_slots": 3,
+      "due_slots": 0,
+      "future_slots": 3,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 0,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": null
+    },
+    {
+      "capture_day_kst": "20261015",
+      "planned_at_kst": "2026-10-15T17:50:00+09:00",
+      "run_status": "not_due",
+      "expected_usage_day": "20261011",
+      "planned_slots": 3,
+      "due_slots": 0,
+      "future_slots": 3,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 0,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": null
+    },
+    {
+      "capture_day_kst": "20261016",
+      "planned_at_kst": "2026-10-16T17:50:00+09:00",
+      "run_status": "not_due",
+      "expected_usage_day": "20261012",
+      "planned_slots": 3,
+      "due_slots": 0,
+      "future_slots": 3,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 0,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": null
+    },
+    {
+      "capture_day_kst": "20261017",
+      "planned_at_kst": "2026-10-17T17:50:00+09:00",
+      "run_status": "not_due",
+      "expected_usage_day": "20261013",
+      "planned_slots": 3,
+      "due_slots": 0,
+      "future_slots": 3,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 0,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": null
+    },
+    {
+      "capture_day_kst": "20261018",
+      "planned_at_kst": "2026-10-18T17:50:00+09:00",
+      "run_status": "not_due",
+      "expected_usage_day": "20261014",
+      "planned_slots": 3,
+      "due_slots": 0,
+      "future_slots": 3,
+      "collected_slots": 0,
+      "failed_request_slots": 0,
+      "missed_capture_schedule_slots": 0,
+      "missed_start_window_slots": 0,
+      "unconfirmed_due_slots": 0,
+      "recorded_get_attempts": null,
+      "manifest_recorded_get_attempts": 0,
+      "response_at_limit_snapshots": 0,
+      "planned_due_slot_collection_rate": null
+    }
+  ],
+  "totals": {
+    "planned_slots": 21,
+    "due_slots": 3,
+    "future_slots": 18,
+    "collected_slots": 0,
+    "failed_request_slots": 0,
+    "missed_capture_schedule_slots": 0,
+    "missed_start_window_slots": 0,
+    "unconfirmed_due_slots": 3,
+    "planned_due_slot_collection_rate": 0.0,
+    "known_recorded_get_attempts": 0,
+    "days_with_unknown_get_count": [
+      "20261012"
+    ]
+  },
+  "capture_summary": {
+    "schema_version": 1,
+    "data_kind": "observed",
+    "metadata_only": true,
+    "as_of_kst": "2026-10-13T01:09:20.798127+09:00",
+    "start_day": "20261012",
+    "end_day": "20261018",
+    "calendar_days": 7,
+    "unique_capture_manifests": 0,
+    "duplicate_manifests_ignored": 0,
+    "source_manifest_sha256": [],
+    "days_without_declared_capture_slots": [
+      "20261012",
+      "20261013",
+      "20261014",
+      "20261015",
+      "20261016",
+      "20261017",
+      "20261018"
+    ],
+    "days_with_collected_snapshots": [],
+    "daily": [
+      {
+        "planned_day_kst": "20261012",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      },
+      {
+        "planned_day_kst": "20261013",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      },
+      {
+        "planned_day_kst": "20261014",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      },
+      {
+        "planned_day_kst": "20261015",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      },
+      {
+        "planned_day_kst": "20261016",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      },
+      {
+        "planned_day_kst": "20261017",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      },
+      {
+        "planned_day_kst": "20261018",
+        "arrival": {
+          "collected": 0,
+          "failed": 0,
+          "missed_schedule": 0,
+          "not_recorded_due": 0,
+          "future": 0
+        },
+        "arrival_get_attempts": 0,
+        "arrival_response_rows": 0,
+        "response_at_limit_snapshots": 0,
+        "usage": {
+          "collected": 0,
+          "failed": 0,
+          "not_recorded": 0
+        },
+        "usage_get_attempts": 0,
+        "usage_observations": [],
+        "capture_starts": 0,
+        "capture_status_counts": {
+          "collected": 0,
+          "incomplete": 0,
+          "running": 0
+        },
+        "declared_slots": 0,
+        "request_outcome_success_rate": null,
+        "declared_due_slot_collection_rate": null,
+        "arrival_request_elapsed_seconds": {
+          "samples": 0,
+          "min": null,
+          "median": null,
+          "p95": null,
+          "max": null
+        },
+        "latest_snapshot_at_kst": null,
+        "latest_snapshot_age_at_as_of_seconds": null
+      }
+    ],
+    "limitations": [
+      "Rates use only slots declared in supplied capture manifests, not a full-day schedule",
+      "A day without a manifest has unknown collection coverage; it is not an API failure",
+      "not_recorded_due is missing metadata, not proof of a failed or skipped API request",
+      "Elapsed seconds measure the request and local-save attempt duration; snapshot age is measured at the explicit as-of",
+      "Response rows are observations, not unique stations or complete network coverage",
+      "Usage observations describe usage_day; repeated dates are not added as unique daily usage",
+      "Metadata-only analysis does not verify raw rows, Silver quality or Delta replay",
+      "GET counts cover these captures only, not other collectors or the API key's total usage",
+      "Daily arrival outcomes are assigned by planned slot date, usage outcomes by capture start date"
+    ]
+  },
+  "limitations": [
+    "Denominator is the sealed three-snapshot daily plan, not continuous five-minute operation",
+    "Unconfirmed slots are missing evidence, not proof of an API failure or zero requests",
+    "Known GET counts are a lower bound when a due day's count is unknown",
+    "Capture timestamps retain their actual start; the sealed plan is a separate schedule",
+    "Raw rows, processing quality, replay and complete network coverage are not validated here"
+  ]
+}
