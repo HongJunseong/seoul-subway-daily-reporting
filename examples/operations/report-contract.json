@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "executed_at_kst": "2026-10-13T17:15:46.072348+09:00",
+  "actual_api_collection": false,
+  "external_calls": 0,
+  "target_ymd": "20260201",
+  "usage_ymd": "20260128",
+  "arrival_ymd": "20260131",
+  "fixture_gold_loader": true,
+  "previous_publication_files": 3,
+  "faults": [
+    {
+      "fault": "fractional_usage",
+      "publication_rejected": true,
+      "previous_three_files_unchanged": true,
+      "previous_manifest_verified": true
+    },
+    {
+      "fault": "empty_identity",
+      "publication_rejected": true,
+      "previous_three_files_unchanged": true,
+      "previous_manifest_verified": true
+    },
+    {
+      "fault": "fractional_denominator",
+      "publication_rejected": true,
+      "previous_three_files_unchanged": true,
+      "previous_manifest_verified": true
+    },
+    {
+      "fault": "invalid_p95",
+      "publication_rejected": true,
+      "previous_three_files_unchanged": true,
+      "previous_manifest_verified": true
+    },
+    {
+      "fault": "wrong_observation_day",
+      "publication_rejected": true,
+      "previous_three_files_unchanged": true,
+      "previous_manifest_verified": true
+    }
+  ],
+  "limitations": [
+    "Synthetic in-memory Gold tests the consumer publication gate, not actual Delta reads or live data quality",
+    "Preservation is verified for validation failures before writing, not multi-file write failures or concurrent publication",
+    "KST midnight is evaluated after converting UTC observation timestamps"
+  ]
+}

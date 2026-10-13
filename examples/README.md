@@ -34,3 +34,5 @@ python scripts/verify_report.py examples/subway_report_20260201.md
 [표본 계획 감사](observed/campaign-plan-audit.md)는 실제 고정 계획과 현재 상태·캡처 파일만 대조한다. 예정 수집 기록이 없는 날을 API 실패나 GET 0회로 확대하지 않는다. 미래 슬롯을 도래 분모에 포함하지 않으며, 원문·정제 품질·전체 하루 운영 성공률은 이 감사의 범위가 아니다.
 
 [원본 무결성 증거](observed/source-integrity.json)는 합성 파일의 동일 건수·시각 값 변경이 변환 전에 차단되는 실험이다. 서울 API를 호출하지 않았고, 기존 실제 10/11 원본은 legacy 무결성 상태로 읽기만 했다. 수집 체크섬 검증·현재 해시·출처 인증을 구분한다.
+
+- [보고서 소비 계약 오류 주입](operations/report-contract.md): 합성 Gold의 불량 건수·키·ETA·날짜를 거부하고 기존 보고서 세 파일을 보존한 실행 증거.

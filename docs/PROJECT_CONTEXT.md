@@ -73,3 +73,7 @@ summarize_source_observations.py의 --campaign-dir 모드는 고정 plan과 상�
 새 제한 관측 capture schema 2는 저장한 UTF-8 원본 파일의 SHA-256을 수집 시점에 기록한다. process_source_experiment.py는 공통 manifest 계약과 파일 체크섬을 새 출력·Spark 실행 전에 검증한다. 행 수와 수집 시각이 같은 값 변경도 거부한다. 기존 schema 1은 원본을 보존하며 unverified_legacy로 표시한다. 처리 시 계산한 해시는 수집 당시 무결성 증거로 소급하지 않는다. 메타데이터 계획 감사는 해시 형식만 검사하며 원본 bytes 검증과 구분한다. 합성 오류 주입의 실행 증거는 examples/observed/source-integrity.json, 계약은 SOURCE_OBSERVATION.md에 있다.
 
 기본 개발 경로는 사용자 요청에 따라 main 직접 검증·커밋·일반 push다. PR은 요청할 때만 만든다. API 관측 자동화의 기간·시간·예산은 그대로 유지한다.
+
+## 보고서 최종 소비 계약 (2026-10-13)
+
+보고서는 Gold의 유한한 정수 건수·비어 있지 않은 identity·유효 ETA 분모와 지표를 독립 검증한다. 관측 범위가 있으면 UTC를 KST로 변환한 뒤 D-1 기준일과 시작/끝 순서를 확인한다. 검증 실패는 쓰기 전에 발생해 기존 보고서·context·manifest를 보존한다. 큰 합계의 int64 wrap과 가중 ETA 계산의 중간 곱 overflow를 피한다. examples/operations/report-contract.{md,json}는 합성 DataFrame 오류 주입의 실행 증거이며 live 원천/Delta 품질과 구분한다.
