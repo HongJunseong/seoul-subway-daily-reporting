@@ -1,6 +1,6 @@
 # 코드 구조와 실행 경로
 
-처음에는 [README의 키 없는 데모](../README.md#키-없이-실행)와 [실행 증거 목록](../examples/README.md)을 본다. 데모는 API나 클라우드 계정 없이 같은 수집 이력·변환·보고서 계약을 재현한다.
+처음에는 [README의 키 없는 데모](../README.md#키-없이-실행)와 [샘플과 테스트 결과](../examples/README.md)을 본다. 데모는 API나 클라우드 계정 없이 같은 수집 이력·변환·보고서 계약을 재현한다.
 
 ## 주 처리 경로
 
@@ -32,7 +32,7 @@ Kubernetes는 태스크 실행 경로이고 Databricks는 별도의 관리형 �
 
 ## 선택적 검증 도구
 
-scripts의 CLI는 아래 문제를 재현하거나 실행 증거를 수집한다. 기본 운영 DAG와 혼동하지 않도록 출력은 새로운 ignored .work 경로에 둔다.
+scripts의 CLI는 아래 문제를 재현하거나 결과를 기록한다. 기본 운영 DAG와 혼동하지 않도록 출력은 새로운 ignored .work 경로에 둔다.
 
 | 목적 | 도구와 절차 |
 |---|---|
@@ -40,8 +40,8 @@ scripts의 CLI는 아래 문제를 재현하거나 실행 증거를 수집한다
 | 품질·실패 복구·파일 유지보수 | audit_lake.py, recovery_experiment.py, compaction_experiment.py — [관측](OBSERVABILITY.md), [유지보수](STORAGE_MAINTENANCE.md) |
 | 실제 원천 제한 관측과 저장 원본 재처리 | capture_sources.py, process_source_experiment.py, summarize_source_observations.py, run_source_observation_day.py — [원천 관측](SOURCE_OBSERVATION.md); API 호출은 별도 opt-in |
 | Airflow 연결과 태스크 요약 | airflow_offline.py, summarize_tasks.py — [로컬 실행](AIRFLOW_OFFLINE.md) |
-| Kubernetes 구성·실행·자원 증거 | check_kubernetes_render.py, check_kubernetes_overrides.py, kubernetes_fixture.py, capture_kubernetes_files.py, summarize_kubernetes_resources.py — [Pod 실행](KUBERNETES.md), [자원](KUBERNETES_RESOURCES.md) |
-| managed Delta 계약과 실제 Job 증거 | managed_usage_experiment.py, record_databricks_run.py, record_databricks_free.py — [Databricks](../databricks/README.md) |
+| Kubernetes 구성·실행·자원 측정 | check_kubernetes_render.py, check_kubernetes_overrides.py, kubernetes_fixture.py, capture_kubernetes_files.py, summarize_kubernetes_resources.py — [Pod 실행](KUBERNETES.md), [자원](KUBERNETES_RESOURCES.md) |
+| managed Delta 계약과 Job 결과 | managed_usage_experiment.py, record_databricks_run.py, record_databricks_free.py — [Databricks](../databricks/README.md) |
 | 저장된 승하차 Bronze의 날짜·버전 고정 snapshot | [export_usage_snapshot.py](../scripts/export_usage_snapshot.py) — [선택적 export](../databricks/README.md#선택적-bronze-snapshot-export) |
 
 실제 API·AWS·Databricks·Slack·LLM 실행은 필요한 인증과 명시적 opt-in을 갖춘 절차로 분리한다. 저장 원본 재처리는 과거 미수집 실시간 관측을 복원하지 못한다.
@@ -50,16 +50,14 @@ scripts의 CLI는 아래 문제를 재현하거나 실행 증거를 수집한다
 
 - [tests](../tests): 변환·품질·시간 경계·복구·플랫폼 계약의 회귀 검사.
 - [.github/workflows/verify.yml](../.github/workflows/verify.yml): 파이프라인, Airflow, 컨테이너, Kubernetes 구성 검사.
-- [examples](../examples/README.md): 공개 가능한 실행 증거와 합성/실수집 범위.
+- [examples](../examples/README.md): 샘플 보고서와 합성/실수집 결과.
 - [docs](../docs): 데이터 계약, 선택 근거, 재현·복구 절차. PROJECT_CONTEXT.md는 현재 설계, ROADMAP.md는 미완료 판단, SESSION_HANDOFF.md는 날짜별 실제 작업 기록이다.
 - .work, .env, 실제 원문·정제 행·개인 인증 파일은 공개하지 않는다. 역사적 private export 출력의 ignore 규칙은 보존한다.
 
 Secret 생성 진입점은 k8s/create-secret.sh 하나다. dotenv를 읽어 kubectl 표준 입력으로 전달하며 fixture 배포는 이 Secret을 사용하지 않는다. 과거 비활성 코드와 실행 메타데이터는 Git 이력에서 확인하고 현재 실행 경로에 별도 legacy 사본을 두지 않는다.
 
-## 미사용 여부 점검 (2026-10-13)
+## 유지보수
 
-DAG·CLI·notebook·Docker/Helm·CI·문서 참조와 Python import/함수 호출을 대조했다. 이번 점검에서 통째로 제거할 근거가 확인된 주 처리 모듈은 없다. 운영 DAG에서 직접 호출하지 않는 scripts도 재현·증거 수집 또는 명시적인 수동 실행 역할이 있으므로 미사용으로 분류하지 않는다.
+Ruff는 미사용 import·재정의·지역 변수를 CI에서 검사한다. 운영 DAG 밖의 scripts는 재현·수동 실행에 쓰이므로 호출 경로와 문서 참조를 함께 확인한다. json.parse_constant 같은 callback의 필수 인자는 내부에서 읽지 않아도 호출 규약을 유지한다.
 
-호출처가 없는 get_env, 미사용 import 6개와 내부 함수의 불필요한 인자 3개를 제거했다. unused import/재정의/지역 변수는 Ruff의 F401/F811/F841로 CI에서 검사한다. json.parse_constant 같은 콜백의 필수 인자는 함수 안에서 쓰지 않더라도 API 계약이므로 유지한다.
-
-LLM 해설과 Slack는 핵심 수집·변환·보고서 흐름에 필수는 아닌 선택 기능이다. 현재 명시적인 호출 경로와 opt-in 설정이 있으며 비활성 코드로 삭제하지 않았다. Databricks·Kubernetes 도구, 버전 고정 export와 공개 실행 증거는 각각 검증·재현 역할을 유지한다. 과거 기록과 private 데이터를 정리 대상으로 삭제하지 않는다.
+LLM 해설과 Slack은 환경 설정으로 켜는 선택 기능이다. Databricks·Kubernetes 실행 도구와 snapshot export는 위 표의 재현·분석 경로에서 사용한다. 날짜별 변경과 테스트 결과는 SESSION_HANDOFF.md에 기록한다.

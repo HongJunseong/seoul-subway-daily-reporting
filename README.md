@@ -24,7 +24,7 @@
 
 보고서의 승하차는 생산일 **D-4 이용 날짜**, 도착은 **D-1 관측 날짜**입니다. 도착 API의 주기적 배치 관측이며, ETA는 실제 운행 지연이나 승객 대기시간을 뜻하지 않습니다.
 
-[코드 구조](docs/REPOSITORY_GUIDE.md) · [실행 증거](examples/README.md) · [샘플 리포트](examples/subway_report_20260201.md)
+[코드 구조](docs/REPOSITORY_GUIDE.md) · [샘플과 테스트 결과](examples/README.md) · [샘플 리포트](examples/subway_report_20260201.md)
 
 ---
 
@@ -98,11 +98,11 @@ LLM 해설과 Slack 전송은 선택 기능입니다.
 
 ---
 
-## Databricks (Free Edition) Validation
+## Databricks (Free Edition)
 
-**Free Edition의 serverless Job·managed Delta·Unity Catalog·SQL warehouse를 실제로 사용했습니다.** 입력은 합성 승하차 fixture이며, 같은 변환 함수의 로컬 실행 결과와 비교합니다.
+공통 승하차 변환을 Free Edition의 serverless Job으로 실행하고, Unity Catalog의 managed Delta 테이블과 SQL view로 제공했습니다. 합성 승하차 데이터로 정정·재처리를 시험하고 로컬 결과와 비교했습니다.
 
-| 기능 | 실제 확인한 결과 |
+| 기능 | 확인한 내용 |
 |---|---|
 | Serverless Job | 네 태스크 SUCCESS, 정정 값 반영·인접 날짜 보존·재처리 해시 일치 |
 | Quality Gate | 불량 최신 정정의 Silver 출판 차단, 기존 출판 버전 보존 |
@@ -110,13 +110,13 @@ LLM 해설과 Slack 전송은 선택 기능입니다.
 | Unity Catalog SQL View | 품질 PASS 날짜만 제공하는 분석 view와 COMMENT |
 | SQL Warehouse | 날짜별 이용량·역/노선 순위·품질·Catalog 네 쿼리 성공 |
 
-[Job 실행 증거](examples/databricks/README.md) · [품질·SQL 실행 결과](examples/databricks/free-edition.md) · [기능 선택과 재현](docs/DATABRICKS_FREE.md)
+[Job 실행 결과](examples/databricks/README.md) · [품질·SQL 실행 결과](examples/databricks/free-edition.md) · [기능 선택과 재현](docs/DATABRICKS_FREE.md)
 
 ---
 
 ## Kubernetes Deployment
 
-Docker Desktop의 실제 Kubernetes에서 **scheduler → worker Pod → 보고서**를 실행했습니다.
+Docker Desktop의 로컬 Kubernetes 클러스터에서 **scheduler → worker Pod → 보고서**를 실행했습니다.
 
 | 구성 요소 | 사용 방식 |
 |---|---|
@@ -130,23 +130,23 @@ Docker Desktop의 실제 Kubernetes에서 **scheduler → worker Pod → 보고�
 
 worker 메모리 peak와 CPU 제한을 관측해 control 예약 메모리를 **256→512MiB**, CPU 상한을 **0.5→1코어**로 조정했습니다. 단일 node·합성 입력이며 Spark는 Pod 내부 local[2]입니다.
 
-[실행·복구 증거](examples/kubernetes/README.md) · [자원 측정](examples/kubernetes/resources.md) · [배포 절차](docs/KUBERNETES.md)
+[실행·복구 결과](examples/kubernetes/README.md) · [자원 측정](examples/kubernetes/resources.md) · [배포 절차](docs/KUBERNETES.md)
 
 ---
 
 ## Validation & Results
 
-| 검증 대상 | 결과와 근거 |
+| 테스트 | 결과 |
 |---|---|
 | 재수집·정정 | 합성 3행 재수집에도 합계 660 유지, 정정 후 680·인접 날짜 보존 — [기본 실험](examples/evidence.json) |
 | 시간·결측·identity | KST 자정/월말·UTC 호스트, NULL ETA·환승역 구분 — [회귀 테스트](tests/test_pipeline_spark.py) |
 | 실패 복구 | Silver 커밋 후 중단 → 기존 Gold 보존 → 원본 재처리 복구 — [복구 실험](examples/operations/recovery.md) |
 | 저장 파일 유지보수 | 합성 36,000행의 닫힌 시간 파일 24→1, 전체 행·인접 파일·재처리 결과 보존 — [compaction](examples/operations/compaction.md) |
-| 실제 원천 | 도착 3회·3,000행, D-4 승하차 617행. 도착 응답 3회 모두 1,000건 상한, 7개 테이블 재처리 일치 — [실수집 증거](examples/observed/evidence.md) |
+| 실제 원천 | 도착 3회·3,000행, D-4 승하차 617행. 도착 응답 3회 모두 1,000건 상한, 7개 테이블 재처리 일치 — [수집 결과](examples/observed/evidence.md) |
 | 날짜별 관측 비교 | 실패·일정 놓침·기록 누락·미확인 날짜를 분리하고 성공률 분모 명시 — [관측 절차](docs/SOURCE_OBSERVATION.md) |
 | GitHub Actions | 파이프라인·DAG/Pod 구성·Airflow 연결·컨테이너 실행 네 검사 — [CI](https://github.com/HongJunseong/seoul-subway-daily-reporting/actions) |
 
-Databricks·Kubernetes의 실제 플랫폼 검증은 합성 입력입니다. 실수집은 현재 로컬 1일·10분 규모 관측이며, 장기 운영 가용성이나 전체 네트워크 커버리지의 근거로 확대하지 않습니다.
+Databricks·Kubernetes 실험에는 합성 데이터를 사용했습니다. 서울 API 수집 결과는 아래의 관측 범위 안에서 해석해야 합니다.
 
 ---
 
@@ -154,10 +154,10 @@ Databricks·Kubernetes의 실제 플랫폼 검증은 합성 입력입니다. 실
 
 - **API 응답 범위**: 도착 응답 1,000건 상한은 전체 역·열차 확보를 보장하지 않습니다.
 - **날짜와 지표 의미**: D-4 이용량은 해당 날짜의 값이며 ETA는 실제 운행 지연이 아닙니다.
-- **제한 표본 관측**: 승인된 7일 소량 관측에서 날짜별 누락·상한·원천 시각·처리 품질을 비교할 예정입니다. 아직 완료 결과가 아닙니다.
+- **관측 기간**: 현재 서울 API 수집 결과는 1일·10분 규모입니다. 장기 결측률과 수집 신선도는 추가 관측이 필요합니다.
 - **운영 비용**: S3 실제 운영·비용, 더 큰 입력의 자원·pool 대기, 유지보수 중인 플랫폼 조합을 추가 검증해야 합니다.
 
-새 기술 도입은 해결할 문제와 측정 근거로 판단합니다. [로드맵](docs/ROADMAP.md) · [검증 범위](docs/VALIDATION.md)
+남은 작업은 [로드맵](docs/ROADMAP.md), 테스트 환경과 범위는 [검증 문서](docs/VALIDATION.md)에 정리했습니다.
 
 ---
 
@@ -179,7 +179,7 @@ ruff check src dags scripts tests
 
 새 출력 디렉터리에서 합성 원본의 수집 이력·변환·품질·보고서를 재현합니다.
 
-### 플랫폼 검증 선택
+### 플랫폼별 실행
 
 - [Kubernetes 실행](docs/KUBERNETES.md): Docker 이미지·Helm·Pod/PVC·writer pool 설정
 - [Databricks 실행](databricks/README.md): 공식 CLI 인증·bundle·managed Delta Job
@@ -188,6 +188,6 @@ ruff check src dags scripts tests
 
 ### 코드와 운영 문서
 
-[Repository Guide](docs/REPOSITORY_GUIDE.md) · [Runbook](docs/RUNBOOK.md) · [Project Context](docs/PROJECT_CONTEXT.md) · [Session Handoff](docs/SESSION_HANDOFF.md)
+[코드 구조](docs/REPOSITORY_GUIDE.md) · [실행·복구 방법](docs/RUNBOOK.md) · [데이터 계약](docs/DATA_CONTRACTS.md)
 
-원문·정제 행·.env·인증 파일은 공개하지 않습니다. 저장소의 [작업 지침](AGENTS.md)과 [커밋 스킬](.agents/skills/write-commit/SKILL.md)이 같은 데이터·검증 기준을 유지합니다.
+서울 API 원문·정제 행·.env·인증 파일은 로컬에 보관합니다. 공개 저장소에는 합성 샘플과 수집 결과 요약을 포함합니다.

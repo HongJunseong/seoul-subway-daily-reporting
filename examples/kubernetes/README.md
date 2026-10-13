@@ -1,8 +1,8 @@
-# Kubernetes 실제 실행과 복구 증거
+# Kubernetes 실행과 장애 복구
 
 2026-10-11 Docker Desktop Kubernetes 1.32.2의 단일 Ready node에서 공식 Helm chart 1.11.0·Airflow 2.7.3·KubernetesExecutor를 실행했다. 전용 ssdr-fixture-20261011 namespace와 합성 Bronze만 사용했다.
 
-| 실험 | 실제 태스크 | worker Pod | 시간 | 검증 |
+| 실험 | 태스크 결과 | worker Pod | 시간 | 검증 |
 |---|---|---|---|---|
 | 장애·복구 | 12 success, API 수집 1 skipped | 13 | 376.452561초 | Gold 실행 중 worker 삭제 → 새 UID의 시도 2 성공 |
 | 같은 원본 재처리 | 12 success, API 수집 1 skipped | 12 | 240.209483초 | 7개 테이블 전체 데이터 해시 일치, Bronze 버전 불변 |

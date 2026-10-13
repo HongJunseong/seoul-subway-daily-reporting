@@ -1,40 +1,32 @@
-# 실행 증거 안내
+# 샘플과 테스트 결과
 
-합성 입력의 회귀 결과와 실제 서울 API 관측을 구분한다. Databricks·Kubernetes에서는 실제 플랫폼을 실행했지만 입력은 합성 데이터다.
+샘플 보고서부터 읽고, 관심 있는 처리 단계의 결과와 재현 방법을 확인할 수 있다. Databricks와 Kubernetes 실험은 합성 데이터로 실행했다. 서울 API에서 수집한 결과는 별도로 표시했다.
 
-| 증거 | 입력과 검증 범위 |
+| 항목 | 확인할 내용 |
 |---|---|
-| [기본 보고서](subway_report_20260201.md), [실험 JSON](evidence.json) | 합성 역·노선·ETA. 중복 재수집·정정·자정 경계와 결정적 보고서 |
-| [품질·복구](operations/README.md), [compaction](operations/compaction.md) | 로컬 합성 Delta. 잘못된 입력 차단·부분 커밋 복구·닫힌 시간 파일 병합의 결과 보존 |
-| [Airflow](airflow/README.md) | 합성 원본의 실제 로컬 태스크·XCom·DAG 트리거. 운영 scheduler 대기와 구분 |
-| [컨테이너](container/README.md) | 합성 원본을 분리된 Airflow/Spark 환경에서 처리 |
-| [Kubernetes](kubernetes/README.md), [worker 자원](kubernetes/resources.md) | 실제 scheduler→worker Pod·삭제 후 새 Pod 재시도·PVC 로그 보존·자원 관측. 단일 node 합성 입력 |
-| [Databricks Job](databricks/README.md), [Free Edition 품질·SQL](databricks/free-edition.md) | 실제 serverless Job·managed Delta·time travel·Unity Catalog view·SQL warehouse. 합성 승하차 |
-| [서울 API 제한 관측](observed/evidence.md) | 실제 도착 3회·D-4 승하차 하루의 소량 수집과 7개 테이블 재처리 일치. 장기 운영·전체 커버리지의 증거로 해석하지 않음 |
+| [샘플 보고서](subway_report_20260201.md) | 합성 이용량·ETA를 기준일별로 표시한 일간 보고서 |
+| [정정·재처리](evidence.json) | 같은 원본의 반복 처리와 정정 반영, 자정 경계 |
+| [품질·복구](operations/README.md), [파일 병합](operations/compaction.md) | 품질 오류와 부분 실패 후 복구, compaction 전후 결과 비교 |
+| [Airflow](airflow/README.md), [컨테이너](container/README.md) | 원본 처리부터 XCom·DAG 트리거·보고서까지 연결 |
+| [Kubernetes](kubernetes/README.md), [worker 자원](kubernetes/resources.md) | worker 삭제 후 재시도, PVC 로그 보존과 자원 사용량 |
+| [Databricks Job](databricks/README.md), [품질·SQL](databricks/free-edition.md) | managed Delta 정정·time travel과 SQL view 조회 |
+| [서울 API 수집](observed/evidence.md) | 도착 3회·D-4 승하차 하루 수집과 7개 테이블 재처리 |
+| [수집 계획 점검](observed/campaign-plan-audit.md) | 예정 슬롯과 저장된 기록 비교; 기록 없는 날짜는 미확인으로 표시 |
+| [원본 무결성](observed/source-integrity.json), [페이지 수집](operations/source-pagination.json) | 파일 변조와 반복·불완전 페이지를 합성 입력으로 재현 |
+| [보고서 품질](operations/report-contract.md), [발행 중단·재시도](operations/publication-commit.md) | 잘못된 Gold 거부, writer 중단 후 이전 보고서 읽기와 재발행 |
 
-## 기본 보고서 파일
-
-- [subway_report_20260201.md](subway_report_20260201.md): 생산일 20260201, 승하차 이용 날짜 20260128, 도착 관측 날짜 20260131.
-- [subway_report_20260201.context.json](subway_report_20260201.context.json): 수치·읽은 Delta 버전·관측 범위.
-- [subway_report_20260201.manifest.json](subway_report_20260201.manifest.json): 입력·출력 SHA-256.
-- [evidence.json](evidence.json): 중복 재수집·정정·자정 경계 실험 결과.
-
-공개 context의 source path만 로컬 절대 경로에서 v2 상대 경로로 정규화하고 manifest의 context 해시를 다시 계산했다. 원래 실행 context 해시는 evidence.runtime_context_sha256에 기록했다. 보고서 수치·Delta 버전·본문은 실행 결과 그대로다. Delta 테이블과 실수집 원문·정제 행은 공개하지 않는다.
-
-재현:
+## 샘플 보고서 실행
 
 ```bash
 python scripts/demo.py --output-dir .work/demo/new-run
-python scripts/verify_report.py .work/demo/new-run/reports/subway_report_20260201.md
+python scripts/verify_report.py .work/demo/new-run/reports/subway_report_20260201.publication.json
 python scripts/verify_report.py examples/subway_report_20260201.md
 ```
 
-데모 출력 context는 실행 머신의 실제 저장 경로를 기록하므로 공개 샘플과 context 해시는 다를 수 있다. 각 플랫폼의 재현 조건·실패 기록·해석 범위는 해당 증거 문서에 적혀 있다.
+새 출력 디렉터리에서 실행한다. 데모는 합성 원본을 사용하며 외부 API를 호출하지 않는다.
 
-[표본 계획 감사](observed/campaign-plan-audit.md)는 실제 고정 계획과 현재 상태·캡처 파일만 대조한다. 예정 수집 기록이 없는 날을 API 실패나 GET 0회로 확대하지 않는다. 미래 슬롯을 도래 분모에 포함하지 않으며, 원문·정제 품질·전체 하루 운영 성공률은 이 감사의 범위가 아니다.
+공개 보고서의 생산일은 20260201, 승하차 이용 날짜는 20260128, 도착 관측 날짜는 20260131이다. 함께 있는 [context](subway_report_20260201.context.json)는 수치·Delta 버전·관측 범위, [manifest](subway_report_20260201.manifest.json)는 입력·출력 해시를 담는다.
 
-[원본 무결성 증거](observed/source-integrity.json)는 합성 파일의 동일 건수·시각 값 변경이 변환 전에 차단되는 실험이다. 서울 API를 호출하지 않았고, 기존 실제 10/11 원본은 legacy 무결성 상태로 읽기만 했다. 수집 체크섬 검증·현재 해시·출처 인증을 구분한다.
+공개 context의 저장 경로는 v2 상대 경로로 바꾸고 manifest의 context 해시를 다시 계산했다. 원래 해시는 evidence.json의 runtime_context_sha256에 남겼다. 보고서 수치·Delta 버전·본문은 그대로다. 실행 머신과 경로가 다르면 데모의 context 해시도 달라질 수 있다.
 
-- [보고서 소비 계약 오류 주입](operations/report-contract.md): 합성 Gold의 불량 건수·키·ETA·날짜를 거부하고 기존 보고서 세 파일을 보존한 실행 증거.
-
-- [발행 중단·재시도](operations/publication-commit.md): 실제 합성 writer SIGKILL 후 이전 객체 읽기와 재발행, 메모리 mock S3 실패·응답 유실 검증. 기존 공개 샘플은 이전 세 파일 형식으로 보존한다.
+서울 API 관측은 1일·10분 규모이며 전체 네트워크 커버리지나 장기 가용성을 판단하기에는 짧다. 각 실험의 입력·환경·한계와 재현 명령은 링크한 문서에서 확인할 수 있다. JSON 결과는 실행 기록이며, 원본 lake와 서울 API 원문·정제 행은 로컬에 보관한다.

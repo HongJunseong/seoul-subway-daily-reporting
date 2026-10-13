@@ -1,6 +1,6 @@
-# 로컬 운영 검증 샘플
+# 품질·복구 실험
 
-이 폴더는 **합성 입력으로 수행한 로컬 처리·품질·복구 검증 결과**다. 각 증거에 실제 Delta 쓰기, in-memory 검증, HTTP mock의 범위를 명시한다. 실데이터·운영·S3 검증은 별도다.
+합성 입력으로 품질 오류, 처리 중단, 파일 병합과 수집 오류를 재현한 결과다. 실험별로 Delta 테이블, in-memory 입력, HTTP mock을 사용하며 환경과 범위는 각 결과에 적었다.
 
 - [recovery.md](recovery.md), [recovery.json](recovery.json): Silver 커밋 후 중단과 최신 원천 품질 오류의 복구. 단계별 합계·테이블 버전·업무 컬럼 SHA-256을 보존한다.
 - [quality.md](quality.md), [quality.json](quality.json): 저장된 최종 테이블의 읽기 전용 감사. 이용 날짜 2026-01-28과 KST 2026-01-31 23:50~2026-02-01 00:10을 독립적으로 지정했다.

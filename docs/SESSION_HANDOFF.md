@@ -593,3 +593,11 @@ private 결과는 .work/slack-{regression,airflow}.log다. HTTP mock 외 실제 
 private 결과는 .work/usage-pages-{before,after,regression,airflow}.log다. 합성 전후 세 사례가 모두 SourceError로 바뀌었고 실제 API GET은 0회다. 원천 API·AWS·Slack·Databricks·LLM 호출, Kubernetes 배포와 예약 관측의 일정/기간/예산 변경은 수행하지 않았다. 기존 실서비스 데이터와 .env는 보존했다.
 
 이번 계약은 응답 내부 페이지 길이와 자연키 완전성이다. 원천이 처음부터 누락한 고유 역, 같은 키의 원천 값이 페이지 사이에 바뀌는 경우, 지속 수집 커버리지까지 증명하지 않는다. 실제 원천이 현재 grain에 대해 중복 키를 제공하면 이를 숨기지 않고 identity 정책을 먼저 검토해야 한다. 기본 5분 도착 수집과 원본 재처리 정책은 유지한다. 기능·회귀·계약·합성 집계 증거를 main에 커밋·일반 push하고 해당 HEAD의 네 CI job을 확인한다.
+
+## 2026-10-13 공개 문서 표현 정리
+
+사용자가 공개 문서의 반복적인 작업 보고 표현을 줄여 달라고 요청했다. README의 기존 섹션·배지·아키텍처를 유지하면서 안내 이름을 샘플·테스트 결과로 정리하고 플랫폼 소개의 반복 강조를 줄였다. 소개 하단은 코드 구조·runbook·데이터 계약으로 연결하며 개발용 작업 지침과 세션 기록은 별도 파일에 보존한다.
+
+examples 목록은 처리 단계별 결과와 재현 명령을 한 표로 모았다. 공개 보고서·JSON·Job/Pod 기록과 해시는 수정하지 않았다. 합성 입력, 서울 API 1일·10분 관측, S3 미검증과 context 상대 경로 정규화의 설명을 유지했다. PROJECT_CONTEXT에 공개 문서 작성 기준을 기록했다.
+
+수집 계약 666fb55의 CI 38413012405는 네 job 성공·artifact 네 개 보존·원격 회귀 406+12개를 확인했다. 이번 변경은 Markdown만 수정하므로 로컬 파이프라인 회귀는 반복하지 않았다. 샘플 보고서 manifest 검증·문서 상대 링크·공개 JSON·비밀 값 미포함·diff whitespace 검사를 통과했다. 문서 정리는 별도 커밋으로 main에 일반 push한다.
