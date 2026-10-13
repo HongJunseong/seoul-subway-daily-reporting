@@ -601,3 +601,9 @@ private 결과는 .work/usage-pages-{before,after,regression,airflow}.log다. �
 examples 목록은 처리 단계별 결과와 재현 명령을 한 표로 모았다. 공개 보고서·JSON·Job/Pod 기록과 해시는 수정하지 않았다. 합성 입력, 서울 API 1일·10분 관측, S3 미검증과 context 상대 경로 정규화의 설명을 유지했다. PROJECT_CONTEXT에 공개 문서 작성 기준을 기록했다.
 
 수집 계약 666fb55의 CI 38413012405는 네 job 성공·artifact 네 개 보존·원격 회귀 406+12개를 확인했다. 이번 변경은 Markdown만 수정하므로 로컬 파이프라인 회귀는 반복하지 않았다. 샘플 보고서 manifest 검증·문서 상대 링크·공개 JSON·비밀 값 미포함·diff whitespace 검사를 통과했다. 문서 정리는 별도 커밋으로 main에 일반 push한다.
+
+## 2026-10-13 README 분량 축약
+
+README를 포트폴리오 소개에 맞게 다듬었다. 기존 섹션·배지·Mermaid 구성과 실행 명령은 유지하고 본문을 약 33% 줄였다. 플랫폼별 상세 수치·반복 설명을 줄이며 핵심 처리·복구 동작과 합성 입력·원천 관측·S3 미검증 범위는 남겼다.
+
+문서 상대 링크 176개·공개 JSON·비밀 값 미포함·diff whitespace와 기존 샘플 보고서 manifest 검사를 통과했다. 코드 변경이 없어 로컬 회귀는 반복하지 않았다. 직전 0d712fd의 CI 38414218489는 네 job 모두 성공이었다. README와 이 기록만 main에 커밋·일반 push한다.
