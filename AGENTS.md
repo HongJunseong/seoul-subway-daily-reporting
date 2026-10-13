@@ -9,7 +9,7 @@
 - 과거 미수집 실시간 관측값은 복원할 수 없다. API backfill과 원본 재처리를 구분한다.
 - 빈 입력·불완전 페이지·잘못된 키와 수치가 정상 데이터처럼 출판되지 않게 한다.
 - S3의 Delta writer는 ssdr_delta_writer 1-slot pool로 직렬화한다. 외부 CLI·다른 scheduler의 동시 writer를 허용하지 않는다.
-- 수집·변환·저장·알림을 분리한다. 외부 API·AWS·Discord·LLM 검증은 별도 opt-in이다.
+- 수집·변환·저장·알림을 분리한다. 외부 API·AWS·Slack·LLM 검증은 별도 opt-in이다.
 - 회귀 테스트를 실행하고 실제 결과·남은 작업을 docs/SESSION_HANDOFF.md에 기록한다.
 - 현재 운영 경로에는 Kafka가 필요하지 않다. 새 기술은 문제와 검증 방법으로 선택한다.
 - .agents/skills/write-commit/SKILL.md를 따른다. 기능과 테스트를 함께 커밋한다.

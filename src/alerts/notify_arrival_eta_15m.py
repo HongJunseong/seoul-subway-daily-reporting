@@ -6,7 +6,7 @@ from src.common.dates import parse_as_of, window_bounds
 from src.common.storage import table_path
 from src.jobs.spark_common import build_spark
 from src.quality.checks import require_nonempty
-from src.alerts.notify_pipeline import discord_notify
+from src.alerts.notify_pipeline import slack_notify
 
 
 def summarize_alert(rows, min_total_n=200, min_group_n=20):
@@ -35,7 +35,7 @@ def main():
         result = summarize_alert(rows)
         print(f"[QA] window={start}~{end} {result}")
         if result["should_alert"]:
-            discord_notify(f"Subway sampled ETA alert: {start}~{end} KST. "
+            slack_notify(f"Subway sampled ETA alert: {start}~{end} KST. "
                            f"valid={result['valid_eta_n']}, ETA>=10m={result['long_ratio_10m']:.1%}. "
                            "This is not a timetable-delay measurement.")
     finally:

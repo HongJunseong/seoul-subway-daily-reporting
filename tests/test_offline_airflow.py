@@ -45,7 +45,7 @@ def test_offline_environment_keeps_venv_symlink_and_isolates_database_and_servic
     python.symlink_to(Path(sys.executable))
     (binary / "spark-submit").write_text("fixture")
     inherited = dict(os.environ, AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql://must-not-connect",
-                     AIRFLOW__SMTP__SMTP_HOST="must-not-send", DISCORD_WEBHOOK_URL="must-not-send",
+                     AIRFLOW__SMTP__SMTP_HOST="must-not-send", SLACK_WEBHOOK_URL="must-not-send",
                      SSDR_DATA_ROOT="must-not-write", SSDR_REPORT_MODE="llm")
     monkeypatch.setattr(os, "environ", inherited)
     output, configured = prepare_environment(tmp_path / "run", python)
@@ -53,7 +53,7 @@ def test_offline_environment_keeps_venv_symlink_and_isolates_database_and_servic
     assert os.environ["SSDR_SPARK_BINARY"] == str(binary / "spark-submit")
     assert os.environ["AIRFLOW__DATABASE__SQL_ALCHEMY_CONN"] == "sqlite:///" + str(output / "airflow/airflow.db")
     assert "AIRFLOW__SMTP__SMTP_HOST" not in os.environ
-    assert os.environ["DISCORD_WEBHOOK_URL"] == ""
+    assert os.environ["SLACK_WEBHOOK_URL"] == ""
     assert os.environ["SSDR_REPORT_MODE"] == "template"
     assert os.environ["SSDR_DATA_ROOT"] == str(output / "input/lake")
 

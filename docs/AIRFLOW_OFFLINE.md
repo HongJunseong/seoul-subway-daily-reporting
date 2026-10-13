@@ -1,6 +1,6 @@
 # 로컬 Airflow 연결 실행 검증
 
-DagBag 검사에 더해 실제 TaskInstance 실행으로 날짜 XCom, 재처리 분기, Bash의 Spark 제출, 다음 DAG 트리거, 보고서와 callback 로그를 검증한다. 합성 원본과 별도 SQLite DB를 사용하며 실제 API·AWS·Discord·LLM은 호출하지 않는다.
+DagBag 검사에 더해 실제 TaskInstance 실행으로 날짜 XCom, 재처리 분기, Bash의 Spark 제출, 다음 DAG 트리거, 보고서와 callback 로그를 검증한다. 합성 원본과 별도 SQLite DB를 사용하며 실제 API·AWS·Slack·LLM은 호출하지 않는다.
 
 ## 실행
 
@@ -25,7 +25,7 @@ python3.11 -m venv .venv-airflow
 ## 실제 실행 경로
 
 1. `seed_bronze.py`가 원천 정정과 반복 수집 이력이 있는 합성 Bronze만 저장한다. Silver·Gold·보고서는 미리 생성하지 않는다.
-2. Airflow 설정을 import 전에 출력 디렉터리의 SQLite DB로 고정한다. 상속된 Airflow 서비스 설정을 제거하고 로컬 저장·템플릿·합성 표시를 지정한다. Discord·LLM·AWS 자격 증명 변수를 비우고 HTTP 요청을 차단한다.
+2. Airflow 설정을 import 전에 출력 디렉터리의 SQLite DB로 고정한다. 상속된 Airflow 서비스 설정을 제거하고 로컬 저장·템플릿·합성 표시를 지정한다. Slack·LLM·AWS 자격 증명 변수를 비우고 HTTP 요청을 차단한다.
 3. 현재 다섯 DAG를 읽고 별도 DB에 등록한다. 로컬 `ssdr_delta_writer` pool을 1-slot으로 만든다.
 4. `usage_daily`의 실제 수동 DagRun을 `target_ymd=20260201`, `reprocess_only=true`로 시작한다. 날짜 XCom과 branch를 실행하며 `bronze_usage`가 skipped인지 확인한다.
 5. `TaskInstance.run()`이 의존성 검사·시도 번호·시작/종료 시각·템플릿 렌더·실제 Spark BashOperator·callback을 수행한다. 변환 코드·보고서 callable·트리거를 대체하지 않는다.

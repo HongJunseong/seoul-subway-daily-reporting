@@ -48,7 +48,7 @@ PYTHONPATH="$PWD" SSDR_DATA_ROOT=/path/to/local/lake spark-submit \
   --use-ymd 20260128 --version 0 --output .work/exports/usage-01
 ```
 
-실데이터 snapshot의 workspace upload는 별도 작업이다. 현재 Job은 API/AWS/Discord/LLM을 호출하지 않으며 다른 notebook/Job과 같은 managed namespace에 동시에 쓰지 않는다.
+실데이터 snapshot의 workspace upload는 별도 작업이다. 현재 Job은 API/AWS/Slack/LLM을 호출하지 않으며 다른 notebook/Job과 같은 managed namespace에 동시에 쓰지 않는다.
 
 공식 기준: [Free Edition 제한](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations), [serverless API/저장 제약](https://docs.databricks.com/aws/en/compute/serverless/limitations), [OAuth CLI 인증](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-u2m), [bundle sync 범위](https://docs.databricks.com/aws/en/dev-tools/bundles/reference#sync).
 

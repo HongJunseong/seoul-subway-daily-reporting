@@ -10,7 +10,7 @@
 | [src/processing](../src/processing) | 자연키별 Silver 정제, 날짜·15분 구간 Gold 집계 |
 | [src/quality/checks.py](../src/quality/checks.py) | 빈 입력·잘못된 날짜·키·수치의 출판 차단 |
 | [src/report](../src/report) | 검증된 context, 결정적 Markdown, 입력 버전·해시 manifest |
-| [src/alerts](../src/alerts) | 선택적 Discord 전송과 ETA 품질 검사 |
+| [src/alerts](../src/alerts) | 선택적 Slack 전송과 ETA 품질 검사 |
 | [src/common](../src/common) | 설정·KST 날짜·HTTP·저장 경로의 공통 계약 |
 | [src/jobs](../src/jobs) | Spark 세션 구성과 날짜 지정 승하차 backfill |
 | [src/observability](../src/observability) | Delta 감사, 태스크·worker 자원 기록, 실험용 전체 행 해시 |
@@ -44,7 +44,7 @@ scripts의 CLI는 아래 문제를 재현하거나 실행 증거를 수집한다
 | managed Delta 계약과 실제 Job 증거 | managed_usage_experiment.py, record_databricks_run.py, record_databricks_free.py — [Databricks](../databricks/README.md) |
 | 저장된 승하차 Bronze의 날짜·버전 고정 snapshot | [export_usage_snapshot.py](../scripts/export_usage_snapshot.py) — [선택적 export](../databricks/README.md#선택적-bronze-snapshot-export) |
 
-실제 API·AWS·Databricks·Discord·LLM 실행은 필요한 인증과 명시적 opt-in을 갖춘 절차로 분리한다. 저장 원본 재처리는 과거 미수집 실시간 관측을 복원하지 못한다.
+실제 API·AWS·Databricks·Slack·LLM 실행은 필요한 인증과 명시적 opt-in을 갖춘 절차로 분리한다. 저장 원본 재처리는 과거 미수집 실시간 관측을 복원하지 못한다.
 
 ## 검증과 공개 범위
 
@@ -62,4 +62,4 @@ DAG·CLI·notebook·Docker/Helm·CI·문서 참조와 Python import/함수 호�
 
 호출처가 없는 get_env, 미사용 import 6개와 내부 함수의 불필요한 인자 3개를 제거했다. unused import/재정의/지역 변수는 Ruff의 F401/F811/F841로 CI에서 검사한다. json.parse_constant 같은 콜백의 필수 인자는 함수 안에서 쓰지 않더라도 API 계약이므로 유지한다.
 
-LLM 해설과 Discord는 핵심 수집·변환·보고서 흐름에 필수는 아닌 선택 기능이다. 현재 명시적인 호출 경로와 opt-in 설정이 있으며 비활성 코드로 삭제하지 않았다. Databricks·Kubernetes 도구, 버전 고정 export와 공개 실행 증거는 각각 검증·재현 역할을 유지한다. 과거 기록과 private 데이터를 정리 대상으로 삭제하지 않는다.
+LLM 해설과 Slack는 핵심 수집·변환·보고서 흐름에 필수는 아닌 선택 기능이다. 현재 명시적인 호출 경로와 opt-in 설정이 있으며 비활성 코드로 삭제하지 않았다. Databricks·Kubernetes 도구, 버전 고정 export와 공개 실행 증거는 각각 검증·재현 역할을 유지한다. 과거 기록과 private 데이터를 정리 대상으로 삭제하지 않는다.

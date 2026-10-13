@@ -14,7 +14,7 @@
 - 로컬 모드는 SSDR_DATA_ROOT를 사용한다. fixture는 합성 데이터이며 실제 서울시 분석 결과가 아니다.
 - 기본 보고서는 결정적 Markdown이다. LLM은 명시적으로 선택한 추가 해설이며 검증된 수치를 대체하지 않는다.
 - S3의 같은 Delta 테이블 동시 driver 쓰기를 피하기 위해 모든 Spark DAG 태스크가 1-slot pool을 공유한다.
-- Kafka는 완료 알림을 위해 별도 운영할 이유가 약해 제거했다. Discord는 선택적인 독립 태스크다.
+- Kafka는 완료 알림을 위해 별도 운영할 이유가 약해 제거했다. Slack는 선택적인 독립 태스크다.
 
 ## 관측과 복구
 - 로컬 감사 CLI는 Delta 루트·버전을 읽어 품질, 수집 시간 bucket, 처리 누락, 활성 파일 메타데이터를 남긴다.
@@ -31,7 +31,7 @@
 
 ## 검증과 작업 상태
 실제 실행 결과는 SESSION_HANDOFF.md, 검증 절차는 RUNBOOK.md, 구현 선택은 adr/에 기록한다.
-AWS·서울 API·Discord·LLM·Kubernetes 실배포는 로컬 fixture 검증과 구분한다.
+AWS·서울 API·Slack·LLM·Kubernetes 실배포는 로컬 fixture 검증과 구분한다.
 과거 미수집 도착 스냅샷은 복원할 수 없다. 원본 보관 후 처리 실패만 재처리로 복구할 수 있다.
 
 ## 플랫폼 실행 경계 (2026-10-11)

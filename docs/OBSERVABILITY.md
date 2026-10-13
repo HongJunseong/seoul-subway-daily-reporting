@@ -1,6 +1,6 @@
 # 품질 감사와 복구 증거
 
-이 도구는 저장된 원본과 처리 결과에서 관측 가능한 사실을 남긴다. API 호출·AWS 접근·Discord 전송 없이 로컬 Delta 테이블을 읽는다. examples/operations는 합성 fixture이며 examples/observed는 별도 소량 실수집 실험이다. 실운영 baseline은 실제 수집 기간과 태스크 로그를 확보한 뒤 별도로 기록한다.
+이 도구는 저장된 원본과 처리 결과에서 관측 가능한 사실을 남긴다. API 호출·AWS 접근·Slack 전송 없이 로컬 Delta 테이블을 읽는다. examples/operations는 합성 fixture이며 examples/observed는 별도 소량 실수집 실험이다. 실운영 baseline은 실제 수집 기간과 태스크 로그를 확보한 뒤 별도로 기록한다.
 
 ## 로컬 데이터 감사
 

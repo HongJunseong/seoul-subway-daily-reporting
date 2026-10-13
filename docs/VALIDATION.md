@@ -17,6 +17,7 @@
 - 태스크 callback의 정보 제한·실제 시도 번호, 중복/재시도/불완전·충돌 이벤트 집계와 로그 CLI 종료 코드.
 - 실제 로컬 Airflow TaskInstance.run 실행: 날짜 XCom·재처리 분기·Spark BashOperator·queued DagRun 두 번 연결·실제 보고서/context/manifest 검증.
 - 프로젝트 경로·Spark 실행 파일의 shell quoting, 로컬/S3 패키지 분리, 가상환경 symlink·DB 격리·기존 출력 보존.
+- Slack Webhook의 JSON 전송·성공 응답·timeout/HTTP 오류·비밀 값 숨김, 실패 callback의 오류 보존과 오프라인 설정 차단을 HTTP mock으로 검사.
 - Ruff correctness 검사, Python 컴파일 검사, Compose 설정 파싱, Secret 셸 구문 검사.
 
 현재 실행 결과의 테스트 수와 명령은 SESSION_HANDOFF에 기록한다. examples/evidence.json은 저장된 합성 데모 실행 결과다. 처리 시간은 소량 로컬 입력의 전체 데모 시간으로, 서비스 SLA나 대용량 성능으로 사용하지 않는다.
@@ -29,8 +30,8 @@
 - 실제 S3 자격 증명·권한·Delta 쓰기·읽기와 장애 복구.
 - Compose scheduler 전체 실행. Docker 이미지 빌드는 2026-10-11 후속 검증에서 통과했다.
 - 운영 Kubernetes의 다중 node PVC·remote logging, 실수집 규모의 자원·순수 pool 대기, 유지보수 버전과 metadata DB 조합.
-- Discord 전달과 OpenAI 해설. 기본 실행·테스트에서 외부 메시지/LLM을 호출하지 않았다.
-- 정의된 GitHub Actions의 원격 실행. 로컬에서 동일 검증 명령을 실행했으나 push하지 않았다.
+- Slack 전달과 OpenAI 해설. 기본 실행·테스트에서 외부 메시지/LLM을 호출하지 않았다.
+- 운영 환경의 지속적인 모니터링. GitHub Actions 네 job의 원격 검증 결과는 SESSION_HANDOFF와 각 main commit의 실행 기록으로 확인한다.
 
 ## 실데이터 검증 절차
 

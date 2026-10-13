@@ -38,7 +38,7 @@ flowchart LR
   S --> G[Gold Delta<br/>역/노선 이용량 · ETA 통계]
   G --> Q[품질 검증 · 입력 context]
   Q --> R[일간 Markdown<br/>context · hash manifest]
-  G --> N[선택적 Discord 알림]
+  G --> N[선택적 Slack 알림]
 ```
 
 Airflow가 실행 날짜와 의존성을 관리하고, KubernetesExecutor가 처리 태스크를 Pod로 실행합니다. Spark/Delta 변환은 로컬 파일 시스템과 S3 저장 경로를 지원합니다. **실제 S3 운영은 아직 검증하지 않았습니다.**
@@ -92,7 +92,7 @@ S3 Delta writer는 **ssdr_delta_writer 1-slot pool**로 직렬화합니다. 알�
 
 기본 보고서는 검증된 Gold context에서 **결정적인 템플릿**으로 생성합니다. 수치뿐 아니라 이용 날짜, 실제 관측 범위, 입력 Delta 버전과 SHA-256을 함께 남겨 결과를 추적합니다. 본문·context·manifest를 담은 단일 발행 객체를 마지막에 교체해 중간 쓰기 실패에도 이전 보고서를 읽도록 했습니다. [발행 중단·복구 검증](examples/operations/publication-commit.md)
 
-LLM 해설과 Discord 전송은 선택 기능입니다.
+LLM 해설과 Slack 전송은 선택 기능입니다.
 
 15분 ETA 알림은 유효 표본 수·긴 ETA 비율·분위수를 확인합니다. 이를 시간표 대비 운행 지연이나 현재 혼잡도로 단정하지 않습니다. [샘플 보고서와 입력 근거](examples/README.md)
 
@@ -165,7 +165,7 @@ Databricks·Kubernetes의 실제 플랫폼 검증은 합성 입력입니다. 실
 
 ### 키 없이 실행
 
-Python 3.11, Java 11/17과 최초 Spark/Delta 의존성 다운로드가 필요합니다. API·AWS·Discord·LLM 키는 사용하지 않습니다.
+Python 3.11, Java 11/17과 최초 Spark/Delta 의존성 다운로드가 필요합니다. API·AWS·Slack·LLM 키는 사용하지 않습니다.
 
 ```bash
 python3.11 -m venv .venv

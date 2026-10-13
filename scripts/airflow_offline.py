@@ -43,7 +43,7 @@ def prepare_environment(output, pipeline_python):
         "SSDR_REPORT_MODE": "template", "SSDR_DATA_KIND": "synthetic",
         "PYSPARK_PYTHON": str(pipeline_python), "PYSPARK_DRIVER_PYTHON": str(pipeline_python),
         "SPARK_LOCAL_IP": "127.0.0.1", "AWS_EC2_METADATA_DISABLED": "true",
-        "DISCORD_WEBHOOK_URL": "", "OPENAI_API_KEY": "", "SEOUL_API_KEY": "",
+        "SLACK_WEBHOOK_URL": "", "OPENAI_API_KEY": "", "SEOUL_API_KEY": "",
         "SSDR_S3_BUCKET": "", "AWS_ACCESS_KEY_ID": "", "AWS_SECRET_ACCESS_KEY": "",
         "AWS_SESSION_TOKEN": "", "AIRFLOW_CONFIG": str(output / "airflow/airflow.cfg"),
     }
@@ -164,7 +164,7 @@ def run(output):
                 "daily_valid_eta_observations": expected["expected_daily_valid_eta_rows"],
                 "limitations": ["Local sequential TaskInstance.run loop; not a running scheduler/executor deployment",
                                 "No scheduler/pool/executor queue delay measurement",
-                                "Synthetic fixture timing; no live API, S3, Discord or LLM validation"]}
+                                "Synthetic fixture timing; no live API, S3, Slack or LLM validation"]}
     (output / "task-summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     (output / "evidence.json").write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
     (output / "evidence.md").write_text(render_evidence(evidence, summary), encoding="utf-8")

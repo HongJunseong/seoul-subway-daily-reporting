@@ -29,7 +29,7 @@ AIRFLOW_HOME="$PWD/.work/airflow" PYTHONPATH="$PWD:$PWD/dags" .venv-airflow/bin/
 
 .env.example을 참고해 .env를 로컬에서 설정한다. .env를 커밋하거나 출력하지 않는다. 프로그램은 환경 변수를 읽으므로 터미널은 환경을 주입해야 하고 Compose는 env_file을 사용한다. AWS 기본 자격 증명 체인(환경·profile·역할)을 사용하며 단기 자격 증명에는 session token도 필요하다.
 
-필수 값은 SSDR_S3_BUCKET, SEOUL_PASSENGER_API_KEY, SEOUL_ARRIVAL_API_KEY다. prefix 기본값은 v2다. Discord webhook은 비워두면 전송하지 않으며 기본 보고서는 OpenAI 키를 사용하지 않는다. LLM은 requirements/llm.txt 설치와 SSDR_REPORT_MODE=llm 설정을 별도로 요구한다.
+필수 값은 SSDR_S3_BUCKET, SEOUL_PASSENGER_API_KEY, SEOUL_ARRIVAL_API_KEY다. prefix 기본값은 v2다. SLACK_WEBHOOK_URL은 비워두면 전송하지 않으며 기본 보고서는 OpenAI 키를 사용하지 않는다. LLM은 requirements/llm.txt 설치와 SSDR_REPORT_MODE=llm 설정을 별도로 요구한다.
 
 ```bash
 docker compose -f docker/docker-compose.yaml build
@@ -62,6 +62,16 @@ PYTHONPATH="$PWD" spark-submit --packages io.delta:delta-spark_2.12:3.2.0,org.ap
 로컬 저장을 재처리할 때는 SSDR_DATA_ROOT에 lake 디렉터리를 설정한다. 새 원천 조회가 필요할 때만 --fetch를 추가한다. 범위는 최대 366일이다.
 
 도착 원본은 수집된 기간만 재처리할 수 있다. Spark 패키지·PYTHONPATH를 위와 같이 제공하고 build_fact_subway_arrival_spark.py --day YYYYMMDD, build_gold_subway_arrival_spark.py YYYYMMDD 순서로 실행한다. 15분 처리는 두 작업에 동일한 --as_of "YYYY-MM-DD HH:MM:SS"를 사용한다. API로 과거 관측을 생성할 수 없다.
+
+## 선택적 Slack 운영 알림
+
+Slack 앱의 Incoming Webhooks를 켜고 받을 채널에 연결한 URL을 로컬 .env의 SLACK_WEBHOOK_URL에 설정한다. [공식 설정 절차](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/)를 따른다. URL 자체가 비밀 값이므로 Git이나 로그에 넣지 않는다. 기존 DISCORD_WEBHOOK_URL은 현재 코드에서 읽지 않는다.
+
+Compose는 env_file로 설정을 전달한다. Kubernetes는 k8s/create-secret.sh가 SLACK_WEBHOOK_URL을 ssdr-secrets에 포함하며, 실행 중인 worker에 적용하려면 새 이미지와 갱신한 Secret을 배포해야 한다. 합성 fixture는 이 Secret을 사용하지 않고 오프라인 Airflow 재현은 상속된 Slack URL을 비운다.
+
+실패 알림은 DAG·태스크·run_id와 가능한 경우 Airflow 로그 URL을 담는다. callback 전송 실패는 원래 태스크 오류를 가리지 않는다. Gold 완료 알림은 보고서 생산일·D-4 이용 날짜·D-1 관측 날짜를 구분하며 보고서 트리거와 독립적으로 실행한다. ETA 알림은 관측 분포만 설명한다.
+
+전송은 JSON text와 10초 timeout을 사용하며 HTTP 200과 ok 본문을 성공으로 확인한다. redirect는 따라가지 않고 요청 예외와 응답 본문을 오류 로그에 노출하지 않는다. 자동 재전송이나 중복 제거는 제공하지 않으며 Airflow 재시도 시 같은 메시지가 다시 전달될 수 있다. 테스트는 HTTP mock으로 검증한다. 실제 채널 도착과 배포 환경 네트워크는 별도 확인 대상이다.
 
 ## 장애 판단
 

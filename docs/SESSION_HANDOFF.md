@@ -557,3 +557,19 @@ UTC 파이프라인 354 passed, 127.54초와 Airflow/Pod 12 passed, 1.64초로 �
 강화된 Ruff·diff whitespace·문서 상대 링크 183개·공개 JSON·DAG CLI·비밀 값 미포함 감사를 통과했다. private 점검/회귀 결과는 .work/unused-audit-*와 .work/unused-cleanup-{regression,airflow,prompt}.log에 보존한다. 코드·호출부·CI 규칙·기존 회귀·점검 기록을 main에 커밋·일반 push하고 새 HEAD의 네 원격 CI job을 확인한다.
 
 이번 점검은 저장소 내부 참조와 실제 로컬 회귀의 범위이며 동적 플랫폼 외부 소비자를 모두 증명하는 분석은 아니다. private .work·원문·정제 데이터, 공개 증거와 과거 기록을 삭제하지 않았다. 외부 API·AWS·Databricks·Discord·LLM·Kubernetes 배포를 호출하거나 예약 관측을 변경하지 않았다. 장기 실운영 검증은 기존 미완료다.
+
+## 2026-10-13 Slack 운영 알림 전환
+
+사용자가 기존 다른 프로젝트와 같이 Slack을 사용하도록 요청했다. main/origin/main 2f7e945가 같고 사용자·staged 변경이 없는 상태에서 진행했으며, 커밋 전 원격 fetch에서도 추가 변경이 없음을 확인했다.
+
+- src/alerts/notify_pipeline.py를 Slack Incoming Webhook으로 전환하고 ETA 알림 호출부를 함께 변경했다. SLACK_WEBHOOK_URL이 없으면 선택 알림만 비활성화한다. 기존 DISCORD_WEBHOOK_URL을 fallback으로 사용하지 않는다.
+- JSON text·10초 timeout·redirect 미추적·HTTP 200/ok 응답 확인을 적용한다. 요청 예외와 실패 응답 본문/URL을 오류 출력에 노출하지 않는다. 별도 SDK나 provider 선택 계층은 추가하지 않았다.
+- 실패 callback에 가능한 경우 Airflow 로그 URL을 함께 담는다. 전송 실패는 원래 태스크 오류를 가리지 않으며 Gold 완료 알림과 보고서 트리거의 독립 의존성을 유지한다. ETA의 관측 의미와 보고서/D-4/D-1 날짜 구분을 보존한다.
+- .env.example·Kubernetes Secret 생성·오프라인 설정·현재 README/실행 문서를 맞췄다. 합성 Airflow는 상속된 Slack URL을 비운다. 과거 Discord 기반 실행 증거와 SESSION_HANDOFF 기록은 당시 결과로 보존했다.
+- 실제 로컬 .env와 환경에는 Slack URL 설정이 없음을 값 출력 없이 확인했다. 원래 .env·기존 비밀 값·예약 관측 계획은 변경하지 않았다. 채널 연결과 배포 환경의 실제 전송은 미검증이다.
+
+### 검증과 남은 작업
+
+새 HTTP mock 회귀 11개를 포함해 UTC 파이프라인 365 passed, 126.98초·Airflow/Pod 12 passed, 1.27초로 서로 다른 회귀 총 377개가 통과했다. 첫 관련 29개 검사는 전체와 중복이며 별도로 더하지 않는다. JSON payload와 성공 응답, timeout/연결/실제 requests HTTP 오류 응답, 예상과 다른 응답과 redirect, traceback/로그의 비밀 값 숨김, 기존 Discord 설정 무시, 실패 callback과 Gold 날짜 계약을 확인했다. Ruff·Secret 셸 구문·diff whitespace·문서 상대 링크/공개 JSON/비밀 값 미포함 검사도 통과했다.
+
+private 결과는 .work/slack-{regression,airflow}.log다. HTTP mock 외 실제 Slack·서울 API·AWS·Databricks·LLM 호출과 Kubernetes 배포는 수행하지 않았다. 실제 사용은 Slack 앱의 채널별 Incoming Webhook을 로컬 SLACK_WEBHOOK_URL에 설정하고 실행 환경에 전달해야 한다. 운영 worker는 새 코드 이미지와 갱신한 Secret을 적용해야 하며 기존 fixture 이미지는 Slack 전환 검증 증거로 소급하지 않는다. 중복 제거/자동 전송 재시도는 제공하지 않으며 Airflow 재시도 시 중복 메시지가 가능하다. 기능·설정·회귀·문서를 main에 커밋·일반 push하고 해당 HEAD의 네 CI job을 확인한다.

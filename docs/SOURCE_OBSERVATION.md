@@ -1,6 +1,6 @@
 # 실제 원천의 제한 수집과 재처리
 
-합성 장애 복구는 처리 정확성을 보여주지만 원천 API의 상한·누락·생성 시각을 설명하지 못한다. 이 단계는 외부 호출을 명시적으로 허용한 뒤 5분 간격 도착 스냅샷 세 번과 날짜 지정 승하차 하루를 별도 로컬 실험으로 수집한다. AWS·Databricks·Kubernetes·Discord·LLM은 호출하지 않는다.
+합성 장애 복구는 처리 정확성을 보여주지만 원천 API의 상한·누락·생성 시각을 설명하지 못한다. 이 단계는 외부 호출을 명시적으로 허용한 뒤 5분 간격 도착 스냅샷 세 번과 날짜 지정 승하차 하루를 별도 로컬 실험으로 수집한다. AWS·Databricks·Kubernetes·Slack·LLM은 호출하지 않는다.
 
 ## 재현
 
@@ -86,7 +86,7 @@ init/status는 서비스에 접근하지 않는다. run은 명시적 --fetch를 
 
 campaign status의 계획 날짜와 실행 기록을 capture 비교 결과와 함께 본다. state가 없는 도래 날짜는 unrecorded_due이며 API 실패라고 단정하지 않는다. 수집이 불완전하면 process_source_experiment의 출판 gate를 통과하지 못한다. 완료된 날짜만 저장 원본에서 별도로 처리한다.
 
-현재 사용자가 허용한 계획은 **2026-10-12~18, 매일 17:50 KST, 최대 91 GET/7일**이다. .work/source-campaign-20261012-18/plan.json에 고정했으며, 20261011의 기존 10분 실험과 구분한다. 원문은 로컬에만 두며 AWS·Databricks upload·Discord·LLM은 이 계획에서 호출하지 않는다. API 키 전체 예산이나 다른 collector의 동시 호출을 제어한 것은 아니다.
+현재 사용자가 허용한 계획은 **2026-10-12~18, 매일 17:50 KST, 최대 91 GET/7일**이다. .work/source-campaign-20261012-18/plan.json에 고정했으며, 20261011의 기존 10분 실험과 구분한다. 원문은 로컬에만 두며 AWS·Databricks upload·Slack·LLM은 이 계획에서 호출하지 않는다. API 키 전체 예산이나 다른 collector의 동시 호출을 제어한 것은 아니다.
 
 예약은 이 채팅의 앱 자동화로 실행한다. [공식 예약 작업 안내](https://learn.chatgpt.com/docs/automations?surface=app)에 따라 로컬 파일 작업에는 컴퓨터와 앱이 실행 중이어야 한다. 꺼져 있거나 실행이 늦어 놓친 관측은 소급 호출하지 않는다. 기간 종료 후 호출을 종료하고 확보한 날짜·미확인 날짜·처리 품질·응답 상한을 보고한다.
 

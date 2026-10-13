@@ -1,5 +1,5 @@
 # Apply after airflow-values.yaml only in a dedicated LOCAL fixture namespace.
-# No ssdr-secrets / AWS / API / Discord / LLM credentials are referenced.
+# No ssdr-secrets / AWS / API / Slack / LLM credentials are referenced.
 extraEnvFrom: ""
 env:
   - name: PYTHONPATH

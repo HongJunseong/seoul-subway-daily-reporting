@@ -188,7 +188,7 @@ def main():
                     "report_hashes_verified": True, "usage_total": 680,
                     "daily_arrival_observations": 4, "daily_valid_eta_observations": 4,
                     "writer_pool_slots": 1,
-                    "limitations": ["Single local node and synthetic input; no S3/API/Discord/LLM",
+                    "limitations": ["Single local node and synthetic input; no S3/API/Slack/LLM",
                                     "No peak memory/CPU or production SLA measurement"]}
         (args.output_dir / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
         print("Verified actual scheduler tasks, worker Pods, and report hashes", flush=True)
