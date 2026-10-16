@@ -1,0 +1,33 @@
+{
+  "data_kind": "observed",
+  "scope": "Existing report function in a local container with saved Gold aggregates; no new source collection or Kubernetes rollout",
+  "report_target_ymd": "20261012",
+  "usage_ymd": "20261008",
+  "arrival_ymd": "20261011",
+  "llm": {
+    "status": "succeeded",
+    "attempts": 1,
+    "model": "gpt-5-mini-2025-08-07",
+    "tokens": {
+      "completion_tokens": 931,
+      "prompt_tokens": 2000,
+      "total_tokens": 2931
+    },
+    "report_verified": true,
+    "report_sha256": "cb043b02987bfc10f3a536dd76fb3391060f2bfa6a4e415fc648bf0cbbc1ab08",
+    "finish_reason": "stop"
+  },
+  "s3": {
+    "status": "failed",
+    "http_requests": 1,
+    "readback_files": 0,
+    "error_type": "ClientError",
+    "http_status": 403,
+    "error_code": "InvalidAccessKeyId"
+  },
+  "limitations": [
+    "LLM report verification covers complete response, publication hashes and date contract; narrative factual correctness needs separate review",
+    "S3 upload/readback is not verified; first PUT rejected with InvalidAccessKeyId",
+    "No live source API, Slack or additional LLM calls"
+  ]
+}

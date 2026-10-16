@@ -645,3 +645,16 @@ DAG/Pod 13 passed, 0.80초와 Ruff·diff 검사를 통과했다. 전체 회귀�
 - CI에 경고 규칙·실제 callback 복구·선택적 Helm overlay 검사를 추가했다. main 직접 커밋·일반 push 경로를 사용하며 원격 CI 결과는 해당 커밋의 Actions 실행 기록으로 확인한다.
 
 남은 범위: 기존 운영 경로에 reviewed 이미지·metrics overlay를 적용하고 완료 구간 감사의 갱신 일정을 운영하는 일, 실수집 장기 임계값 조정과 외부 경고 전달. 이번 fixture는 API 수집·Delta 변환·지속 scheduler 운영의 추가 증거가 아니다. Prometheus 데이터는 2일/512MB, callback 누적은 metrics PVC 보존 범위다. 현재 로컬 대시보드 port-forward는 loopback 13000, Prometheus는 19090이며 종료되면 MONITORING.md 명령으로 다시 연결한다.
+
+## 2026-10-16 — 실제 LLM 보고서와 S3 연결 점검
+
+사용자는 저장된 자료의 집계·기준일을 OpenAI에 전달하는 LLM 1회(출력 상한 1,000토큰·SDK 자동 재요청 없음), 기존 S3 버킷의 새 검증 경로에 네 파일 저장·읽기를 승인했다. 키는 출력하지 않았고 추가 서울 API·Slack·Databricks 호출이나 운영 Kubernetes 배포는 하지 않았다.
+
+- 기존 report_daily가 호출하는 generate_daily_report를 같은 소스로 컨테이너에서 실행했다. 저장 Gold의 2026-10-08 승하차와 2026-10-11 도착 관측으로 2026-10-12 기준 보고서를 실제 생성했다. 실행일과 보고서 기준일은 구분한다.
+- 실제 OpenAI 호출은 1회 성공했다. 모델 gpt-5-mini-2025-08-07, prompt 2,000·completion 931·total 2,931토큰, finish_reason=stop. 본문·context·manifest·publication은 private .work/llm-s3-check-20261016-001/llm-report에 보존했다.
+- 프롬프트를 집계·기준일 allowlist로 제한해 저장 경로·원문·개별 역 기록을 제외했다. 모델·전송 프롬프트 해시·토큰 사용량을 manifest에 기록하고, 빈/잘린 응답과 요청 실패는 쓰기 전에 차단한다. provider 오류 문자열이 로그에 노출되지 않게 한다.
+- S3는 새 v2/validation/llm-report/<임의 UUID> 경로의 첫 PUT 1회에서 403 InvalidAccessKeyId를 반환했다. 성공한 업로드·읽기는 0개이며 재요청하지 않았다. 사용자에게 .env의 AWS 자격 증명 갱신을 요청했다. 갱신 후에는 보존된 발행 객체를 사용하며 LLM을 다시 호출하지 않는다.
+- 전체 파이프라인 453 passed(160.14초), 마지막 요청 오류 회귀 추가 후 publication 대상 10 passed, DAG/Pod 13 passed. 서로 다른 검사는 총 467개다. Ruff·diff·문서 링크·공개 파일의 비밀 값 미포함 검사 통과. 원격 CI는 해당 커밋의 Actions 기록으로 확인한다.
+- README·맥락 문서에서 LLM 보고서가 핵심 목적임을 바로잡았다. 개발/fixture의 template 기본값과 배포 설정은 유지하고 실제 운영 활성화와 구분했다. OpenAI 공식 API와 GPT-5 매개변수 문서로 token cap·minimal 지원을 확인했다.
+
+남은 작업은 AWS 키 갱신 후 승인된 네 파일의 S3 저장·동일 bytes 읽기 확인, 운영 DAG의 생성/업로드 재시도 분리, LLM 해설의 수치·의미 평가다. 이번 보고서 검증은 정상 종료·발행 해시·기준일 계약이며 문장 전체의 사실성 검증이나 Kubernetes에서의 상시 LLM 운영을 뜻하지 않는다. 공개 메타데이터는 examples/operations/llm-report-check.json이며 원문·본문·context·키·버킷 주소는 공개하지 않는다.

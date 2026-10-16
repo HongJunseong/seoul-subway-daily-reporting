@@ -50,25 +50,47 @@ def render_report(ctx):
 
 
 def build_prompt(ctx):
+    # Only analytical aggregates and report dates cross the provider boundary.
+    facts = {key: ctx[key] for key in ("target_ymd", "usage_ymd", "arrival_ymd")}
+    facts["data_kind"] = ctx.get("data_kind", "api_observations")
+    fields = {
+        "usage": ("total_count", "station_line_count", "line_usage_stats"),
+        "arrival": ("total_observations", "valid_eta_observations", "line_wait_stats",
+                    "max_snapshots_per_station", "observation_range"),
+    }
+    for section, allowed in fields.items():
+        facts[section] = {key: ctx[section][key] for key in allowed if key in ctx[section]}
     return [{"role": "system", "content":
              "검증된 지하철 데이터만 한국어로 설명하라. 기준 날짜·부분 수집·ETA의 한계를 명시하라. "
-             "입력에 없는 수치·비교·운행 지연·현재 혼잡도를 추정하지 말라."},
-            {"role": "user", "content": json.dumps(ctx, ensure_ascii=False, allow_nan=False)}]
+             "입력에 없는 수치·비교·운행 지연·현재 혼잡도를 추정하지 말라. "
+             "한국어로 기준일, 주요 관측, 수집 한계를 간결하게 설명하라."},
+            {"role": "user", "content": json.dumps(facts, ensure_ascii=False, allow_nan=False)}]
 
 
-def generate_daily_report(target_ymd=None, save_to_s3=True):
+def generate_daily_report(target_ymd=None, save_to_s3=True, *, llm_client=None):
     target_ymd = validate_ymd(target_ymd or now_kst().strftime("%Y%m%d"))
     ctx = build_report_context(target_ymd)
     canonical = json.dumps(ctx, ensure_ascii=False, sort_keys=True, allow_nan=False)
     mode = os.getenv("SSDR_REPORT_MODE", "template")
     report_text = render_report(ctx)
     if mode == "llm":
-        from openai import OpenAI
-        response = OpenAI().chat.completions.create(model=os.getenv("SSDR_LLM_MODEL", "gpt-5-mini"),
-                                                    messages=build_prompt(ctx))
-        narrative = response.choices[0].message.content
-        if not narrative:
-            raise ReportDataError("LLM returned an empty narrative")
+        if llm_client is None:
+            from openai import OpenAI
+            llm_client = OpenAI(max_retries=0, timeout=45)
+        model = os.getenv("SSDR_LLM_MODEL", "gpt-5-mini")
+        options = {"reasoning_effort": "minimal"} if model == "gpt-5-mini" else {}
+        messages = build_prompt(ctx)
+        try:
+            response = llm_client.chat.completions.create(model=model, messages=messages,
+                                                          max_completion_tokens=1000, **options)
+        except Exception:
+            raise ReportDataError("LLM request failed; report not published") from None
+        if not response.choices:
+            raise ReportDataError("LLM returned no report choice")
+        choice = response.choices[0]
+        narrative = choice.message.content
+        if choice.finish_reason != "stop" or not isinstance(narrative, str) or not narrative.strip():
+            raise ReportDataError("LLM returned an incomplete or empty narrative")
         # Keep the deterministic evidence table; mark optional unverified interpretation separately.
         report_text += "\n## AI 해설 · 자동 생성, 추가 검증 필요\n\n" + narrative + "\n"
     elif mode != "template":
@@ -80,6 +102,12 @@ def generate_daily_report(target_ymd=None, save_to_s3=True):
                   "context_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
                   "report_sha256": hashlib.sha256(report_text.encode()).hexdigest(),
                   "target_ymd": target_ymd, "usage_ymd": ctx["usage_ymd"], "arrival_ymd": ctx["arrival_ymd"]}
+    if mode == "llm":
+        provenance["llm"] = {"model": response.model, "finish_reason": choice.finish_reason,
+            "prompt_sha256": hashlib.sha256(json.dumps(messages, ensure_ascii=False, sort_keys=True).encode()).hexdigest()}
+        if response.usage is not None:
+            provenance["llm"]["tokens"] = {key: getattr(response.usage, key) for key in
+                ("prompt_tokens", "completion_tokens", "total_tokens")}
     outputs = publication_outputs(report_text, canonical, provenance)
     save_local_publication(output_dir, outputs)
     if save_to_s3 and not os.getenv("SSDR_DATA_ROOT"):

@@ -18,3 +18,5 @@
 [runtime-checks.json](runtime-checks.json)은 localhost HTTP의 수집 시간 제한, 실제 로컬 Airflow의 자식 종료·다음 실행, 새 가상환경의 합성 데모 결과다. 배포 scheduler·Kubernetes·S3의 timeout 검증과 구분한다.
 
 [monitoring.json](monitoring.json)은 로컬 Kubernetes에서 실제 TaskInstance callback을 사용한 정상·실패·재시도, exporter 중단·복구의 경고 전환이다. 품질 값은 합성이며 실수집·Delta 처리 검증과 구분한다. [설치와 해석](../../docs/MONITORING.md)
+
+[llm-report-check.json](llm-report-check.json)은 저장된 실제 집계의 OpenAI 보고서 생성 1회와 S3 연결 점검 결과다. 본문·context·인증 정보는 공개하지 않는다.

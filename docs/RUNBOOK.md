@@ -29,7 +29,7 @@ AIRFLOW_HOME="$PWD/.work/airflow" PYTHONPATH="$PWD:$PWD/dags" .venv-airflow/bin/
 
 .env.example을 참고해 .env를 로컬에서 설정한다. .env를 커밋하거나 출력하지 않는다. 프로그램은 환경 변수를 읽으므로 터미널은 환경을 주입해야 하고 Compose는 env_file을 사용한다. AWS 기본 자격 증명 체인(환경·profile·역할)을 사용하며 단기 자격 증명에는 session token도 필요하다.
 
-필수 값은 SSDR_S3_BUCKET, SEOUL_PASSENGER_API_KEY, SEOUL_ARRIVAL_API_KEY다. prefix 기본값은 v2다. SLACK_WEBHOOK_URL은 비워두면 전송하지 않으며 기본 보고서는 OpenAI 키를 사용하지 않는다. LLM은 requirements/llm.txt 설치와 SSDR_REPORT_MODE=llm 설정을 별도로 요구한다.
+필수 값은 SSDR_S3_BUCKET, SEOUL_PASSENGER_API_KEY, SEOUL_ARRIVAL_API_KEY다. prefix 기본값은 v2다. SLACK_WEBHOOK_URL은 비워두면 전송하지 않으며 기본 보고서는 OpenAI 키를 사용하지 않는다. LLM 보고서는 requirements/llm.txt 설치와 SSDR_REPORT_MODE=llm 설정을 요구한다. Kubernetes values와 Compose는 현재 template 모드이므로 운영 LLM 활성화 때 이 설정도 명시적으로 바꾼다.
 
 ```bash
 docker compose -f docker/docker-compose.yaml build
@@ -162,3 +162,9 @@ fixture의 worker 계측과 실제 Pod/로그 연결은 [KUBERNETES_RESOURCES](K
 갱신할 때는 공식 릴리스의 변경점·태그가 가리키는 SHA·action.yml 런타임을 확인한 뒤 워크플로 문법을 [actionlint](https://github.com/rhysd/actionlint)로 검사한다. main push 후 해당 HEAD의 네 job, 합성 처리 결과와 artifact 업로드까지 성공해야 호환성을 확인한 것이다. 실행 로그의 runner image·설치 버전과 artifact는 해당 run의 증거이며, artifact 보존 기간은 7일이다.
 
 이 설정은 전체 transitive 의존성·Docker base digest·runner 패치 이미지를 잠근 완전한 재현 환경은 아니다. 새 OS/Airflow/provider로의 운영 전환과 실제 S3·클러스터 검증은 따로 수행한다.
+
+## LLM 보고서 점검
+
+report_daily의 generate_report는 같은 보고서 함수를 호출하며, S3 모드에서는 네 발행 파일을 업로드한다. 프롬프트에는 집계·기준일만 포함하고 저장 경로·원문·개별 역 기록은 제외한다. SDK 자동 재요청은 0회, timeout은 45초, 출력 상한은 추론을 포함한 1,000토큰이다. 기본 gpt-5-mini는 minimal 추론을 사용한다. 빈 응답·중단 응답은 쓰기 전에 거부한다. manifest의 llm에 모델·전송 프롬프트 해시·토큰 사용량을 남긴다.
+
+실제 API 검증 결과는 [집계 기록](../examples/operations/llm-report-check.json)에 있다. LLM 결과의 수치·날짜 의미는 형식/해시 검사와 별도로 검토해야 한다. LLM 출력의 재생성은 같은 본문을 보장하지 않으므로 S3 발행 재시도에는 저장한 publication 객체를 사용한다. 현재 DAG는 생성과 업로드가 한 태스크에 있어 실패 단계별 재시도 분리는 남은 작업이다.
