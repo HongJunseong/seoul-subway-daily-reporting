@@ -30,7 +30,7 @@ python3.11 -m venv .venv-airflow
 4. `usage_daily`의 실제 수동 DagRun을 `target_ymd=20260201`, `reprocess_only=true`로 시작한다. 날짜 XCom과 branch를 실행하며 `bronze_usage`가 skipped인지 확인한다.
 5. `TaskInstance.run()`이 의존성 검사·시도 번호·시작/종료 시각·템플릿 렌더·실제 Spark BashOperator·callback을 수행한다. 변환 코드·보고서 callable·트리거를 대체하지 않는다.
 6. `TriggerDagRunOperator`가 만든 queued DagRun의 ID와 conf를 확인하고 그 실행 자체를 이어서 처리한다. `gold_daily`와 `report_daily`에 다른 테스트 실행을 대신 만들지 않는다.
-7. 세 DAG의 성공 상태, 성공 태스크 12개, API 수집 skipped 1개, lifecycle 로그 완결성, 태스크 시간 표본, 보고서 수치·해시를 검증한다. 조건이 어긋나면 실행은 실패한다.
+7. 세 DAG의 성공 상태, 성공 태스크 13개(보고서 생성·업로드 분리 포함), API 수집 skipped 1개, lifecycle 로그 완결성, 태스크 시간 표본, 보고서 수치·해시를 검증한다. 조건이 어긋나면 실행은 실패한다.
 
 의존성 때문에 실행할 태스크가 없거나 재시도 대기가 필요하면 실패로 종료한다. 이 로컬 루프는 운영 재시도·scheduler·executor 대기를 모사하지 않는다. 실제 재시도 callback의 시도 번호와 집계는 별도 회귀 검사로 검증한다.
 

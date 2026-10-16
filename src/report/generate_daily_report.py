@@ -1,4 +1,4 @@
-"""Deterministic reports by default; optional LLM narrative uses the same validated context."""
+"""Generate reports with validated data and fact-grounded LLM commentary."""
 from __future__ import annotations
 import argparse
 import hashlib
@@ -6,10 +6,9 @@ import json
 import os
 from pathlib import Path
 from src.common.dates import now_kst, validate_ymd
-from src.common.storage import storage_prefix
-from src.common.config import load_s3_config
 from src.report.build_report_context_daily import build_report_context, ReportDataError
-from src.report.publication import publication_outputs, save_local_publication, save_s3_publication
+from src.report.publication import publication_outputs, save_local_publication
+from src.report.narrative import narrative_facts, validate_narrative
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -60,14 +59,20 @@ def build_prompt(ctx):
     }
     for section, allowed in fields.items():
         facts[section] = {key: ctx[section][key] for key in allowed if key in ctx[section]}
+    facts["report_facts"] = narrative_facts(ctx)
     return [{"role": "system", "content":
-             "검증된 지하철 데이터만 한국어로 설명하라. 기준 날짜·부분 수집·ETA의 한계를 명시하라. "
-             "입력에 없는 수치·비교·운행 지연·현재 혼잡도를 추정하지 말라. "
-             "한국어로 기준일, 주요 관측, 수집 한계를 간결하게 설명하라."},
+             "검증된 지하철 집계만 한국어로 설명하라. 입력에 없는 사실을 추정하지 말라. "
+             "report_facts의 지표를 골라 한국어 해설을 세 문장 이내로 작성하라. "
+             "수치와 날짜는 직접 쓰지 말고 {{usage.total_count}}처럼 report_facts의 키를 이중 중괄호로 참조하라. "
+             "참조는 출력 시 검증된 지표 이름·값·단위로 치환되므로 참조 뒤에 다른 숫자나 단위를 붙이지 말라. "
+             "최소 한 개 지표를 참조하고, 나머지 문장은 아라비아 숫자 없이 작성하라. "
+             "기간 비교, 순위 추론, 증감, 인원, 승객, 지연, 혼잡, 대기시간, 오늘·현재에 관한 표현은 "
+             "부정문을 포함해 쓰지 말라. 수집·해석 한계와 정확한 기준일은 별도 고정 본문에서 제공한다. "
+             "예: {{usage.total_count}}입니다. {{arrival.valid_eta_observations}}은 관측 표본을 요약합니다."},
             {"role": "user", "content": json.dumps(facts, ensure_ascii=False, allow_nan=False)}]
 
 
-def generate_daily_report(target_ymd=None, save_to_s3=True, *, llm_client=None):
+def generate_daily_report(target_ymd=None, save_to_s3=True, *, llm_client=None, output_dir=None):
     target_ymd = validate_ymd(target_ymd or now_kst().strftime("%Y%m%d"))
     ctx = build_report_context(target_ymd)
     canonical = json.dumps(ctx, ensure_ascii=False, sort_keys=True, allow_nan=False)
@@ -91,11 +96,11 @@ def generate_daily_report(target_ymd=None, save_to_s3=True, *, llm_client=None):
         narrative = choice.message.content
         if choice.finish_reason != "stop" or not isinstance(narrative, str) or not narrative.strip():
             raise ReportDataError("LLM returned an incomplete or empty narrative")
-        # Keep the deterministic evidence table; mark optional unverified interpretation separately.
+        narrative, narrative_checks = validate_narrative(narrative, ctx)
         report_text += "\n## AI 해설 · 자동 생성, 추가 검증 필요\n\n" + narrative + "\n"
     elif mode != "template":
         raise ValueError("SSDR_REPORT_MODE must be template or llm")
-    output_dir = Path(os.getenv("SSDR_REPORT_OUTPUT_DIR", str(PROJECT_ROOT / "data/report_text/daily")))
+    output_dir = Path(output_dir or os.getenv("SSDR_REPORT_OUTPUT_DIR", str(PROJECT_ROOT / "data/report_text/daily")))
     stem = f"subway_report_{target_ymd}"
     out_path = output_dir / f"{stem}.md"
     provenance = {"schema_version": 2, "report_mode": mode,
@@ -105,17 +110,15 @@ def generate_daily_report(target_ymd=None, save_to_s3=True, *, llm_client=None):
     if mode == "llm":
         provenance["llm"] = {"model": response.model, "finish_reason": choice.finish_reason,
             "prompt_sha256": hashlib.sha256(json.dumps(messages, ensure_ascii=False, sort_keys=True).encode()).hexdigest()}
+        provenance["llm"]["narrative_checks"] = narrative_checks
         if response.usage is not None:
             provenance["llm"]["tokens"] = {key: getattr(response.usage, key) for key in
                 ("prompt_tokens", "completion_tokens", "total_tokens")}
     outputs = publication_outputs(report_text, canonical, provenance)
     save_local_publication(output_dir, outputs)
     if save_to_s3 and not os.getenv("SSDR_DATA_ROOT"):
-        import boto3
-        cfg = load_s3_config()
-        client = boto3.client("s3", region_name=cfg.region)
-        prefix = "/".join(p for p in [storage_prefix(), "report_text/daily"] if p)
-        save_s3_publication(client, cfg.bucket, prefix, outputs)
+        from src.report.delivery import upload_saved_publication
+        upload_saved_publication(out_path.with_suffix(".publication.json"))
     return out_path
 
 

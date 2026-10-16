@@ -33,7 +33,7 @@ def llm_context():
     return json.loads(Path("examples/subway_report_20260201.context.json").read_text())
 
 
-def response_client(content="입력 기준일과 관측 범위를 바탕으로 작성한 해설입니다.", finish="stop"):
+def response_client(content="{{usage.total_count}}입니다. {{arrival.valid_eta_observations}}은 관측 표본을 요약합니다.", finish="stop"):
     from types import SimpleNamespace
     from unittest.mock import Mock
     response = SimpleNamespace(model="gpt-5-mini-test", usage=SimpleNamespace(

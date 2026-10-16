@@ -676,3 +676,15 @@ DAG/Pod 13 passed, 0.80초와 Ruff·diff 검사를 통과했다. 전체 회귀�
 로컬 .env의 미사용 DISCORD_WEBHOOK_URL·AIRFLOW_GID·SSDR_S3_PREFIX를 제거하고 .env.example과 같은 15개 설정으로 정리했다. 현재 저장 prefix는 SSDR_STORAGE_PREFIX이며 기본 동작 v2를 유지한다. 기존 AWS·서울 API·OpenAI와 실행 계정 값은 전후 비교로 보존을 확인했고 원본은 ignored .work의 private 사본에 보관했다. 예제는 원천·저장소·LLM·선택 Slack·Compose 용도로 구분하고 RUNBOOK의 이전 Discord 전환 안내를 제거했다. 알림의 과거 설정 무시 회귀 테스트는 유지했다.
 
 기존 알림·보고서 발행 회귀 21 passed(0.73초), Compose config --quiet 파싱과 env 키/기존 값 보존·이전/현재 비밀 값의 공개 파일 미포함·문서 링크·diff 검사를 확인했다. 외부 서비스 호출·배포·스케줄 변경은 없고 .env·private 백업은 커밋하지 않는다. 변경은 공개 예제·운영 안내·이 기록뿐이다.
+
+## 2026-10-17 보고서 생성·전송 분리와 해설 검사
+
+report_daily를 날짜 계산→생성→업로드로 분리했다. 생성은 자동 재시도하지 않고 실행 ID 해시별 발행 객체를 보존한다. XCom에는 기준일·경로·발행 객체 해시만 전달하며 upload_report만 두 번 재시도한다. 업로드는 저장된 bytes와 해시를 검사하고 Gold 조회·LLM 호출·날짜별 최신 export fallback을 하지 않는다. 수동 재개 시 완전한 같은 실행 객체를 재사용한다. 모델 응답과 파일 보존 사이의 중단까지 exactly-once를 보장하지 않으며 수동 생성 재실행의 추가 비용 가능성을 문서화했다. S3 SDK 자동 재시도는 제거하고 오류 내용을 노출하지 않는다.
+
+LLM 프롬프트는 지표 참조를 선택해 해설을 작성하도록 변경했다. 참조를 검증된 날짜·지표 이름·수치·단위로 치환하고 자유 문장의 숫자·알 수 없는 참조·단위/배수 덧붙임·기간 비교·ETA의 지연/대기시간 해석 표현은 발행 전에 거부한다. 실패 시 이전 발행을 보존한다. 자유 문장의 전체 의미는 검증되지 않으므로 manifest에도 false를 기록한다. 공식 OpenAI prompt engineering 가이드를 확인했고 새 프롬프트의 실제 모델 준수율은 아직 측정하지 않았다.
+
+Kubernetes의 보고서 경로를 기존 logs PVC에 지정해 서로 다른 생성·업로드 Pod의 파일 공유를 준비했다. llm-values.yaml은 명시적 적용용이며 기본/fixture template 모드를 유지한다. 새 DAG paused 설정은 기존 unpaused DAG를 일시정지하지 않는다. LLM+monitoring·fixture+monitoring Helm 렌더와 실제 DAG 18개 Pod override 병합·직렬화를 통과했다. 신규 합성 실행은 업로드를 포함한 13개 태스크를 요구하며 기존 12개 worker 자원 측정 기록은 계속 읽을 수 있다.
+
+파이프라인 전체 474 passed(168.95초), 마지막 단위/배수 검사 추가 후 관련 회귀 76 passed(2.46초), Airflow/Pod 14 passed(1.11초)다. 중복 검사는 합산하지 않는다. 실제 로컬 TaskInstance 연결 실행은 세 DAG·13개 성공·API 수집 1개 skipped·발행 해시 일치로 완료됐다(78.826832초). 초기 관련 59/49개도 전체·최종 검사와 중복이다. Ruff·복구 CLI help·문서 링크·공개 파일의 비밀 값 미포함·diff 검사를 확인했다. 상세 로그는 private .work/report-reliability-20261017에 있다.
+
+실제 API·AWS·Slack·LLM 호출, Kubernetes 배포·일정 활성화와 원천 관측 캠페인 변경은 없었다. .env와 기존 원본은 보존했다. 남은 작업은 승인된 예산에서 새 프롬프트의 실제 모델 준수율 평가와 Kubernetes 연속 운영이다. 구현·회귀·복구 안내를 main에 직접 커밋하고 일반 push하며 원격 CI는 해당 커밋의 Actions 기록으로 확인한다.

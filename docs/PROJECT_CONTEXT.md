@@ -104,3 +104,7 @@ SSDR_METRICS_DIR를 지정하면 task callback과 audit_lake가 숫자 메타데
 ## 실제 LLM 보고서의 S3 저장 (2026-10-16)
 
 OpenAI 보고서 1회 생성 후 사용자가 AWS 자격 증명을 갱신하고 버킷 생성을 승인했다. ap-northeast-2에 프로젝트용 비공개 버킷을 만들고 퍼블릭 접근 차단·AES256 기본 암호화·BucketOwnerEnforced를 확인했다. .env의 버킷·리전만 연결하고 다른 설정은 보존했다. 기존 publication helper로 같은 보고서 네 파일을 저장·읽어 전체 bytes와 발행 해시를 검증했다. LLM 추가 호출은 없다. 버킷 주소·계정·본문은 private .work에만 두며 공개 집계는 examples/operations/llm-report-check.json이다. 실제 S3 Delta lake·운영 DAG 활성화와 구분한다.
+
+## 보고서 생성·전송 분리 (2026-10-17)
+
+report_daily의 generate_report는 실행별 발행 객체를 보존하고 upload_report는 XCom의 경로·해시로 동일 객체만 전송한다. LLM 중복 비용을 줄이기 위해 생성 자동 재시도는 없고 전송만 두 번 재시도한다. Kubernetes는 기존 logs PVC로 생성·전송 Pod 사이의 파일을 공유한다. 새 llm-values.yaml은 명시적 적용용이며 실서비스를 활성화하지 않았다. 해설은 검증된 지표 참조를 치환하고 미지원 수치·표현을 거부하지만 자유 문장의 전체 사실성을 보증하지 않는다. REPORT_PUBLICATION에 복구·제약을 기록한다.

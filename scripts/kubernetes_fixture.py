@@ -38,8 +38,8 @@ def worker_record(pod, namespace, run_ids):
 def validate_evidence(runs, workers, deleted=None):
     successful = [(r["dag_id"], t["task_id"]) for r in runs for t in r["tasks"]
                   if t["state"] == "success"]
-    if len(runs) != 3 or any(r["state"] != "success" for r in runs) or len(successful) != 12:
-        raise ValueError("expected three successful DAGs and twelve actual tasks")
+    if len(runs) != 3 or any(r["state"] != "success" for r in runs) or len(successful) != 13:
+        raise ValueError("expected three successful DAGs and thirteen actual tasks")
     skipped = [t for r in runs for t in r["tasks"] if t["state"] == "skipped"]
     if len(skipped) != 1 or skipped[0]["task_id"] != "bronze_usage":
         raise ValueError("live API task must be skipped")

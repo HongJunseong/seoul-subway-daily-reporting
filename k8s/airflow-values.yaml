@@ -22,12 +22,16 @@ env:
     value: v2
   - name: SSDR_REPORT_MODE
     value: template
+  # Shared logs PVC keeps run publications available to a different upload/retry Pod.
+  - name: SSDR_REPORT_OUTPUT_DIR
+    value: /opt/airflow/logs/report-publications
   - name: SSDR_TASK_POD_PROFILES
     value: 'true'
 config:
   core:
     parallelism: 2
     max_active_tasks_per_dag: 2
+    dags_are_paused_at_creation: 'True'
 dags:
   gitSync:
     enabled: false

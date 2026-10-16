@@ -29,7 +29,7 @@ python scripts/check_kubernetes_render.py \
   --output .work/kubernetes/render-fixture/overrides.json
 ```
 
-별도 Airflow 환경에 cncf.kubernetes extra를 공식 constraints로 설치하고 pytest를 설치한다. tests/test_dags.py와 tests/test_kubernetes_profiles.py를 함께 실행한다. 렌더 검사는 values schema, 같은 worker 이미지, namespace RBAC, base 컨테이너, Secret 없는 합성 모드, 데이터·로그 PVC reference를 확인한다. 병합 검사는 실제 DAG 태스크 17개와 Airflow 직렬화를 사용한다. 결과에 actual_pod_execution=false를 명시한다.
+별도 Airflow 환경에 cncf.kubernetes extra를 공식 constraints로 설치하고 pytest를 설치한다. tests/test_dags.py와 tests/test_kubernetes_profiles.py를 함께 실행한다. 렌더 검사는 values schema, 같은 worker 이미지, namespace RBAC, base 컨테이너, Secret 없는 합성 모드, 데이터·로그 PVC reference를 확인한다. 병합 검사는 실제 DAG 태스크 18개와 Airflow 직렬화를 사용한다. 결과에 actual_pod_execution=false를 명시한다.
 
 전체 Helm manifest에는 생성된 Secret 값이 있을 수 있어 출력하거나 증거에 저장하지 않는다. 공개 파일은 Secret reference만 포함하는 worker template의 hash와 제한된 검사 결과다.
 
@@ -97,3 +97,15 @@ kubectl --context docker-desktop -n ssdr-fixture-demo exec deployment/ssdr-fixtu
 이미지는 검증한 Linux amd64 Airflow/JRE digest를 고정하고 Java를 별도 stage에서 가져온다. 기존 Airflow 이미지의 종료된 apt 저장소에 의존하지 않는다. Airflow는 기본 환경, Spark는 /opt/pipeline 가상환경을 사용하며 두 환경의 pip check와 Airflow provider의 compiled dependency import를 빌드 단계에서 실행한다. 기존 Airflow provider와 NumPy 2의 ABI 오류를 확인해 Airflow 환경의 NumPy만 1.26.4로 고정했다. pipeline 환경은 별도로 유지한다. DAG의 SSDR_SPARK_BINARY와 PYSPARK_PYTHON이 같은 pipeline 환경을 가리킨다.
 
 기존 chart의 bitnami/postgresql:11은 실제 registry에서 manifest가 없어 그대로 설치할 수 없었다. 운영 후보 values는 embedded PostgreSQL을 비활성화하고 ssdr-metadata Secret으로 유지보수되는 외부 DB를 요구한다. fixture만 bitnamilegacy PostgreSQL 15.4의 확인한 amd64 digest를 사용한다. 보관 이미지이며 운영 DB 선택·보안 업데이트를 검증한 것은 아니다. 현재 Airflow/chart 버전은 검증한 호환 조합이며 유지보수 버전으로의 migration은 별도 로드맵이다.
+
+## LLM 보고서 설정 준비
+
+기본·fixture는 template 모드다. 실제 LLM용으로 `airflow-values.yaml` 뒤에 `llm-values.yaml`을 명시적으로 적용한다. 이 파일은 생성·업로드 Pod의 보고서 경로를 기존 logs PVC로 고정하고 llm 모드를 지정한다. Secret은 기존 create-secret.sh의 OPENAI_API_KEY·AWS 설정을 사용한다. 설정 렌더만으로 Secret 생성·배포·DAG 활성화가 이뤄지지는 않는다.
+
+```bash
+python scripts/check_kubernetes_render.py \
+  --chart-dir .work/kubernetes/airflow \
+  --output-dir .work/kubernetes/render-llm-new --llm --monitoring
+```
+
+새 DAG는 paused로 생성한다. 기존에 unpaused인 DAG는 이 값만으로 일시정지되지 않는다. 운영 전에는 실행 중인 DAG·writer, 수집 기간·주기, LLM 호출 예산과 metadata DB를 확인해야 한다. 실제 외부 검증과 상시 실행은 별도 승인 범위이며 기존 제한 관측 캠페인의 시간·예산은 바꾸지 않는다. 렌더 결과는 Pod 실행 증거가 아니다.

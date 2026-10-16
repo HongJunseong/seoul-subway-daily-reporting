@@ -1,0 +1,19 @@
+# Apply explicitly after airflow-values.yaml for a reviewed LLM deployment.
+# Helm replaces env lists; keep the base worker settings here.
+# DAGs start paused. Unpausing live collection requires its own operating budget.
+env:
+  - name: PYTHONPATH
+    value: /opt/airflow
+  - name: SSDR_STORAGE_PREFIX
+    value: v2
+  - name: SSDR_REPORT_MODE
+    value: llm
+  - name: SSDR_LLM_MODEL
+    value: gpt-5-mini
+  - name: SSDR_REPORT_OUTPUT_DIR
+    value: /opt/airflow/logs/report-publications
+  - name: SSDR_TASK_POD_PROFILES
+    value: 'true'
+config:
+  core:
+    dags_are_paused_at_creation: 'True'

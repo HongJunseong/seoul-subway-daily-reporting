@@ -45,3 +45,23 @@ manifest = snapshot["manifest"]
 S3 객체를 다운로드한 bytes에는 decode_publication을 적용한다. 기존 .md CLI는 세 export 해시와 현재 발행 manifest의 일치 여부를 확인한다. 실패 후 부분 export는 거부되지만 .publication.json은 이전 완전한 보고서를 계속 제공한다. 같은 날짜의 writer는 기존 정책대로 직렬 실행한다.
 
 [실제 합성 오류 주입](../examples/operations/publication-commit.md)은 writer 자식 프로세스 SIGKILL·재시도·mock S3 실패/응답 유실을 구분한다. 로컬 Airflow·컨테이너 재현 소비도 read_publication으로 context를 읽는다. 예전 공개 샘플의 bytes·실행 증거는 그대로 보존했다.
+
+## 생성과 전송의 재시도
+
+report_daily는 compute_target_ymd → generate_report → upload_report로 실행한다. 생성 태스크는 S3에 쓰지 않고 `SSDR_REPORT_OUTPUT_DIR/runs/<run ID의 SHA-256>/`에 발행 객체를 남긴다. XCom에는 기준일·파일 경로·발행 객체 해시만 전달한다. 업로드 태스크는 해당 파일을 검증한 뒤 네 객체를 전송하며 날짜별 최신 export로 대체하지 않는다. 전송 실패·파일 손상·파일 누락은 LLM 재호출로 복구하지 않는다. 로컬 저장 모드는 파일만 검증하고 S3 전송을 생략한다.
+
+생성은 자동 재시도 0회, 업로드는 Airflow에서 최대 2회 재시도한다. S3 SDK 자체 재시도는 비활성화했다. 같은 실행을 수동 재개할 때 완전한 발행 객체가 있으면 그대로 사용한다. 모델 응답을 받았지만 파일을 남기기 전에 중단된 경우까지 exactly-once를 보장하지 않으며, 그때 생성 태스크의 수동 재실행은 추가 모델 호출이 될 수 있다. 새 입력으로 새 보고서를 만들려면 새 DAG run을 사용한다.
+
+S3 단계만 수동 복구할 때도 저장 파일과 생성 당시 해시를 지정한다. 이 명령은 LLM을 호출하지 않는다. 실제 S3 실행에는 외부 호출 승인이 필요하다.
+
+```bash
+python -m src.report.delivery <saved.publication.json> --sha256 <publication_sha256>
+```
+
+Kubernetes에서는 기존 logs PVC의 `/opt/airflow/logs/report-publications`를 사용해 서로 다른 생성·업로드 Pod가 파일을 공유한다. Compose는 기존 data 볼륨을 사용한다. 재시도·수동 복구가 끝나기 전에 실행별 파일을 지우지 않는다. logs PVC에 대한 보존·정리 정책도 이 파일에 적용될 수 있다.
+
+## LLM 해설의 근거와 검사 범위
+
+LLM은 프롬프트의 report_facts에서 지표를 선택하고 `{{usage.total_count}}` 같은 참조로 해설을 작성한다. 참조는 검증된 Gold의 지표 이름·값·단위로 치환한다. 자유 문장의 숫자·잘못된 날짜·알 수 없는 참조와 기간 증감·실제 지연·혼잡·승객 대기시간 관련 표현은 발행 전에 거부한다. 해석 한계와 기준일은 고정 본문에서 제공한다. 검사 실패 시 이전 발행을 보존하고 template로 조용히 대체하지 않는다.
+
+이 검사는 수치 참조 계약과 보수적인 표현 검사다. 자유 문장의 전체 의미, 동의어·우회 표현의 사실성까지 증명하지 않으며 manifest에 `free_text_semantics_verified=false`를 남긴다. 새 프롬프트는 합성 응답 회귀로 검사했고 실제 모델의 준수율은 아직 평가하지 않았다. 프롬프트 변경과 평가의 근거는 [OpenAI 공식 가이드](https://developers.openai.com/api/docs/guides/prompt-engineering)를 참고했다.

@@ -117,8 +117,10 @@ def summarize(runtime, logs):
             "memory_peak_to_limit_ratio": metrics["memory_container_peak_bytes"] / metrics["memory_limit_bytes"],
             "mean_cpu_to_request_ratio": metrics["mean_cpu_cores"] / request_cpu,
         })
-    if len(tasks) != 12 or len({(t["dag_id"], t["task_id"]) for t in tasks}) != 12:
-        raise ValueError("expected twelve distinct successful measured workers")
+    if len(tasks) not in (12, 13) or len({(t["dag_id"], t["task_id"]) for t in tasks}) != len(tasks):
+        raise ValueError("expected twelve or thirteen distinct successful measured workers")
+    if len(tasks) == 13 and not any(t["dag_id"] == "report_daily" and t["task_id"] == "upload_report" for t in tasks):
+        raise ValueError("thirteenth measured worker must be report upload")
     profiles = []
     for profile in sorted({t["profile"] for t in tasks}):
         group = [t for t in tasks if t["profile"] == profile]

@@ -145,7 +145,7 @@ def run(output):
     states = {row["task_id"]: row["state"] for row in runs[0]["tasks"]}
     require(states["bronze_usage"] == "skipped", "API collection must be skipped")
     require(summary["malformed_events"] == 0, "event log parse")
-    require(sum(task["succeeded"] for task in summary["tasks"]) == 12, "12 executed tasks")
+    require(sum(task["succeeded"] for task in summary["tasks"]) == 13, "13 executed tasks")
     require(all(task["failed"] == task["incomplete"] == task["conflicting"] == 0 for task in summary["tasks"]),
             "all observed lifecycles complete")
     require(all(task["duration_seconds"]["samples"] == 1 for task in summary["tasks"]), "actual task timing")
@@ -159,7 +159,7 @@ def run(output):
             and context["arrival"]["valid_eta_observations"] == expected["expected_daily_valid_eta_rows"],
             "report D-1 observation counts")
     evidence = {"schema_version": 1, "data_kind": "synthetic", "verified": True, "runs": runs,
-                "executed_tasks": 12, "skipped_api_tasks": 1, "elapsed_seconds": round(elapsed, 6),
+                "executed_tasks": 13, "skipped_api_tasks": 1, "elapsed_seconds": round(elapsed, 6),
                 "report_hashes_verified": True, "usage_total": 680, "daily_arrival_observations": 4,
                 "daily_valid_eta_observations": expected["expected_daily_valid_eta_rows"],
                 "limitations": ["Local sequential TaskInstance.run loop; not a running scheduler/executor deployment",

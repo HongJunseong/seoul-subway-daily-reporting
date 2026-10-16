@@ -13,7 +13,7 @@ import sys
 import yaml
 
 
-def validate_documents(documents, expected_image, fixture=False):
+def validate_documents(documents, expected_image, fixture=False, llm=False):
     configs = [d for d in documents if d and d.get("kind") == "ConfigMap"
                and "pod_template_file.yaml" in d.get("data", {})]
     if len(configs) != 1:
@@ -38,6 +38,17 @@ def validate_documents(documents, expected_image, fixture=False):
     if not any("pods" in r.get("resources", []) and "create" in r.get("verbs", [])
                for d in roles for r in d.get("rules", [])):
         raise ValueError("scheduler needs namespace-scoped Pod creation permission")
+    if fixture and llm:
+        raise ValueError("fixture must not enable LLM")
+    if not fixture:
+        mounts = {v["name"]: v["mountPath"] for v in base.get("volumeMounts", [])}
+        claims = {v["name"]: v.get("persistentVolumeClaim", {}).get("claimName")
+                  for v in spec.get("volumes", [])}
+        if (env.get("SSDR_REPORT_OUTPUT_DIR") != "/opt/airflow/logs/report-publications"
+                or mounts.get("logs") != "/opt/airflow/logs" or not claims.get("logs")):
+            raise ValueError("report generation and upload need the shared persistent logs volume")
+        if env.get("SSDR_REPORT_MODE") != ("llm" if llm else "template"):
+            raise ValueError("unexpected worker report mode")
     if fixture:
         bootstrap = {d.get("metadata", {}).get("labels", {}).get("component"): d
                      for d in documents if d and d.get("kind") == "Job"}
@@ -69,7 +80,10 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--fixture", action="store_true")
     parser.add_argument("--monitoring", action="store_true")
+    parser.add_argument("--llm", action="store_true")
     args = parser.parse_args()
+    if args.fixture and args.llm:
+        parser.error("--fixture and --llm cannot be combined")
     expected = (root / "k8s/chart-version.txt").read_text().strip()
     metadata = yaml.safe_load((args.chart_dir / "Chart.yaml").read_text())
     if metadata["version"] != expected:
@@ -80,6 +94,8 @@ def main():
                "-f", str(root / "k8s/airflow-values.yaml")]
     if args.fixture:
         command.extend(["-f", str(root / "k8s/fixture-values.yaml")])
+    if args.llm:
+        command.extend(["-f", str(root / "k8s/llm-values.yaml")])
     if args.monitoring:
         command.extend(["-f", str(root / "k8s/monitoring-airflow-values.yaml")])
     result = subprocess.run(command, capture_output=True, text=True)
@@ -93,7 +109,7 @@ def main():
     if any(effective["airflow"][key] != effective["pod_template"][key] for key in ("repository", "tag")):
         raise ValueError("scheduler and worker must use the same reviewed image")
     image = effective["airflow"]["repository"] + ":" + effective["airflow"]["tag"]
-    pod = validate_documents(docs, image, args.fixture)
+    pod = validate_documents(docs, image, args.fixture, args.llm)
     if args.monitoring:
         env = {e["name"]: e.get("value") for e in pod["spec"]["containers"][0].get("env", [])}
         if env.get("SSDR_METRICS_DIR") != "/opt/airflow/logs/ssdr-metrics":
@@ -103,7 +119,7 @@ def main():
     (args.output_dir / "worker-pod.yaml").write_text(template, encoding="utf-8")
     evidence = {"verified": True, "validation_scope": "helm-render-only",
                 "chart_version": expected, "airflow_version": "2.7.3",
-                "image": image, "fixture": args.fixture, "monitoring": args.monitoring,
+                "image": image, "fixture": args.fixture, "monitoring": args.monitoring, "llm": args.llm,
                 "worker_template_sha256": hashlib.sha256(template.encode()).hexdigest(),
                 "task_resource_metrics_enabled": any(e["name"] == "SSDR_TASK_RESOURCE_METRICS"
                                                      and e.get("value") == "true" for e in pod["spec"]["containers"][0].get("env", [])),

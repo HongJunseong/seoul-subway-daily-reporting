@@ -43,6 +43,10 @@ Compose init은 ssdr_delta_writer pool을 1 slot으로 생성한다. 모든 Spar
 
 Compose는 로컬 개발용 설정이다. 설정 파싱과 후속 Docker 이미지 빌드는 통과했다. Compose scheduler 전체 실행은 별도 미검증이다. 컨테이너 Spark 명령은 /opt/pipeline/bin/spark-submit을 사용한다.
 
+## 보고서 전송 실패
+
+report_daily의 upload_report만 재시도하면 생성된 실행별 파일을 다시 전송한다. generate_report를 함께 clear할 필요가 없다. 생성은 자동 재시도하지 않으며, 저장 파일이 없는 생성 실패를 수동 재실행하면 추가 LLM 호출이 될 수 있다. 경로·해시와 수동 복구 명령은 [발행 절차](REPORT_PUBLICATION.md#생성과-전송의-재시도)를 따른다. 파일이 손상·유실되면 발행을 중단하고 원인을 먼저 확인한다.
+
 ## 재처리
 
 usage_daily 수동 실행 conf 예:

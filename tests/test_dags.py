@@ -102,3 +102,13 @@ def test_all_tasks_have_finite_execution_limits_and_five_minute_collection_is_re
     task = collector.tasks[0]
     # Two bounded attempts plus retry delay fit within one scheduled collection run.
     assert task.execution_timeout * (task.retries + 1) + task.retry_delay <= collector.dagrun_timeout
+
+
+def test_report_upload_retries_are_separate_and_generation_has_no_automatic_retry(bag):
+    dag = bag.dags["report_daily"]
+    generate = dag.get_task("generate_report")
+    upload = dag.get_task("upload_report")
+    assert generate.upstream_task_ids == {"compute_target_ymd"}
+    assert upload.upstream_task_ids == {"generate_report"}
+    assert generate.retries == 0
+    assert upload.retries == 2

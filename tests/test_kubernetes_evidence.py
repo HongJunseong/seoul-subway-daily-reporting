@@ -8,7 +8,7 @@ def observed_success():
     names = {
         "usage_daily": ["compute_dates", "choose_input", "silver_usage", "gold_usage", "trigger_gold_daily"],
         "gold_daily": ["compute_dates", "silver_arrival_day", "gold_arrival", "notify_gold_ready", "trigger_report_daily"],
-        "report_daily": ["compute_target_ymd", "generate_report"],
+        "report_daily": ["compute_target_ymd", "generate_report", "upload_report"],
     }
     runs = [{"dag_id": dag, "state": "success",
              "tasks": [{"task_id": task, "state": "success"} for task in tasks]}
