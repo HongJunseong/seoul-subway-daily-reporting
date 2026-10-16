@@ -64,6 +64,7 @@ jobs:
       - run: helm repo add apache-airflow https://airflow.apache.org
       - run: helm pull apache-airflow/airflow --version "$(cat k8s/chart-version.txt)" --destination .work/kubernetes --untar
       - run: python scripts/check_kubernetes_render.py --chart-dir .work/kubernetes/airflow --output-dir .work/kubernetes/render-fixture --fixture
+      - run: python scripts/check_kubernetes_render.py --chart-dir .work/kubernetes/airflow --output-dir .work/kubernetes/render-monitoring --fixture --monitoring
       - run: python scripts/check_kubernetes_overrides.py --worker-template .work/kubernetes/render-fixture/worker-pod.yaml --output .work/kubernetes/render-fixture/overrides.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
@@ -109,6 +110,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: docker build -f docker/dockerfile -t ssdr-airflow:portfolio-v4 .
       - run: mkdir -p .work/container
+      - name: Verify Prometheus rules and recovery transitions
+        run: |
+          ssdr_prometheus_image="$(python -c 'import json; print(json.load(open("monitoring/images.json"))["prometheus"])')"
+          docker run --rm --entrypoint /bin/promtool -v "$PWD/monitoring:/etc/prometheus:ro" "$ssdr_prometheus_image" check config /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint /bin/promtool -v "$PWD/monitoring:/etc/prometheus:ro" "$ssdr_prometheus_image" test rules /etc/prometheus/alerts.test.yml
+      - name: Verify actual task retry metric callbacks
+        run: |
+          docker run --name ssdr-monitoring-ci --entrypoint python \
+            -e SSDR_FIXTURE_MODE=true -e SSDR_DATA_KIND=synthetic \
+            -e SSDR_METRICS_DIR=/opt/airflow/.work/metrics \
+            ssdr-airflow:portfolio-v4 /opt/airflow/scripts/monitoring_fixture.py \
+            --phase recovery --output-dir /opt/airflow/.work/monitoring > .work/container/monitoring.log 2>&1
+
       - run: |
           docker run --name ssdr-fixture-ci --entrypoint python \
             -e PYTHONPATH=/opt/airflow:/opt/airflow/dags -e SSDR_TASK_POD_PROFILES=false \

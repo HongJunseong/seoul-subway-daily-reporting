@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.common.dates import parse_as_of, validate_ymd
 from src.observability.audit import DeltaAuditReader, audit_lake
+from src.observability.metrics import publish_quality
 
 
 def render_audit(result):
@@ -52,6 +53,11 @@ def save_audit(result, output):
         temp = output / (name + ".tmp")
         temp.write_text(content, encoding="utf-8")
         temp.replace(output / name)
+    try:
+        publish_quality(result)
+    except (OSError, ValueError, TypeError, KeyError):
+        import logging
+        logging.getLogger(__name__).warning("Optional quality metric snapshot failed; audit outcome preserved")
 
 
 def main():

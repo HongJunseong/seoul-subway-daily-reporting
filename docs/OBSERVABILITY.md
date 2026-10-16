@@ -2,6 +2,8 @@
 
 이 도구는 저장된 원본과 처리 결과에서 관측 가능한 사실을 남긴다. API 호출·AWS 접근·Slack 전송 없이 로컬 Delta 테이블을 읽는다. examples/operations는 합성 fixture이며 examples/observed는 별도 소량 실수집 실험이다. 실운영 baseline은 실제 수집 기간과 태스크 로그를 확보한 뒤 별도로 기록한다.
 
+태스크와 감사 결과를 대시보드로 보는 선택적 경로는 [Prometheus·Grafana](MONITORING.md)에 있다.
+
 ## 로컬 데이터 감사
 
 `requirements/dev.txt` 환경에서 다음 명령을 실행한다. 아래 lake는 복구 실험으로 만든다.

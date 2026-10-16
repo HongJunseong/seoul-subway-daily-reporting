@@ -122,3 +122,13 @@ Databricks 성공은 합성 승하차 fixture, Kubernetes 성공은 단일 node 
 - [x] mock S3 단계별 실패·커밋 응답 유실·같은 게시 입력의 재시도 일치
 
 호환 export 교체·전원/디스크 장애·local/S3 분산 트랜잭션·동시 writer의 최신성은 별도다. 실제 S3 운영은 미검증이다.
+
+## 선택적 파이프라인 모니터링
+
+- [x] callback·품질 감사의 선택적 메타데이터 발행과 읽기 전용 exporter
+- [x] Prometheus 규칙·Grafana provisioning, local Kubernetes 설치
+- [x] 실제 TaskInstance 실패·재시도 경고와 exporter 중단·복구 전환 검증
+- [x] Helm worker template의 metrics 경로 유지, 중복/손상/결측 회귀·경고 규칙 CI
+- [ ] 승인된 실수집 운영 경로에 연결한 장기 신선도·누락률과 경고 임계값 조정
+
+검증용 TaskInstance 명령·품질 값은 합성이다. 운영 일정의 주기적 감사와 외부 알림 전달, S3 상시 관측은 완료 처리하지 않는다. Terraform은 관리할 실제 AWS 인프라가 확정될 때 검토한다.

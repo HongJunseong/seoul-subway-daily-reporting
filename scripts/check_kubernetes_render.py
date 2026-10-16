@@ -68,6 +68,7 @@ def main():
     parser.add_argument("--chart-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--fixture", action="store_true")
+    parser.add_argument("--monitoring", action="store_true")
     args = parser.parse_args()
     expected = (root / "k8s/chart-version.txt").read_text().strip()
     metadata = yaml.safe_load((args.chart_dir / "Chart.yaml").read_text())
@@ -79,6 +80,8 @@ def main():
                "-f", str(root / "k8s/airflow-values.yaml")]
     if args.fixture:
         command.extend(["-f", str(root / "k8s/fixture-values.yaml")])
+    if args.monitoring:
+        command.extend(["-f", str(root / "k8s/monitoring-airflow-values.yaml")])
     result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode:
         # Helm errors may include manifest fragments. Do not dump them to public logs.
@@ -91,12 +94,16 @@ def main():
         raise ValueError("scheduler and worker must use the same reviewed image")
     image = effective["airflow"]["repository"] + ":" + effective["airflow"]["tag"]
     pod = validate_documents(docs, image, args.fixture)
+    if args.monitoring:
+        env = {e["name"]: e.get("value") for e in pod["spec"]["containers"][0].get("env", [])}
+        if env.get("SSDR_METRICS_DIR") != "/opt/airflow/logs/ssdr-metrics":
+            raise ValueError("monitoring directory missing from worker template")
     args.output_dir.mkdir(parents=True)
     template = yaml.safe_dump(pod, sort_keys=False)
     (args.output_dir / "worker-pod.yaml").write_text(template, encoding="utf-8")
     evidence = {"verified": True, "validation_scope": "helm-render-only",
                 "chart_version": expected, "airflow_version": "2.7.3",
-                "image": image, "fixture": args.fixture,
+                "image": image, "fixture": args.fixture, "monitoring": args.monitoring,
                 "worker_template_sha256": hashlib.sha256(template.encode()).hexdigest(),
                 "task_resource_metrics_enabled": any(e["name"] == "SSDR_TASK_RESOURCE_METRICS"
                                                      and e.get("value") == "true" for e in pod["spec"]["containers"][0].get("env", [])),

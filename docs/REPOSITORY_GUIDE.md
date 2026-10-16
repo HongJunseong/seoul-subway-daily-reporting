@@ -41,6 +41,7 @@ scripts의 CLI는 아래 문제를 재현하거나 결과를 기록한다. 기�
 | 실제 원천 제한 관측과 저장 원본 재처리 | capture_sources.py, process_source_experiment.py, summarize_source_observations.py, run_source_observation_day.py — [원천 관측](SOURCE_OBSERVATION.md); API 호출은 별도 opt-in |
 | Airflow 연결·timeout 복구·태스크 요약 | airflow_offline.py, task_timeout_experiment.py, summarize_tasks.py — [로컬 실행](AIRFLOW_OFFLINE.md), [시간 제한](RUNBOOK.md#실행-시간-제한) |
 | Kubernetes 구성·실행·자원 측정 | check_kubernetes_render.py, check_kubernetes_overrides.py, kubernetes_fixture.py, capture_kubernetes_files.py, summarize_kubernetes_resources.py — [Pod 실행](KUBERNETES.md), [자원](KUBERNETES_RESOURCES.md) |
+| 선택적 Prometheus·Grafana | serve_metrics.py, render_monitoring.py, monitoring_fixture.py, verify_monitoring.py, monitoring/ — [모니터링](MONITORING.md) |
 | managed Delta 계약과 Job 결과 | managed_usage_experiment.py, record_databricks_run.py, record_databricks_free.py — [Databricks](../databricks/README.md) |
 | 저장된 승하차 Bronze의 날짜·버전 고정 snapshot | [export_usage_snapshot.py](../scripts/export_usage_snapshot.py) — [선택적 export](../databricks/README.md#선택적-bronze-snapshot-export) |
 

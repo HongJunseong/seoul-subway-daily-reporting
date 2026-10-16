@@ -1,0 +1,38 @@
+groups:
+  - name: ssdr
+    rules:
+      - alert: SSDRExporterDown
+        expr: up{job="ssdr-pipeline"} == 0 or absent(up{job="ssdr-pipeline"})
+        for: 15s
+        labels: {severity: warning}
+        annotations: {summary: "Metric exporter unreachable; pipeline state is unknown"}
+      - alert: SSDRMetricInputUnavailable
+        expr: ssdr_metrics_read_errors > 0 or ssdr_task_record_available == 0 or ssdr_quality_record_available == 0 or ssdr_task_success_record_available == 0
+        for: 15s
+        labels: {severity: warning}
+        annotations: {summary: "Expected metric input absent or invalid; inspect publisher"}
+      - alert: SSDRTaskFailed
+        expr: ssdr_task_last_attempt_failed == 1
+        for: 15s
+        labels: {severity: warning}
+        annotations: {summary: "Latest observed task attempt failed; confirm Airflow state and retry"}
+      - alert: SSDRTaskSuccessStale
+        expr: time() - ssdr_task_last_success_timestamp_seconds{dag_id=~"arrival_collect_5m|pipeline_arrival_5m"} > 600
+        for: 30s
+        labels: {severity: warning}
+        annotations: {summary: "No recent task success; inspect scheduler and collection/processing separately"}
+      - alert: SSDRProcessingBehind
+        expr: ssdr_quality_unprocessed_snapshot_count > 0
+        for: 15s
+        labels: {severity: warning}
+        annotations: {summary: "Saved Bronze snapshots missing from Silver; reprocess saved input"}
+      - alert: SSDRQualityFailed
+        expr: ssdr_quality_failed == 1
+        for: 15s
+        labels: {severity: warning}
+        annotations: {summary: "Latest data audit failed; inspect health.json before publishing"}
+      - alert: SSDRAuditStale
+        expr: time() - ssdr_quality_evaluated_timestamp_seconds > 900
+        for: 30s
+        labels: {severity: warning}
+        annotations: {summary: "No recent quality check; old audit results are not current health"}

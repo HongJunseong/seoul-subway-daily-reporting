@@ -632,3 +632,16 @@ DAG/Pod 13 passed, 0.80초와 Ruff·diff 검사를 통과했다. 전체 회귀�
 관측 캠페인은 12~15일 실행 기록 미확인, 16일은 실제 KST의 전용 run CLI에서 missed_start_window/GET 0회다. plan·seal·기간·예산은 변경하지 않았다. 현재 도래 15슬롯 중 미확인 12·시작 놓침 3이며 미확인 날짜의 호출 수를 0으로 단정하지 않는다. 공식 automation_update로 기존 예약의 DTSTART를 Asia/Seoul 10/17 17:50, 남은 두 실행으로 명시했고 설정을 다시 읽어 확인했다. 늦은 기동의 근본 원인과 미래 실제 기동은 미확인이다. 컴퓨터·앱 실행이 필요한 로컬 예약이며 운영 상시 수집 성공으로 처리하지 않는다.
 
 추가 실서비스 GET은 승인된 승하차 한 번뿐이다. AWS·Slack·LLM·Databricks upload·Kubernetes 배포는 없다. 장기 원천 baseline·운영 scheduler 감시·실제 S3·대규모 자원 검증은 미완료로 유지한다. README는 도착 관측 범위를 명확히 한 한 문장만 수정했다. 구현·검증·필수 문서와 공개 집계를 main에 일반 push하고 새 HEAD의 네 CI job을 확인한다.
+
+## 2026-10-16 — 선택적 Prometheus·Grafana
+
+사용자가 요청한 범위로 전용 로컬 ssdr-monitoring namespace에 exporter·Prometheus·Grafana를 배포했다. Terraform은 실제 관리 대상 AWS 인프라가 정해질 때 검토한다. 기존 Airflow 배포와 캠페인 일정은 바꾸지 않았고 서울 API·AWS·Slack·LLM·Databricks upload는 호출하지 않았다.
+
+- task callback·audit_lake의 선택적 숫자 snapshot, Linux 파일 lock·atomic replace, 입력 종류 분리와 읽기 전용 exporter를 추가했다. 키·원문·run ID를 지표에 넣지 않는다.
+- 두 5분 DAG의 성공 시각·실패·재시도, 저장 원본 미처리·감사 신선도·마지막 worker cgroup 측정을 대시보드에 연결했다. 누락·손상·exporter 단절을 정상 0과 구분한다.
+- 실제 로컬 TaskInstance 첫 실패(up_for_retry), 두 번째 성공을 Kubernetes Job에서 실행했다. 실패 시 SSDRTaskFailed/SSDRProcessingBehind firing, 복구 후 firing 없음, exporter replicas=0 시 SSDRExporterDown firing, replicas=1 후 지표 유지·해제를 확인했다. Grafana provisioning과 datasource proxy 실제 쿼리, 브라우저 차트도 확인했다. 품질 값과 작업 명령은 합성이다.
+- 첫 점검에서 Grafana 384Mi 한도의 OOM과 fixture의 Airflow operator 복사 후 재시도 명령 유지 문제를 발견했다. Grafana 한도 1Gi·재시도 operator 재연결로 수정한 뒤 정상 복구를 확인했다. 기록은 private .work/monitoring, 공개 숫자 요약은 examples/operations/monitoring.json이다.
+- 파이프라인 전체 **446 passed**, Airflow DAG/Pod **13 passed**. Promtool config 7개 규칙·6개 실패/복구 사례, 실제 컨테이너 retry callback 검증, Helm monitoring overlay worker template 검증, Ruff·actionlint·문서 링크/비밀 값 검사 통과. 처음 DAG 검사는 PYTHONPATH 누락으로 실패해 CI와 같은 .:dags 설정으로 재실행했다.
+- CI에 경고 규칙·실제 callback 복구·선택적 Helm overlay 검사를 추가했다. main 직접 커밋·일반 push 경로를 사용하며 원격 CI 결과는 해당 커밋의 Actions 실행 기록으로 확인한다.
+
+남은 범위: 기존 운영 경로에 reviewed 이미지·metrics overlay를 적용하고 완료 구간 감사의 갱신 일정을 운영하는 일, 실수집 장기 임계값 조정과 외부 경고 전달. 이번 fixture는 API 수집·Delta 변환·지속 scheduler 운영의 추가 증거가 아니다. Prometheus 데이터는 2일/512MB, callback 누적은 metrics PVC 보존 범위다. 현재 로컬 대시보드 port-forward는 loopback 13000, Prometheus는 19090이며 종료되면 MONITORING.md 명령으로 다시 연결한다.

@@ -6,6 +6,7 @@ import math
 from datetime import datetime, timezone
 from src.alerts.notify_pipeline import notify_failure
 from src.observability import container_resources
+from src.observability.metrics import publish_task
 
 PREFIX = "SSDR_TASK_EVENT "
 log = logging.getLogger(__name__)
@@ -54,6 +55,10 @@ def emit(context, event):
         if resources is not None:
             value["container_resources"] = resources
     log.info("%s%s", PREFIX, json.dumps(value, ensure_ascii=False, allow_nan=False))
+    try:
+        publish_task(context, value)
+    except (OSError, ValueError, TypeError, KeyError):
+        log.warning("Optional metric snapshot failed; task outcome preserved")
     return value
 
 

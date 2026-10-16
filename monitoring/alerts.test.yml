@@ -1,0 +1,107 @@
+rule_files:
+- alerts.yml
+evaluation_interval: 5s
+tests:
+- name: task failure persists and retry success clears it
+  interval: 5s
+  input_series:
+  - series: ssdr_task_last_attempt_failed{dag_id="arrival_collect_5m",data_kind="synthetic",task_id="bronze_ingest_arrival"}
+    values: 0 1 1 1 1 0 0
+  alert_rule_test:
+  - eval_time: 15s
+    alertname: SSDRTaskFailed
+    exp_alerts: []
+  - eval_time: 20s
+    alertname: SSDRTaskFailed
+    exp_alerts:
+    - exp_labels:
+        dag_id: arrival_collect_5m
+        data_kind: synthetic
+        task_id: bronze_ingest_arrival
+        severity: warning
+      exp_annotations:
+        summary: Latest observed task attempt failed; confirm Airflow state and retry
+  - eval_time: 25s
+    alertname: SSDRTaskFailed
+    exp_alerts: []
+- name: exporter outage is unknown and recovery clears it
+  interval: 5s
+  input_series:
+  - series: up{job="ssdr-pipeline"}
+    values: 0 0 0 0 1 1
+  alert_rule_test:
+  - eval_time: 15s
+    alertname: SSDRExporterDown
+    exp_alerts:
+    - exp_labels:
+        job: ssdr-pipeline
+        severity: warning
+      exp_annotations: &id001
+        summary: Metric exporter unreachable; pipeline state is unknown
+  - eval_time: 20s
+    alertname: SSDRExporterDown
+    exp_alerts: []
+- name: missing scrape target must not look healthy
+  interval: 5s
+  input_series: []
+  alert_rule_test:
+  - eval_time: 15s
+    alertname: SSDRExporterDown
+    exp_alerts:
+    - exp_labels:
+        job: ssdr-pipeline
+        severity: warning
+      exp_annotations: *id001
+- name: missing expected record then valid input
+  interval: 5s
+  input_series:
+  - series: ssdr_task_record_available{dag_id="arrival_collect_5m",data_kind="synthetic",task_id="bronze_ingest_arrival"}
+    values: 0 0 0 0 1 1
+  alert_rule_test:
+  - eval_time: 15s
+    alertname: SSDRMetricInputUnavailable
+    exp_alerts:
+    - exp_labels:
+        dag_id: arrival_collect_5m
+        data_kind: synthetic
+        task_id: bronze_ingest_arrival
+        severity: warning
+      exp_annotations:
+        summary: Expected metric input absent or invalid; inspect publisher
+  - eval_time: 20s
+    alertname: SSDRMetricInputUnavailable
+    exp_alerts: []
+- name: saved bronze processing catches up
+  interval: 5s
+  input_series:
+  - series: ssdr_quality_unprocessed_snapshot_count{data_kind="synthetic"}
+    values: 1 1 1 1 0 0
+  alert_rule_test:
+  - eval_time: 15s
+    alertname: SSDRProcessingBehind
+    exp_alerts:
+    - exp_labels:
+        data_kind: synthetic
+        severity: warning
+      exp_annotations:
+        summary: Saved Bronze snapshots missing from Silver; reprocess saved input
+  - eval_time: 20s
+    alertname: SSDRProcessingBehind
+    exp_alerts: []
+- name: audit age does not remain healthy indefinitely
+  interval: 5s
+  input_series:
+  - series: ssdr_quality_evaluated_timestamp_seconds{data_kind="synthetic"}
+    values: 0+0x190
+  alert_rule_test:
+  - eval_time: 930s
+    alertname: SSDRAuditStale
+    exp_alerts: []
+  - eval_time: 935s
+    alertname: SSDRAuditStale
+    exp_alerts:
+    - exp_labels:
+        data_kind: synthetic
+        severity: warning
+      exp_annotations:
+        summary: No recent quality check; old audit results are not current health

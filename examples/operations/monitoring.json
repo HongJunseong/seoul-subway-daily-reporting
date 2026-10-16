@@ -1,0 +1,86 @@
+{
+  "environment": "Docker Desktop Kubernetes 1.32.2; dedicated ssdr-monitoring namespace",
+  "data_kind": "synthetic",
+  "source_api_calls": 0,
+  "scope": "Actual local TaskInstance callbacks, worker-container cgroup samples, Prometheus and Grafana; generated quality values, no Delta execution",
+  "phases": [
+    {
+      "data_kind": "synthetic",
+      "phase": "baseline",
+      "checked_at_utc": "2026-10-16T13:14:18.169957+00:00",
+      "exporter_up": true,
+      "firing_alerts": [],
+      "observed_retry_count": 0.0,
+      "dashboard_provisioned": true,
+      "grafana_datasource_query_verified": true,
+      "scope": "Kubernetes monitoring and metric fixture; no live source collection or Delta processing"
+    },
+    {
+      "data_kind": "synthetic",
+      "phase": "failure",
+      "checked_at_utc": "2026-10-16T13:15:40.366481+00:00",
+      "exporter_up": true,
+      "firing_alerts": [
+        "SSDRProcessingBehind",
+        "SSDRTaskFailed"
+      ],
+      "observed_retry_count": 0.0,
+      "dashboard_provisioned": true,
+      "grafana_datasource_query_verified": true,
+      "scope": "Kubernetes monitoring and metric fixture; no live source collection or Delta processing"
+    },
+    {
+      "data_kind": "synthetic",
+      "phase": "recovery",
+      "checked_at_utc": "2026-10-16T13:23:43.346634+00:00",
+      "exporter_up": true,
+      "firing_alerts": [],
+      "observed_retry_count": 2.0,
+      "dashboard_provisioned": true,
+      "grafana_datasource_query_verified": true,
+      "scope": "Kubernetes monitoring and metric fixture; no live source collection or Delta processing"
+    },
+    {
+      "data_kind": "synthetic",
+      "phase": "exporter-down",
+      "checked_at_utc": "2026-10-16T13:25:25.058260+00:00",
+      "exporter_up": false,
+      "firing_alerts": [
+        "SSDRExporterDown"
+      ],
+      "observed_retry_count": null,
+      "dashboard_provisioned": true,
+      "grafana_datasource_query_verified": true,
+      "scope": "Kubernetes monitoring and metric fixture; no live source collection or Delta processing"
+    },
+    {
+      "data_kind": "synthetic",
+      "phase": "recovery",
+      "checked_at_utc": "2026-10-16T13:26:00.691461+00:00",
+      "exporter_up": true,
+      "firing_alerts": [],
+      "observed_retry_count": 2.0,
+      "dashboard_provisioned": true,
+      "grafana_datasource_query_verified": true,
+      "scope": "Kubernetes monitoring and metric fixture; no live source collection or Delta processing"
+    },
+    {
+      "data_kind": "synthetic",
+      "phase": "recovery",
+      "checked_at_utc": "2026-10-16T13:34:53.543100+00:00",
+      "exporter_up": true,
+      "firing_alerts": [],
+      "observed_retry_count": 4.0,
+      "dashboard_provisioned": true,
+      "grafana_datasource_query_verified": true,
+      "scope": "Kubernetes monitoring and metric fixture; no live source collection or Delta processing"
+    }
+  ],
+  "limitations": [
+    "Existing Airflow deployment unchanged; operational wiring requires reviewed image and optional metrics overlay",
+    "No long-running live source monitoring or external alert delivery",
+    "Resources are last fixture Job container samples, not live task Pod usage"
+  ],
+  "final_fixture_image": "ssdr-airflow:monitoring-final",
+  "final_fixture_image_id": "sha256:2f93b0f2f363b7d965763a64c22f0471da5c83e84d428f2bea0c0bb826551615"
+}

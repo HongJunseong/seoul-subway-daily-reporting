@@ -106,7 +106,7 @@ Free Edition의 serverless Job으로 공통 승하차 변환을 실행하고, Un
 
 Docker Desktop의 단일 node 클러스터에서 scheduler → worker Pod → 보고서를 실행했습니다. 태스크별 자원 설정과 PVC 로그 보존을 적용하고, 합성 데이터로 worker 삭제 후 새 Pod 재시도와 재처리 결과를 확인했습니다.
 
-worker 자원 사용량을 측정해 control 태스크의 CPU·메모리 설정을 조정했습니다. Spark는 Pod 내부에서 실행합니다.
+worker 자원 사용량을 측정해 control 태스크의 CPU·메모리 설정을 조정했습니다. Spark는 Pod 내부에서 실행합니다. Prometheus·Grafana로 태스크 성공 시각·재시도·처리 누락을 조회하고, 로컬 장애 실험에서 경고 발생과 복구를 확인했습니다. [모니터링](docs/MONITORING.md)
 
 [실행·복구 결과](examples/kubernetes/README.md) · [자원 측정](examples/kubernetes/resources.md) · [배포 방법](docs/KUBERNETES.md)
 

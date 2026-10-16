@@ -1,0 +1,563 @@
+{
+  "uid": "ssdr-pipeline",
+  "title": "Seoul Subway · Pipeline Health",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "timezone": "Asia/Seoul",
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "tags": [
+    "seoul-subway",
+    "pipeline"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "data_kind",
+        "label": "입력 종류",
+        "type": "constant",
+        "query": "synthetic",
+        "current": {
+          "text": "synthetic",
+          "value": "synthetic"
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "운영 범위",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**입력: $data_kind** · callback과 마지막 로컬 품질 점검을 관측합니다. 원문·run ID·API 키는 지표에 포함하지 않습니다. CPU·메모리는 **마지막 worker 측정값**이며 현재 실행 중인 Pod 사용량이 아닙니다."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Exporter 연결",
+      "type": "stat",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"ssdr-pipeline\"}",
+          "legendFormat": "scrape",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          },
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "미검증",
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "미검증",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "values": false
+        },
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 3,
+      "title": "필수 task 기록",
+      "type": "stat",
+      "description": "0은 기록 없음, 미검증은 exporter 수집 불가입니다.",
+      "gridPos": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "min(ssdr_task_record_available{data_kind=\"$data_kind\"})",
+          "legendFormat": "available",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          },
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "미검증",
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "미검증",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "values": false
+        },
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 4,
+      "title": "마지막 태스크 성공 후 경과 시간",
+      "type": "timeseries",
+      "description": "태스크 성공 시각입니다. API 원천 생성 시각이나 snapshot 시각과 구분합니다.",
+      "gridPos": {
+        "x": 8,
+        "y": 3,
+        "w": 16,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - ssdr_task_last_success_timestamp_seconds{data_kind=\"$data_kind\"}",
+          "legendFormat": "{{dag_id}} / {{task_id}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "최근 완료 시도의 실행 시간",
+      "type": "timeseries",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ssdr_task_last_duration_seconds{data_kind=\"$data_kind\"}",
+          "legendFormat": "{{dag_id}} / {{task_id}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "15분간 관측한 실패·재시도",
+      "type": "timeseries",
+      "description": "callback이 기록한 시도입니다. Airflow DB의 최종 상태·전체 이력을 대체하지 않습니다.",
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (dag_id) (increase(ssdr_task_observed_failures_total{data_kind=\"$data_kind\"}[15m]))",
+          "legendFormat": "{{dag_id}} failed",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (dag_id) (increase(ssdr_task_observed_retries_total{data_kind=\"$data_kind\"}[15m]))",
+          "legendFormat": "{{dag_id}} retried",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "최근 감사의 미관측·미처리",
+      "type": "timeseries",
+      "description": "미관측 bucket이 API 실패를 증명하지 않습니다. 기록이 없으면 0으로 채우지 않습니다.",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ssdr_quality_missing_time_buckets{data_kind=\"$data_kind\"}",
+          "legendFormat": "미관측 bucket",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "ssdr_quality_unprocessed_snapshot_count{data_kind=\"$data_kind\"}",
+          "legendFormat": "Bronze 미처리 snapshot",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "감사 기준 관측 나이·원천 시각 차이",
+      "type": "timeseries",
+      "description": "감사에 지정한 기준 시각을 사용합니다. 과거 구간의 재처리를 현재 장애로 해석하지 않습니다.",
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ssdr_quality_reference_timestamp_seconds{data_kind=\"$data_kind\"} - ssdr_quality_latest_snapshot_timestamp_seconds{data_kind=\"$data_kind\"}",
+          "legendFormat": "감사 기준 snapshot 나이",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "ssdr_quality_p95_source_age_seconds{data_kind=\"$data_kind\"}",
+          "legendFormat": "원천 시각 차이 p95",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "마지막 worker 메모리 peak",
+      "type": "timeseries",
+      "description": "종료 callback까지 관측한 해당 컨테이너의 kernel peak입니다.",
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ssdr_worker_last_memory_peak_bytes{data_kind=\"$data_kind\"}",
+          "legendFormat": "{{dag_id}} / {{task_id}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "마지막 worker CPU 사용",
+      "type": "timeseries",
+      "description": "0.25초 이상 유효 구간의 측정값입니다. 순간 peak나 현재 Pod 사용량이 아닙니다.",
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ssdr-prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ssdr_worker_last_mean_cpu_cores{data_kind=\"$data_kind\"}",
+          "legendFormat": "{{task_id}} 평균",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "ssdr_worker_last_sampled_peak_cpu_cores{data_kind=\"$data_kind\"}",
+          "legendFormat": "{{task_id}} 구간 최대",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ssdr-prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "noValue": "미검증",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    }
+  ]
+}

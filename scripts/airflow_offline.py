@@ -43,7 +43,7 @@ def prepare_environment(output, pipeline_python):
         "SSDR_REPORT_MODE": "template", "SSDR_DATA_KIND": "synthetic",
         "PYSPARK_PYTHON": str(pipeline_python), "PYSPARK_DRIVER_PYTHON": str(pipeline_python),
         "SPARK_LOCAL_IP": "127.0.0.1", "AWS_EC2_METADATA_DISABLED": "true",
-        "SLACK_WEBHOOK_URL": "", "OPENAI_API_KEY": "", "SEOUL_API_KEY": "",
+        "SSDR_METRICS_DIR": "", "SLACK_WEBHOOK_URL": "", "OPENAI_API_KEY": "", "SEOUL_API_KEY": "",
         "SSDR_S3_BUCKET": "", "AWS_ACCESS_KEY_ID": "", "AWS_SECRET_ACCESS_KEY": "",
         "AWS_SESSION_TOKEN": "", "AIRFLOW_CONFIG": str(output / "airflow/airflow.cfg"),
     }

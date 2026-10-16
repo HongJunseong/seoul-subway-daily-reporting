@@ -1,0 +1,5 @@
+# Optional overlay after existing Airflow values. Uses its shared logs PVC.
+# Exporter must mount that same claim read-only at /metrics/ssdr-metrics.
+extraEnv: |
+  - name: SSDR_METRICS_DIR
+    value: /opt/airflow/logs/ssdr-metrics

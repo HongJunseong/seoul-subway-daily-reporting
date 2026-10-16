@@ -16,3 +16,5 @@
 [source-pagination.json](source-pagination.json)은 같은 HTTP mock 응답의 수집 전후 비교다. 반복 페이지가 총 행 수를 채우는 경우와 소수/boolean 예고 건수가 기존에 통과했고 새 collector에서는 SourceError로 차단됐다. 실제 API 커버리지나 Delta 쓰기 실험과 구분한다.
 
 [runtime-checks.json](runtime-checks.json)은 localhost HTTP의 수집 시간 제한, 실제 로컬 Airflow의 자식 종료·다음 실행, 새 가상환경의 합성 데모 결과다. 배포 scheduler·Kubernetes·S3의 timeout 검증과 구분한다.
+
+[monitoring.json](monitoring.json)은 로컬 Kubernetes에서 실제 TaskInstance callback을 사용한 정상·실패·재시도, exporter 중단·복구의 경고 전환이다. 품질 값은 합성이며 실수집·Delta 처리 검증과 구분한다. [설치와 해석](../../docs/MONITORING.md)

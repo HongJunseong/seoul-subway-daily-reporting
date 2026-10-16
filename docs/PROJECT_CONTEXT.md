@@ -96,3 +96,7 @@ publication.json은 정확한 본문·context 문자열·manifest를 함께 담�
 ## 승하차 수집의 페이지 완전성 (2026-10-13)
 
 승하차 collector는 예고 건수의 타입·페이지별 요청 길이·수집 내부 자연키 고유성을 Bronze append 전에 검증한다. 반복 페이지가 총 건수만 채우는 경우를 거부하며 서로 다른 노선의 동일 역명과 별도 수집의 정정 이력은 유지한다. 예고 건수가 설정한 페이지 예산을 넘으면 추가 요청을 중단한다. DATA_CONTRACTS와 examples/operations/source-pagination.json에 합성 재현과 범위를 기록했다. 실제 원천의 고유 역 누락·장기 커버리지와 API 관측 결과는 별도다.
+
+## 선택적 모니터링 (2026-10-16)
+
+SSDR_METRICS_DIR를 지정하면 task callback과 audit_lake가 숫자 메타데이터만 atomic JSON으로 기록한다. 읽기 전용 exporter→Prometheus→Grafana는 원본 수집·Delta 조회를 수행하지 않는다. synthetic/observed 입력을 분리하고, api_observations 보고서 설정은 observed 지표로 정규화한다. 누락·손상·연결 단절은 정상 0으로 채우지 않는다. 기존 Airflow의 logs PVC를 사용할 수 있으나 이번 실제 배포 검증은 전용 ssdr-monitoring namespace의 TaskInstance fixture다. 기존 scheduler와 실수집 일정은 변경하지 않았다. MONITORING.md에 설치·지표·경고와 유지 범위를 기록했다.
