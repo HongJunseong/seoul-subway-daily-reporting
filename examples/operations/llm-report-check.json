@@ -18,16 +18,129 @@
     "finish_reason": "stop"
   },
   "s3": {
-    "status": "failed",
-    "http_requests": 1,
-    "readback_files": 0,
-    "error_type": "ClientError",
-    "http_status": 403,
-    "error_code": "InvalidAccessKeyId"
+    "status": "succeeded",
+    "http_requests": 8,
+    "uploaded_files": 4,
+    "readback_files": 4,
+    "all_bytes_match": true,
+    "remote_publication_verified": true,
+    "report_mode": "llm",
+    "files": [
+      {
+        "suffix": "md",
+        "bytes": 5565,
+        "sha256": "cb043b02987bfc10f3a536dd76fb3391060f2bfa6a4e415fc648bf0cbbc1ab08"
+      },
+      {
+        "suffix": "json",
+        "bytes": 8619,
+        "sha256": "90a2385cda7298fab801af56ec4f65e2868639702b1074086f6201022395521e"
+      },
+      {
+        "suffix": "json",
+        "bytes": 590,
+        "sha256": "65662223cc79c8bb3d28b7796a47d7d65c2b3cd95ce42b2374c2c41a630b8a2b"
+      },
+      {
+        "suffix": "json",
+        "bytes": 15665,
+        "sha256": "843befd8de0d3bcde1a7e1ee6f114ae7668fa88289fe7885a2f41253277809a0"
+      }
+    ],
+    "object_encryption_verified": true
   },
   "limitations": [
     "LLM report verification covers complete response, publication hashes and date contract; narrative factual correctness needs separate review",
-    "S3 upload/readback is not verified; first PUT rejected with InvalidAccessKeyId",
+    "Actual S3 validation covers four saved report objects in a newly created private bucket; Delta lake S3 writes and continuous Kubernetes operation are not verified",
     "No live source API, Slack or additional LLM calls"
-  ]
+  ],
+  "s3_attempts": [
+    {
+      "stage": "initial_credentials",
+      "result": {
+        "status": "failed",
+        "http_requests": 1,
+        "readback_files": 0,
+        "error_type": "ClientError",
+        "http_status": 403,
+        "error_code": "InvalidAccessKeyId"
+      }
+    },
+    {
+      "stage": "after_credential_refresh",
+      "result": {
+        "status": "failed",
+        "http_requests": 1,
+        "readback_files": 0,
+        "error_type": "NoSuchBucket",
+        "http_status": 404,
+        "error_code": "NoSuchBucket"
+      }
+    },
+    {
+      "stage": "after_authorized_bucket_creation",
+      "result": {
+        "status": "succeeded",
+        "http_requests": 8,
+        "uploaded_files": 4,
+        "readback_files": 4,
+        "all_bytes_match": true,
+        "remote_publication_verified": true,
+        "report_mode": "llm",
+        "files": [
+          {
+            "suffix": "md",
+            "bytes": 5565,
+            "sha256": "cb043b02987bfc10f3a536dd76fb3391060f2bfa6a4e415fc648bf0cbbc1ab08"
+          },
+          {
+            "suffix": "json",
+            "bytes": 8619,
+            "sha256": "90a2385cda7298fab801af56ec4f65e2868639702b1074086f6201022395521e"
+          },
+          {
+            "suffix": "json",
+            "bytes": 590,
+            "sha256": "65662223cc79c8bb3d28b7796a47d7d65c2b3cd95ce42b2374c2c41a630b8a2b"
+          },
+          {
+            "suffix": "json",
+            "bytes": 15665,
+            "sha256": "843befd8de0d3bcde1a7e1ee6f114ae7668fa88289fe7885a2f41253277809a0"
+          }
+        ]
+      }
+    }
+  ],
+  "s3_object_http_requests_total": 10,
+  "bucket_setup": {
+    "status": "succeeded",
+    "created": true,
+    "region": "ap-northeast-2",
+    "public_access_blocked": true,
+    "default_encryption": "AES256",
+    "object_ownership": "BucketOwnerEnforced",
+    "location_verified": true,
+    "project_tags_applied": true,
+    "http_requests": 9,
+    "operations": [
+      "get_caller_identity",
+      "create_bucket",
+      "put_public_access_block",
+      "put_bucket_encryption",
+      "put_bucket_tagging",
+      "get_public_access_block",
+      "get_bucket_encryption",
+      "get_bucket_ownership_controls",
+      "get_bucket_location"
+    ],
+    "verified_at_utc": "2026-10-16T14:56:02.181378+00:00",
+    "identity_lookup_http_requests": 1
+  },
+  "s3_http_requests_total": 18,
+  "aws_http_requests_total": 19,
+  "local_config": {
+    "bucket_and_region_updated": true,
+    "other_settings_preserved": true
+  }
 }

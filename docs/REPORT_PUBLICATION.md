@@ -19,7 +19,7 @@ Gold 소비 계약을 통과한 본문/context의 정확한 UTF-8 bytes로 SHA-2
 
 호환 export 세 개를 먼저 쓰고 발행 객체를 마지막에 교체한다. 로컬은 같은 디렉터리의 고유 임시 파일에 쓰고 flush·file fsync 뒤 replace한다. 발행 객체 교체 전 실패/프로세스 종료에서는 기존 발행을 읽는다. 소비자는 한 객체의 bytes를 한 번만 읽어 본문과 context를 검증한다.
 
-S3 adapter도 네 PUT 중 발행 객체를 마지막에 보낸다. 단일 key 갱신과 여러 key의 트랜잭션은 구분해야 한다. 이 선택은 [AWS S3 consistency 문서](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html)의 단일 key 원자적 갱신 계약을 사용한다. 이번 S3 실패·응답 유실 검증은 메모리 mock이며 실제 AWS 실행은 아니다.
+S3 adapter도 네 PUT 중 발행 객체를 마지막에 보낸다. 단일 key 갱신과 여러 key의 트랜잭션은 구분해야 한다. 이 선택은 [AWS S3 consistency 문서](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html)의 단일 key 원자적 갱신 계약을 사용한다. S3 실패·응답 유실 주입은 메모리 mock으로 검사했다. 정상 저장·읽기는 이후 [실제 LLM 보고서 네 파일](../examples/operations/llm-report-check.json)로 별도 확인했으며 로컬과 S3의 전체 bytes·발행 해시가 일치했다.
 
 커밋은 성공했지만 응답이 유실되면 새 완전한 객체가 이미 존재할 수 있다. 실패 응답만으로 이전 값이라고 단정하지 않는다. 같은 출력/context로 재시도하면 동일 bytes를 게시한다. local/S3는 독립적으로 커밋되며 분산 트랜잭션이 아니다. 동시 writer의 시각 순서·최신성, 전원/디스크 장애 내구성, S3 version history는 이 구현의 검증 범위가 아니다.
 

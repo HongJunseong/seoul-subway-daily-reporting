@@ -100,3 +100,7 @@ publication.json은 정확한 본문·context 문자열·manifest를 함께 담�
 ## 선택적 모니터링 (2026-10-16)
 
 SSDR_METRICS_DIR를 지정하면 task callback과 audit_lake가 숫자 메타데이터만 atomic JSON으로 기록한다. 읽기 전용 exporter→Prometheus→Grafana는 원본 수집·Delta 조회를 수행하지 않는다. synthetic/observed 입력을 분리하고, api_observations 보고서 설정은 observed 지표로 정규화한다. 누락·손상·연결 단절은 정상 0으로 채우지 않는다. 기존 Airflow의 logs PVC를 사용할 수 있으나 이번 실제 배포 검증은 전용 ssdr-monitoring namespace의 TaskInstance fixture다. 기존 scheduler와 실수집 일정은 변경하지 않았다. MONITORING.md에 설치·지표·경고와 유지 범위를 기록했다.
+
+## 실제 LLM 보고서의 S3 저장 (2026-10-16)
+
+OpenAI 보고서 1회 생성 후 사용자가 AWS 자격 증명을 갱신하고 버킷 생성을 승인했다. ap-northeast-2에 프로젝트용 비공개 버킷을 만들고 퍼블릭 접근 차단·AES256 기본 암호화·BucketOwnerEnforced를 확인했다. .env의 버킷·리전만 연결하고 다른 설정은 보존했다. 기존 publication helper로 같은 보고서 네 파일을 저장·읽어 전체 bytes와 발행 해시를 검증했다. LLM 추가 호출은 없다. 버킷 주소·계정·본문은 private .work에만 두며 공개 집계는 examples/operations/llm-report-check.json이다. 실제 S3 Delta lake·운영 DAG 활성화와 구분한다.
