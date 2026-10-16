@@ -18,6 +18,7 @@ from src.observability.source_integrity import capture_version, integrity_summar
 from src.common.dates import KST, validate_ymd
 from src.observability.audit import DeltaAuditReader, audit_lake
 from scripts.audit_lake import save_audit
+from src.observability.health import pipeline_health, render_health
 
 TABLES = [
     "bronze/subway_usage_delta", "bronze/subway_arrival_delta",
@@ -144,6 +145,9 @@ def process(source, output):
                          capture["cadence_seconds"])
     quality["data_kind"] = "observed"
     save_audit(quality, output / "audit")
+    health = pipeline_health(quality)
+    write_json(output / "health.json", health)
+    (output / "health.md").write_text(render_health(health), encoding="utf-8")
     # Only capture metadata, content hashes and aggregate metrics are suitable for public evidence.
     evidence = {
         "schema_version": 1, "data_kind": "observed", "actual_api_collection": True,

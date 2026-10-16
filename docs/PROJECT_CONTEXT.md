@@ -29,6 +29,12 @@
 입력 날짜·키·수치·표본 분모가 잘못됐거나 데이터가 없으면 정상 보고서 출판을 막는다.
 실제 운행 지연·승객 대기시간·당일 혼잡도를 관측 ETA나 D-4 이용량으로 단정하지 않는다.
 
+## 실행 제한과 점검
+
+수집 함수 전체는 Linux main-thread process timer로 도착 45초·승하차 120초를 제한한다. 과도한 Retry-After는 조기 재요청 없이 중단하며 고정 관측 session의 단일 GET 정책은 유지한다. 모든 Airflow 태스크와 DAG에는 실행 상한이 있다. 시간 초과 뒤 자식 종료·다음 실행은 실제 로컬 TaskInstance로 검사한다.
+
+check_pipeline.py는 완료된 로컬 Delta·선택적 태스크 로그/캠페인 기록을 읽고 원인별 조치를 안내한다. 저장 원본 처리 CLI는 같은 health 결과를 자동 생성한다. S3 scheduler의 상시 모니터링이나 자동 복구로 확대하지 않는다. 운영·재현 절차는 RUNBOOK과 OBSERVABILITY에 있다.
+
 ## 검증과 작업 상태
 실제 실행 결과는 SESSION_HANDOFF.md, 검증 절차는 RUNBOOK.md, 구현 선택은 adr/에 기록한다.
 AWS·서울 API·Slack·LLM·Kubernetes 실배포는 로컬 fixture 검증과 구분한다.

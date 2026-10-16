@@ -14,3 +14,5 @@
 [compaction.md](compaction.md)와 [compaction.json](compaction.json)은 더 큰 합성 36,000행의 닫힌 시간 파일 유지보수 결과다. 파일 수·버전·조회 표본과 전체 행·인접 파일·원본 재처리 보존을 확인했다. 기존 recovery/quality 실험의 lake와 분리한다.
 
 [source-pagination.json](source-pagination.json)은 같은 HTTP mock 응답의 수집 전후 비교다. 반복 페이지가 총 행 수를 채우는 경우와 소수/boolean 예고 건수가 기존에 통과했고 새 collector에서는 SourceError로 차단됐다. 실제 API 커버리지나 Delta 쓰기 실험과 구분한다.
+
+[runtime-checks.json](runtime-checks.json)은 localhost HTTP의 수집 시간 제한, 실제 로컬 Airflow의 자식 종료·다음 실행, 새 가상환경의 합성 데모 결과다. 배포 scheduler·Kubernetes·S3의 timeout 검증과 구분한다.

@@ -1,0 +1,37 @@
+{
+  "data_kind": "synthetic",
+  "airflow_timeout": {
+    "data_kind": "synthetic",
+    "timed_out_state": "failed",
+    "child_stopped": true,
+    "late_output_absent": true,
+    "next_run_state": "success",
+    "elapsed_seconds": 1.132,
+    "scope": "actual local TaskInstance.run and Bash child; no scheduler, Kubernetes or S3 execution"
+  },
+  "clean_environment": {
+    "data_kind": "synthetic",
+    "fresh_venv": true,
+    "tracked_source_copy": true,
+    "copied_files": 202,
+    "private_env_absent": true,
+    "inherited_service_configuration_removed": true,
+    "demo_passed": true,
+    "publication_verified": true,
+    "ruff_passed": true,
+    "elapsed_seconds": 79.084,
+    "scope": "new source folder and Python venv; same host Java and pip cache; Maven downloads on first run"
+  },
+  "http_checks": {
+    "method": "tests/test_source_deadline.py: real localhost HTTP server and controlled pagination",
+    "slow_drip_interrupted": true,
+    "next_request_succeeded": true,
+    "excessive_retry_after_aborted_before_retry": true,
+    "redirect_not_followed": true,
+    "external_API_GETs": 0
+  },
+  "limitations": [
+    "Local TaskInstance.run; no deployed scheduler or Kubernetes timeout experiment",
+    "Fresh Python venv on the same host; Java and pip cache shared"
+  ]
+}

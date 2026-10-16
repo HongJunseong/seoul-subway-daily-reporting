@@ -618,3 +618,17 @@ README를 포트폴리오 소개에 맞게 다듬었다. 기존 섹션·배지·
 - 실제 localhost HTTP의 slow-drip·긴 Retry-After·redirect와 페이지 중단, timer/handler 복원 및 다음 요청 성공을 검사했다. 새 Airflow 실험은 실제 TaskInstance.run에서 1초 상한의 Bash 자식 종료·지연 출력 부재·다음 실행 success를 확인했다. 최종 timeout 실행은 1.132초다. scheduler·Kubernetes에서 timeout을 검증한 것은 아니다.
 
 DAG/Pod 13 passed, 0.80초와 Ruff·diff 검사를 통과했다. 전체 회귀와 새 환경·실제 보고서·운영 점검의 통합 결과는 다음 항목에 기록한다. CI에 timeout 실험과 결과 artifact를 추가했다. private 로그는 .work/finalize-{dags,final-timeout,final-regression}.log이며 실서비스 배포는 수행하지 않았다.
+
+## 2026-10-16 실제 보고서·운영 점검·새 환경 확인
+
+- check_pipeline.py는 완료된 로컬 Delta와 선택적 태스크 로그·캠페인을 대조하고 health JSON/Markdown에 조치 방법을 남긴다. 수집 기록 부재·Bronze 미처리·품질 오류·관측 나이·원천 시각을 구분한다. 과거 실패 시도는 최종 태스크 실패로 단정하지 않고 로그 미제공은 미검증으로 남긴다. process_source_experiment.py에는 처리 후 health 자동 생성을 연결했다.
+- 보관된 10/11 실제 원본을 새 lake에서 처리해 7개 테이블 재처리를 확인했다. 이 원본의 10/7 이용량은 10/12 보고서의 D-4 날짜가 아니어서 발행이 차단됐다. 사용자가 별도로 승인한 1 GET으로 10/8 이용량 615행을 확보해 기존 10/11 도착 2,987개 유효 ETA 관측과 함께 10/12 기준 보고서를 생성했다. 실제 생성은 10/16이며 과거 생성으로 소급하지 않는다.
+- 해당 원본 재처리에서 7개 테이블 행·전체 해시와 Bronze 버전, 보고서 본문·업무 context가 유지됐고 canonical 발행 검증이 통과했다. Silver/Gold 버전이 바뀌므로 context 전체 bytes 일치로 확대하지 않는다. 예전 도착 원본은 schema 1 미검증 이력을 유지하고 추가 승하차 파일은 수집 시 SHA256을 기록했다.
+- 실제 데이터의 점검은 응답 상한·미래 원천 시각·과거 관측 나이로 degraded다. 별도 자동 health 생성까지 실제 저장 원본으로 실행했다. 원문·정제 행·보고서·context는 private .work에만 두고 공개에는 runtime-checks.json/report-check.json의 집계·시각·해시만 남겼다.
+- 새 소스 폴더와 새 Python venv에 requirements를 설치하고 private .env 없이 서비스 설정을 제거한 환경에서 README의 합성 데모·보고서 검증·Ruff를 통과했다(79.084초). 첫 준비 시 python3.11이 PATH에 없어 실패했고 기존 설치된 Python 3.11 디렉터리를 PATH에 추가한 새 경로로 재실행했다. 같은 호스트의 Java·pip cache는 공유하며 새 OS/완전한 환경 lock 검증이 아니다.
+
+최종 UTC 파이프라인 425 passed, 124.08초·DAG/Pod 13 passed, 0.80초로 서로 다른 회귀 438개가 통과했다. 이전 전체 424개와 관련 89/18/32개는 겹치는 검사이므로 더하지 않는다. Ruff·diff·문서 상대 링크 182개·공개 JSON·DAG CLI·비밀 값 미포함 검사를 통과했다. 로그와 실제 산출물은 .work/finalize-*에 보관한다.
+
+관측 캠페인은 12~15일 실행 기록 미확인, 16일은 실제 KST의 전용 run CLI에서 missed_start_window/GET 0회다. plan·seal·기간·예산은 변경하지 않았다. 현재 도래 15슬롯 중 미확인 12·시작 놓침 3이며 미확인 날짜의 호출 수를 0으로 단정하지 않는다. 공식 automation_update로 기존 예약의 DTSTART를 Asia/Seoul 10/17 17:50, 남은 두 실행으로 명시했고 설정을 다시 읽어 확인했다. 늦은 기동의 근본 원인과 미래 실제 기동은 미확인이다. 컴퓨터·앱 실행이 필요한 로컬 예약이며 운영 상시 수집 성공으로 처리하지 않는다.
+
+추가 실서비스 GET은 승인된 승하차 한 번뿐이다. AWS·Slack·LLM·Databricks upload·Kubernetes 배포는 없다. 장기 원천 baseline·운영 scheduler 감시·실제 S3·대규모 자원 검증은 미완료로 유지한다. README는 도착 관측 범위를 명확히 한 한 문장만 수정했다. 구현·검증·필수 문서와 공개 집계를 main에 일반 push하고 새 HEAD의 네 CI job을 확인한다.

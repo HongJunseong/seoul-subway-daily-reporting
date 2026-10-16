@@ -87,6 +87,22 @@ python scripts/summarize_tasks.py \
 
 ## 다음 운영 검증
 
+### 처리 후 점검과 조치
+
+저장 원본의 process_source_experiment.py는 처리·재처리 뒤 health.json/health.md를 자동으로 남긴다. 아래 CLI는 완료된 로컬 lake를 점검하고 선택적으로 복사한 태스크 로그(--task-log 반복)와 고정 캠페인(--campaign-dir)을 함께 대조한다. 별도 서비스 호출이나 자동 복구는 하지 않는다.
+
+```bash
+python scripts/check_pipeline.py \
+  --local-root .work/recovery/my-run/lake --usage-day 20260128 \
+  --start '2026-01-31 23:50:00' --end '2026-02-01 00:10:00' \
+  --as-of '2026-02-01 00:20:00' --data-kind synthetic \
+  --output-dir .work/health/my-run
+```
+
+기존 감사의 healthy=0/degraded=1/failed=2 종료 코드를 사용하며 출력은 새 .work 경로만 허용한다. 위 fixture에서는 degraded가 예상된다. 관측 부재는 수집 기록 확인, Bronze 미처리는 저장 원본 재처리, 타입·키 오류는 품질 원인 확인으로 안내한다. 원천 시각 차이와 감사 시점의 관측 나이를 구분한다.
+
+태스크 로그를 주지 않으면 미검증이며 성공으로 간주하지 않는다. 실패 후 성공한 재시도가 있을 수 있어 실패 시도 기록은 Airflow 최종 상태 확인 대상으로 남긴다. 캠페인 기록은 observed 입력에만 연결한다. 기록 없는 날짜를 API 실패나 GET 0회로 단정하지 않는다. 이 CLI는 로컬 점검이며 S3의 운영 scheduler에 자동 배포한 모니터링은 아니다.
+
 실수집 자료·태스크 로그의 코드 commit, 실행 환경, 수집 시작·종료 시각을 함께 기록한다. 날짜별 감사 결과와 실행 로그를 보존해 누락 bucket·응답 상한·ETA 결측·최신성·처리 시간을 비교한다. 실제 파일 수·읽기 시간이 확인된 뒤 compaction 또는 파티션 변경의 전후를 측정한다. 실서비스 접근과 배포는 별도 작업 범위다.
 
 ## 파일 수와 조회 시간에 근거한 유지보수
