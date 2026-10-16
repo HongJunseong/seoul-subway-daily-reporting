@@ -670,3 +670,9 @@ DAG/Pod 13 passed, 0.80초와 Ruff·diff 검사를 통과했다. 전체 회귀�
 .env의 SSDR_S3_BUCKET·SSDR_AWS_REGION만 연결하고 다른 값이 보존됐는지 확인했다. 보관된 llm-report의 네 파일을 기존 save_s3_publication으로 저장하고 네 GET의 bytes·해시·AES256 응답과 원격 publication을 검증했다. 이번 객체 요청 8회, 앞선 인증/버킷 실패 두 번을 합친 객체 요청 10회, 전체 S3 요청 18회·STS 1회다. 실제 OpenAI 호출은 이전의 1회 그대로다. 버킷/계정/endpoint·본문·context·인증 정보는 공개하지 않는다. private bucket-provision*·s3-bucket-resume* 결과를 보존하고 공개 집계와 ROADMAP을 갱신했다.
 
 검증 범위는 보고서 객체다. 새 버킷의 Delta lake 수집/변환, Kubernetes 운영 Secret·LLM 모드·상시 일정은 활성화하지 않았다. 코드 변경은 없으며 기존 보고서 회귀와 문서/JSON/비밀 값 미포함 검사를 확인한다.
+
+## 2026-10-17 환경 설정 정리
+
+로컬 .env의 미사용 DISCORD_WEBHOOK_URL·AIRFLOW_GID·SSDR_S3_PREFIX를 제거하고 .env.example과 같은 15개 설정으로 정리했다. 현재 저장 prefix는 SSDR_STORAGE_PREFIX이며 기본 동작 v2를 유지한다. 기존 AWS·서울 API·OpenAI와 실행 계정 값은 전후 비교로 보존을 확인했고 원본은 ignored .work의 private 사본에 보관했다. 예제는 원천·저장소·LLM·선택 Slack·Compose 용도로 구분하고 RUNBOOK의 이전 Discord 전환 안내를 제거했다. 알림의 과거 설정 무시 회귀 테스트는 유지했다.
+
+기존 알림·보고서 발행 회귀 21 passed(0.73초), Compose config --quiet 파싱과 env 키/기존 값 보존·이전/현재 비밀 값의 공개 파일 미포함·문서 링크·diff 검사를 확인했다. 외부 서비스 호출·배포·스케줄 변경은 없고 .env·private 백업은 커밋하지 않는다. 변경은 공개 예제·운영 안내·이 기록뿐이다.
