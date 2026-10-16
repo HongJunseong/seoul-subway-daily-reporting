@@ -57,6 +57,7 @@ jobs:
       - run: pip install "apache-airflow[cncf.kubernetes]==2.7.3" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.3/constraints-3.11.txt
       - run: pip install pytest==8.4.2
       - run: pytest -q tests/test_dags.py tests/test_kubernetes_profiles.py
+      - run: python scripts/task_timeout_experiment.py --output-dir .work/task-timeout/ci
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
           version: v3.20.0
@@ -68,7 +69,9 @@ jobs:
         if: always()
         with:
           name: kubernetes-config-evidence
-          path: .work/kubernetes/render-fixture
+          path: |
+            .work/kubernetes/render-fixture
+            .work/task-timeout/ci/evidence.json
           retention-days: 7
   airflow-integration:
     runs-on: ubuntu-24.04

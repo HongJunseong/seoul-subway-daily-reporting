@@ -6,6 +6,7 @@ from pyspark.sql import functions as F
 from src.common.dates import now_kst
 from src.common.get_api import get_arrival_api_key
 from src.common.http import get_json, SourceError
+from src.common.deadline import collection_deadline
 from src.common.storage import table_path, public_uri
 from src.ingestion.bronze import bronze_frame, ARRIVAL_COLUMNS
 from src.jobs.spark_common import build_spark
@@ -14,6 +15,7 @@ BASE_URL = "http://swopenapi.seoul.go.kr/api/subway"
 SERVICE_NAME = "realtimeStationArrival"
 
 
+@collection_deadline(45)
 def fetch_realtime_arrival_all_json(start_index=1, end_index=1000, *, session=None):
     if not 1 <= start_index <= end_index <= 1000:
         raise ValueError("invalid arrival response range")

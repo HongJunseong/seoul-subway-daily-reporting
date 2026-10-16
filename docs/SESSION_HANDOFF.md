@@ -607,3 +607,14 @@ examples 목록은 처리 단계별 결과와 재현 명령을 한 표로 모았
 README를 포트폴리오 소개에 맞게 다듬었다. 기존 섹션·배지·Mermaid 구성과 실행 명령은 유지하고 본문을 약 33% 줄였다. 플랫폼별 상세 수치·반복 설명을 줄이며 핵심 처리·복구 동작과 합성 입력·원천 관측·S3 미검증 범위는 남겼다.
 
 문서 상대 링크 176개·공개 JSON·비밀 값 미포함·diff whitespace와 기존 샘플 보고서 manifest 검사를 통과했다. 코드 변경이 없어 로컬 회귀는 반복하지 않았다. 직전 0d712fd의 CI 38414218489는 네 job 모두 성공이었다. README와 이 기록만 main에 커밋·일반 push한다.
+
+## 2026-10-16 수집·태스크 실행 시간 제한
+
+사용자의 제출 전 마무리 요청으로 main/origin/main 67a30e5와 깨끗한 작업 트리에서 시작했다. fetch 뒤 추가 원격 변경은 없었고 직전 CI 38416294138의 성공을 확인했다.
+
+- 도착 수집 45초·승하차 전체 페이지 수집 120초의 Linux main-thread process timer를 추가했다. socket read timeout과 구분하며 시간 초과 시 부분 입력을 저장하지 않는다. 기존 활성 timer는 덮어쓰지 않고 지원하지 않는 runtime에서는 호출 전에 실패한다.
+- 일반 GET의 Retry-After가 10초를 넘으면 조기 재요청 없이 실패한다. 지수 대기 회당 5초·최대 네 시도와 redirect 거부를 적용한다. 주입된 제한 관측 session의 자동 재시도·예산은 변경하지 않았다.
+- 모든 태스크·DAG에 실행 상한을 넣었다. 수집/처리 분리·5분 일정·ssdr_delta_writer 1 slot·독립 알림 의존성은 유지한다. 상한은 초기 보호 설정이며 실운영 SLA가 아니다.
+- 실제 localhost HTTP의 slow-drip·긴 Retry-After·redirect와 페이지 중단, timer/handler 복원 및 다음 요청 성공을 검사했다. 새 Airflow 실험은 실제 TaskInstance.run에서 1초 상한의 Bash 자식 종료·지연 출력 부재·다음 실행 success를 확인했다. 최종 timeout 실행은 1.132초다. scheduler·Kubernetes에서 timeout을 검증한 것은 아니다.
+
+DAG/Pod 13 passed, 0.80초와 Ruff·diff 검사를 통과했다. 전체 회귀와 새 환경·실제 보고서·운영 점검의 통합 결과는 다음 항목에 기록한다. CI에 timeout 실험과 결과 artifact를 추가했다. private 로그는 .work/finalize-{dags,final-timeout,final-regression}.log이며 실서비스 배포는 수행하지 않았다.

@@ -9,16 +9,28 @@ class SourceError(RuntimeError):
     pass
 
 
+class SourceRetry(Retry):
+    """Stop rather than retry earlier than an excessive server-requested delay."""
+
+    def sleep_for_retry(self, response):
+        delay = self.get_retry_after(response)
+        if delay and delay > 10:
+            raise SourceError("API Retry-After exceeds the collection wait budget")
+        return super().sleep_for_retry(response)
+
+
 def get_json(url: str, *, session=None, timeout: int = 15) -> dict:
     owned = session is None
     client = session or requests.Session()
     if owned:
-        policy = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504],
+        policy = SourceRetry(total=3, backoff_factor=1, backoff_max=5, status_forcelist=[429, 500, 502, 503, 504],
                        allowed_methods=["GET"], respect_retry_after_header=True)
         client.mount("http://", HTTPAdapter(max_retries=policy))
         client.mount("https://", HTTPAdapter(max_retries=policy))
     try:
-        response = client.get(url, timeout=timeout)
+        response = client.get(url, timeout=timeout, **({"allow_redirects": False} if owned else {}))
+        if owned and 300 <= response.status_code < 400:
+            raise SourceError("API redirect rejected; source endpoint must be explicit")
         response.raise_for_status()
         payload = response.json()
         if not isinstance(payload, dict):

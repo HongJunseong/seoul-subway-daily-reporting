@@ -89,3 +89,16 @@ def test_actual_airflow_attempt_number_is_stable_after_failure(bag):
         ti.state = state
         assert ti.try_number == 2
         assert task_event(ctx, "failed")["try_number"] == 1
+
+
+def test_all_tasks_have_finite_execution_limits_and_five_minute_collection_is_retained(bag):
+    from datetime import timedelta
+    for dag in bag.dags.values():
+        assert timedelta(0) < dag.dagrun_timeout <= timedelta(minutes=45)
+        for task in dag.tasks:
+            assert timedelta(0) < task.execution_timeout < dag.dagrun_timeout
+    collector = bag.dags['arrival_collect_5m']
+    assert collector.schedule_interval == '*/5 * * * *'
+    task = collector.tasks[0]
+    # Two bounded attempts plus retry delay fit within one scheduled collection run.
+    assert task.execution_timeout * (task.retries + 1) + task.retry_delay <= collector.dagrun_timeout

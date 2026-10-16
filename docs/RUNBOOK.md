@@ -75,6 +75,31 @@ Compose는 env_file로 설정을 전달한다. Kubernetes는 k8s/create-secret.s
 
 ## 장애 판단
 
+### 실행 시간 제한
+
+| 작업 | 한 번의 실행 상한 |
+|---|---|
+| 도착 API 수집 | 전체 45초 |
+| 승하차 API 수집 | 모든 페이지·재시도 합계 120초 |
+| 도착 수집 태스크 | 2분, 재시도 1회·간격 30초 |
+| 5분 처리 태스크 | 각 5분 |
+| 일간 수집 / 변환 / 보고서 | 5분 / 각 10분 / 5분 |
+| 일간 날짜 계산·분기·트리거·알림 | 각 1분 |
+
+수집 전체 상한은 Linux main thread의 process timer로 적용한다. HTTP timeout은 응답 전체 시간이 아니므로 일정 간격으로 bytes가 도착하는 응답도 이 timer로 중단한다. 이미 활성화된 process timer를 덮어쓰거나 thread/Windows에서 제한 없이 실행하지 않는다. Spark 저장 시간은 Airflow 태스크 상한으로 별도 제한한다. 독립 CLI의 Spark 저장에는 Airflow 제한이 적용되지 않는다.
+
+일반 HTTP GET은 최대 네 번 시도하고 지수 대기는 회당 5초 이하로 제한한다. redirect는 따라가지 않는다. Retry-After가 10초를 넘으면 조기 재요청 대신 실패한다. 제한 관측의 주입 session에는 자동 재시도를 추가하지 않는다. 수집 시간 초과는 부분 결과를 Bronze에 넘기지 않는다.
+
+DAG 실행 상한은 도착 수집 5분·5분 처리 15분·일간 수집/집계 각 45분·보고서 20분이다. scheduler의 검사 주기와 queue 지연까지 포함한 SLA는 아니다. 일간 처리 상한은 초기 보호 설정이며 실운영 처리 시간에 따라 조정한다.
+
+timeout 후에는 Airflow의 실패/재시도 상태와 자식 프로세스 종료를 확인한다. Delta 커밋 직후 중단됐을 수 있으므로 저장된 원본과 테이블 버전을 확인하고 같은 구간을 재처리한다. 수집 재시도로 얻은 새 도착 관측은 놓친 과거 snapshot 복구가 아니다. 고정 캠페인은 기존의 같은 날 재수집 금지 규칙을 유지한다.
+
+새 로컬 SQLite에서 실제 태스크 종료와 다음 실행을 확인하려면 다음 명령을 사용한다.
+
+```bash
+PYTHONPATH=.:dags .venv-airflow/bin/python scripts/task_timeout_experiment.py --output-dir .work/task-timeout/my-run
+```
+
 | 증상 | 확인·조치 |
 |---|---|
 | 승하차 미제공·페이지 불완전 | API 코드·total count·페이지 길이 확인; 반복/중복 키는 정상 수집으로 간주하지 않고 날짜 변경 없이 원천 준비 후 전체 재수집 |

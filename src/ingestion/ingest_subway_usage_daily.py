@@ -8,6 +8,7 @@ from pyspark.sql import functions as F
 from src.common.dates import date_parts, now_kst, validate_ymd
 from src.common.get_api import get_passenger_api_key
 from src.common.http import get_json, SourceError
+from src.common.deadline import collection_deadline
 from src.common.storage import table_path, public_uri
 from src.ingestion.bronze import bronze_frame, USAGE_COLUMNS
 from src.jobs.spark_common import build_spark
@@ -16,6 +17,7 @@ BASE_URL = "http://openapi.seoul.go.kr:8088"
 SERVICE_NAME = "CardSubwayStatsNew"
 
 
+@collection_deadline(120)
 def fetch_subway_usage_daily(use_ymd: str, page_size: int = 1000, max_pages: int = 10, *, session=None):
     validate_ymd(use_ymd)
     if type(page_size) is not int or type(max_pages) is not int or not 1 <= page_size <= 1000 or max_pages < 1:
