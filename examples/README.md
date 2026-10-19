@@ -11,7 +11,7 @@
 | [Kubernetes](kubernetes/README.md), [worker 자원](kubernetes/resources.md) | worker 삭제 후 재시도, PVC 로그 보존과 자원 사용량 |
 | [Databricks Job](databricks/README.md), [품질·SQL](databricks/free-edition.md) | managed Delta 정정·time travel과 SQL view 조회 |
 | [서울 API 수집](observed/evidence.md) | 도착 3회·D-4 승하차 하루 수집과 7개 테이블 재처리 |
-| [수집 계획 점검](observed/campaign-plan-audit.md) | 예정 슬롯과 저장된 기록 비교; 기록 없는 날짜는 미확인으로 표시 |
+| [수집 계획 점검](observed/campaign-plan-audit.md), [10/12~18 종료](observed/source-campaign-20261012-18.json) | 예정 슬롯과 저장된 기록 비교; 기록 없는 날짜는 미확인으로 표시 |
 | [원본 무결성](observed/source-integrity.json), [페이지 수집](operations/source-pagination.json) | 파일 변조와 반복·불완전 페이지를 합성 입력으로 재현 |
 | [보고서 품질](operations/report-contract.md), [발행 중단·재시도](operations/publication-commit.md) | 잘못된 Gold 거부, writer 중단 후 이전 보고서 읽기와 재발행 |
 

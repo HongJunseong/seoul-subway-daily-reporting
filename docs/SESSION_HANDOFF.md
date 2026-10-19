@@ -688,3 +688,11 @@ Kubernetes의 보고서 경로를 기존 logs PVC에 지정해 서로 다른 생
 파이프라인 전체 474 passed(168.95초), 마지막 단위/배수 검사 추가 후 관련 회귀 76 passed(2.46초), Airflow/Pod 14 passed(1.11초)다. 중복 검사는 합산하지 않는다. 실제 로컬 TaskInstance 연결 실행은 세 DAG·13개 성공·API 수집 1개 skipped·발행 해시 일치로 완료됐다(78.826832초). 초기 관련 59/49개도 전체·최종 검사와 중복이다. Ruff·복구 CLI help·문서 링크·공개 파일의 비밀 값 미포함·diff 검사를 확인했다. 상세 로그는 private .work/report-reliability-20261017에 있다.
 
 실제 API·AWS·Slack·LLM 호출, Kubernetes 배포·일정 활성화와 원천 관측 캠페인 변경은 없었다. .env와 기존 원본은 보존했다. 남은 작업은 승인된 예산에서 새 프롬프트의 실제 모델 준수율 평가와 Kubernetes 연속 운영이다. 구현·회귀·복구 안내를 main에 직접 커밋하고 일반 push하며 원격 CI는 해당 커밋의 Actions 기록으로 확인한다.
+
+## 2026-10-19 제한 원천 관측 종료
+
+KST 10/19에 고정된 10/12~18 계획의 기간 종료를 확인했다. 계획 21슬롯 중 캡처로 확인된 수집은 0, 10/16 시작 시간 놓침은 3, 나머지 6일의 미확인은 18이다. 알려진 GET 기록은 10/16의 0회뿐이고 전체 호출량은 미확인이다. 캡처가 없어 응답 상한·identity·원천 시각 나이·분석 시점 관측 나이·처리 품질·7개 테이블 재처리는 검증하지 않았다. 별도 10/11 관측과 추가 승하차 수집은 이번 집계에 포함하지 않는다. 장기 baseline과 실행 누락 원인 확인은 미완료로 유지한다.
+
+기존 status/summarize CLI로 private summaries/final-20261019T102504에 계획·상태·집계를 보존하고 공개 가능한 메타데이터만 examples/observed/source-campaign-20261012-18.json에 기록했다. plan·seal·기존 예약 state 해시가 유지됐고 API 재수집·backfill·기간 연장은 없다. 기간 밖 예약은 공식 automation_update로 삭제 완료했다(id 7). 원천·AWS·Slack·Databricks upload·LLM 호출은 없었다.
+
+관측 캠페인·계획 대조·메타데이터 회귀 70 passed(0.92초), 문서 링크·JSON·비밀 값 미포함·diff 검사를 확인했다. 새 데이터가 없어 Spark 처리를 실행하지 않았다. 직전 구현 55acb88의 CI 38935069428은 success다. 이번 종료 기록은 write-commit 규칙으로 main에 직접 커밋·일반 push하고 해당 CI를 확인한다.

@@ -86,11 +86,13 @@ init/status는 서비스에 접근하지 않는다. run은 명시적 --fetch를 
 
 campaign status의 계획 날짜와 실행 기록을 capture 비교 결과와 함께 본다. state가 없는 도래 날짜는 unrecorded_due이며 API 실패라고 단정하지 않는다. 수집이 불완전하면 process_source_experiment의 출판 gate를 통과하지 못한다. 완료된 날짜만 저장 원본에서 별도로 처리한다.
 
-현재 사용자가 허용한 계획은 **2026-10-12~18, 매일 17:50 KST, 최대 91 GET/7일**이다. .work/source-campaign-20261012-18/plan.json에 고정했으며, 20261011의 기존 10분 실험과 구분한다. 원문은 로컬에만 두며 AWS·Databricks upload·Slack·LLM은 이 계획에서 호출하지 않는다. API 키 전체 예산이나 다른 collector의 동시 호출을 제어한 것은 아니다.
+사용자가 허용한 **2026-10-12~18, 매일 17:50 KST, 최대 91 GET/7일** 계획은 종료됐다. .work/source-campaign-20261012-18/plan.json에 고정했으며, 20261011의 기존 10분 실험과 구분한다. 원문은 로컬에만 두며 AWS·Databricks upload·Slack·LLM은 이 계획에서 호출하지 않는다. API 키 전체 예산이나 다른 collector의 동시 호출을 제어한 것은 아니다.
 
 예약은 이 채팅의 앱 자동화로 실행한다. [공식 예약 작업 안내](https://learn.chatgpt.com/docs/automations?surface=app)에 따라 로컬 파일 작업에는 컴퓨터와 앱이 실행 중이어야 한다. 꺼져 있거나 실행이 늦어 놓친 관측은 소급 호출하지 않는다. 기간 종료 후 호출을 종료하고 확보한 날짜·미확인 날짜·처리 품질·응답 상한을 보고한다.
 
 10/16 점검에서 12~15일 실행 기록은 미확인, 16일은 실제 CLI의 missed_start_window/GET 0회로 남았다. 예약 설정은 17·18일 17:50 KST를 명시하도록 갱신했으며 plan의 기간·예산은 보존했다. 늦은 실행의 원인은 기록만으로 확정하지 않았고 남은 예약의 실제 기동은 별도 확인 대상이다.
+
+[종료 집계](../examples/observed/source-campaign-20261012-18.json)에서 계획 21슬롯 중 확인된 수집은 0, 시작 시간 놓침 3, 미확인 18이다. 10/16은 GET 0회로 기록됐고 나머지 6일의 호출량은 알 수 없다. 완전한 캡처가 없어 원천 품질·7개 테이블 재처리는 실행하지 않았다. 과거 관측을 복원하거나 기간을 연장하지 않았으며 10/19에 예약을 삭제했다. 지연·실행 누락의 원인은 미확정이고 장기 baseline은 미완료다.
 
 10/16의 추가 승인된 승하차 1 GET은 이 캠페인과 별도다. 10/8 이용량과 기존 10/11 도착으로 10/12 기준 보고서를 재처리했고, 날짜·생성 시각·범위는 [보고서 점검](../examples/observed/report-check.json)에 남겼다. 로컬 lake의 보고서는 SSDR_DATA_ROOT·SSDR_REPORT_OUTPUT_DIR·SSDR_DATA_KIND=observed·SSDR_REPORT_MODE=template을 설정한 뒤 `python -m src.report.generate_daily_report 20261012 --local-only`로 생성하고 verify_report.py로 확인한다. 날짜가 없는 경우 다른 날짜로 대체하지 않는다.
 

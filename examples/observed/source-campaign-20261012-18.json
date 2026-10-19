@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "scope": "campaign-execution-metadata-only",
+  "status": "closed_without_verified_captures",
+  "as_of_kst": "2026-10-19T10:27:17.009760+09:00",
+  "plan": {
+    "schema_version": 1,
+    "timezone": "Asia/Seoul",
+    "start_day": "20261012",
+    "end_day": "20261018",
+    "days": 7,
+    "daily_time": "17:50",
+    "snapshots": 3,
+    "cadence_seconds": 300,
+    "start_grace_seconds": 300,
+    "max_get_attempts_per_day": 13,
+    "max_get_attempts_campaign": 91
+  },
+  "sealed_plan_sha256": "8f2eacae6d2ec29381b6b2fa153f58586e18d3bcf9b15fac2c78734c2d4e36ad",
+  "totals": {
+    "verified_capture_manifests": 0,
+    "confirmed_collected_days": 0,
+    "planned_arrival_slots": 21,
+    "confirmed_collected_arrival_slots": 0,
+    "missed_start_window_slots": 3,
+    "unconfirmed_arrival_slots": 18,
+    "known_recorded_get_attempts": 0,
+    "total_get_attempts": null,
+    "days_with_unknown_get_count": [
+      "20261012",
+      "20261013",
+      "20261014",
+      "20261015",
+      "20261017",
+      "20261018"
+    ],
+    "recorded_failed_request_slots": 0
+  },
+  "daily": [
+    {
+      "capture_day_kst": "20261012",
+      "expected_usage_day": "20261008",
+      "run_status": "unrecorded_due",
+      "recorded_get_attempts": null
+    },
+    {
+      "capture_day_kst": "20261013",
+      "expected_usage_day": "20261009",
+      "run_status": "unrecorded_due",
+      "recorded_get_attempts": null
+    },
+    {
+      "capture_day_kst": "20261014",
+      "expected_usage_day": "20261010",
+      "run_status": "unrecorded_due",
+      "recorded_get_attempts": null
+    },
+    {
+      "capture_day_kst": "20261015",
+      "expected_usage_day": "20261011",
+      "run_status": "unrecorded_due",
+      "recorded_get_attempts": null
+    },
+    {
+      "capture_day_kst": "20261016",
+      "expected_usage_day": "20261012",
+      "run_status": "missed_start_window",
+      "recorded_get_attempts": 0
+    },
+    {
+      "capture_day_kst": "20261017",
+      "expected_usage_day": "20261013",
+      "run_status": "unrecorded_due",
+      "recorded_get_attempts": null
+    },
+    {
+      "capture_day_kst": "20261018",
+      "expected_usage_day": "20261014",
+      "run_status": "unrecorded_due",
+      "recorded_get_attempts": null
+    }
+  ],
+  "data_checks": {
+    "response_at_limit_rate": null,
+    "identity_quality": null,
+    "source_timestamp_age_seconds": null,
+    "observation_age_at_analysis_seconds": null,
+    "processing_quality": null,
+    "seven_table_replay_verified": null,
+    "reason": "No complete campaign capture is available for processing or source-quality checks"
+  },
+  "data_publication_status": "not_published",
+  "automation": {
+    "id": "7",
+    "status": "deleted_after_period"
+  },
+  "source_api_gets_during_closeout": 0,
+  "limitations": [
+    "Missing execution records do not establish zero API calls or an API request failure.",
+    "Known GET attempts are a lower bound; the six unrecorded days have unknown request counts.",
+    "The cause of missing or delayed automation execution remains unconfirmed.",
+    "No backfill, retry of reserved days, campaign extension or plan/budget change was performed.",
+    "The earlier 2026-10-11 source experiment and separately approved usage GET are excluded.",
+    "No source-quality, station coverage, source freshness or long-term operating baseline is established."
+  ]
+}
